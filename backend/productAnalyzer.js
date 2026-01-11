@@ -313,13 +313,13 @@ function compareProducts(products) {
 
     let recommendation;
     if (scoredProducts.length === 1) {
-        recommendation = 'Single product analyzed';
+        recommendation = 'Apenas um produto analisado';
     } else if (scoreDiff >= 15) {
-        recommendation = `${winner.model || 'Product'} is clearly the better choice`;
+        recommendation = `${winner.model || 'Product'} é claramente a melhor escolha`;
     } else if (scoreDiff >= 5) {
         recommendation = `${winner.model || 'Product'} oferece o melhor valor`;
     } else {
-        recommendation = 'Both products are comparable options';
+        recommendation = 'Ambos os produtos são opções semelhantes';
     }
 
     return {
@@ -538,21 +538,42 @@ async function scrapeProductsForComparison(productUrls, onProgress = null) {
                 total: productUrls.length
             });
 
-            try {
-                const page = await context.newPage();
-                await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+            // First page needs more time (cold start)
+            const timeout = i === 0 ? 60000 : 30000;
+            let retries = 2; // Allow 1 retry
 
-                const details = await extractProductDetails(page);
-                products.push(details);
+            while (retries > 0) {
+                try {
+                    const page = await context.newPage();
+                    await page.goto(url, { waitUntil: 'networkidle', timeout });
 
-                await page.close();
-            } catch (pageError) {
-                console.error(`[ProductAnalyzer] Error on ${url}:`, pageError.message);
-                products.push({
-                    id: url.match(/id=(\d+)/)?.[1] || Date.now().toString(),
-                    url,
-                    error: pageError.message
-                });
+                    const details = await extractProductDetails(page);
+                    products.push(details);
+
+                    await page.close();
+                    break; // Success, exit retry loop
+                } catch (pageError) {
+                    retries--;
+                    console.error(`[ProductAnalyzer] Error on ${url} (retries left: ${retries}):`, pageError.message);
+
+                    if (retries === 0) {
+                        // Final failure - still add to results with error
+                        products.push({
+                            id: url.match(/id=(\d+)/)?.[1] || Date.now().toString(),
+                            url,
+                            error: pageError.message,
+                            title: 'Erro ao carregar produto',
+                            price: 0
+                        });
+                    } else {
+                        // Wait before retry
+                        await new Promise(r => setTimeout(r, 2000));
+                        emit('scraping', `Tentando novamente produto ${i + 1}...`, {
+                            current: i + 1,
+                            total: productUrls.length
+                        });
+                    }
+                }
             }
 
             // Small delay between requests

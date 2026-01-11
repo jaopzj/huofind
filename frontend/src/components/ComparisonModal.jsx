@@ -98,8 +98,8 @@ function ComparisonModal({ isOpen, onClose, comparisonData, isLoading }) {
                     backdropFilter: 'blur(10px)'
                 }}
             >
-                {/* Image gallery */}
-                <div className="relative aspect-square rounded-xl overflow-hidden mb-4 bg-gray-100">
+                {/* Image gallery with arrow navigation */}
+                <div className="relative aspect-square rounded-xl overflow-hidden mb-4 bg-gray-100 group">
                     {product.images?.length > 0 ? (
                         <>
                             <img
@@ -107,17 +107,72 @@ function ComparisonModal({ isOpen, onClose, comparisonData, isLoading }) {
                                 alt={product.title}
                                 className="w-full h-full object-cover"
                             />
+
+                            {/* Left/Right Arrow Navigation */}
                             {product.images.length > 1 && (
-                                <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-                                    {product.images.slice(0, 5).map((_, i) => (
-                                        <button
-                                            key={i}
-                                            onClick={() => setActiveImageIndex(prev => ({ ...prev, [product.id]: i }))}
-                                            className={`w-2 h-2 rounded-full transition-all ${currentImage === i ? 'bg-white w-4' : 'bg-white/50'
-                                                }`}
-                                        />
-                                    ))}
-                                </div>
+                                <>
+                                    {/* Left Arrow */}
+                                    <button
+                                        onClick={() => setActiveImageIndex(prev => ({
+                                            ...prev,
+                                            [product.id]: currentImage === 0 ? product.images.length - 1 : currentImage - 1
+                                        }))}
+                                        className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+                                        style={{
+                                            background: 'rgba(255, 255, 255, 0.9)',
+                                            backdropFilter: 'blur(4px)',
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                        }}
+                                    >
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                    </button>
+
+                                    {/* Right Arrow */}
+                                    <button
+                                        onClick={() => setActiveImageIndex(prev => ({
+                                            ...prev,
+                                            [product.id]: currentImage === product.images.length - 1 ? 0 : currentImage + 1
+                                        }))}
+                                        className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+                                        style={{
+                                            background: 'rgba(255, 255, 255, 0.9)',
+                                            backdropFilter: 'blur(4px)',
+                                            boxShadow: '0 2px 8px rgba(0,0,0,0.15)'
+                                        }}
+                                    >
+                                        <svg className="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                        </svg>
+                                    </button>
+
+                                    {/* Image counter badge */}
+                                    <div
+                                        className="absolute top-2 right-2 px-2 py-1 rounded-lg text-xs font-medium"
+                                        style={{
+                                            background: 'rgba(0, 0, 0, 0.5)',
+                                            color: 'white'
+                                        }}
+                                    >
+                                        {currentImage + 1} / {product.images.length}
+                                    </div>
+
+                                    {/* Dot indicators */}
+                                    <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
+                                        {product.images.slice(0, 5).map((_, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => setActiveImageIndex(prev => ({ ...prev, [product.id]: i }))}
+                                                className={`w-2 h-2 rounded-full transition-all ${currentImage === i ? 'bg-white w-4' : 'bg-white/50'
+                                                    }`}
+                                            />
+                                        ))}
+                                        {product.images.length > 5 && (
+                                            <span className="text-white/70 text-xs ml-1">+{product.images.length - 5}</span>
+                                        )}
+                                    </div>
+                                </>
                             )}
                         </>
                     ) : (
@@ -255,8 +310,8 @@ function ComparisonModal({ isOpen, onClose, comparisonData, isLoading }) {
                         {/* Products comparison */}
                         <div className="p-6">
                             <div className={`grid gap-6 ${products.length === 2 ? 'grid-cols-2' :
-                                    products.length === 3 ? 'grid-cols-3' :
-                                        'grid-cols-2 lg:grid-cols-4'
+                                products.length === 3 ? 'grid-cols-3' :
+                                    'grid-cols-2 lg:grid-cols-4'
                                 }`}>
                                 {products.map((product, index) => (
                                     <ProductCompareCard key={product.id || index} product={product} index={index} />
