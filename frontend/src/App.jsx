@@ -157,15 +157,22 @@ function App() {
         setMiningStage({ stage: 'starting', message: 'Iniciando mineração...', count: 0 });
 
         try {
-            // Flag to track if complete event was received
+            // Flags to track connection state
             let completedSuccessfully = false;
+            let receivedAnyEvent = false;
 
             // Use SSE for real-time progress
             const eventSource = new EventSource(
                 `/api/mine-stream?url=${encodeURIComponent(url)}&limit=${limit}`
             );
 
+            eventSource.onopen = () => {
+                console.log('[SSE] Conexão estabelecida');
+                receivedAnyEvent = true;
+            };
+
             eventSource.addEventListener('progress', (event) => {
+                receivedAnyEvent = true;
                 const data = JSON.parse(event.data);
                 setMiningStage({
                     stage: data.stage,
@@ -189,6 +196,7 @@ function App() {
             });
 
             eventSource.addEventListener('error', (event) => {
+                receivedAnyEvent = true;
                 try {
                     const data = JSON.parse(event.data);
                     setError(data.message || 'Erro na mineração');
@@ -199,10 +207,12 @@ function App() {
                 eventSource.close();
             });
 
-            eventSource.onerror = () => {
-                // Only set error if we haven't received complete event
-                if (!completedSuccessfully) {
-                    setError('Conexão perdida com o servidor');
+            eventSource.onerror = (e) => {
+                // SSE connections always close after complete, which triggers onerror
+                // Only show error if we never received any events AND didn't complete
+                if (!completedSuccessfully && !receivedAnyEvent) {
+                    console.error('[SSE] Erro de conexão:', e);
+                    setError('Não foi possível conectar ao servidor. Verifique se o backend está rodando.');
                     setLoading(false);
                 }
                 eventSource.close();

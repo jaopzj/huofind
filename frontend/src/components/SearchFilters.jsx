@@ -30,12 +30,23 @@ function SearchFilters({
 
     const hasActiveFilters = filters.keyword || filters.minPrice || filters.maxPrice || filters.sort || filters.iphoneModel || filters.storage || filters.unlockStatus;
 
+    // Button styles with hover effects
+    const getFilterButtonStyle = (isActive, activeColor = 'var(--color-orange-500)') => ({
+        background: isActive ? activeColor : 'var(--color-cream-50)',
+        color: isActive ? 'white' : '#6B7280',
+        border: isActive ? 'none' : '1px solid var(--color-cream-200)',
+        transform: 'scale(1)',
+        transition: 'all 0.2s ease'
+    });
+
     return (
         <div
-            className="rounded-2xl p-5 mb-6"
+            className="rounded-2xl p-5 mb-6 transition-all duration-300 hover:shadow-lg"
             style={{
-                background: 'white',
-                boxShadow: 'var(--shadow-soft)'
+                background: 'rgba(255, 255, 255, 0.95)',
+                backdropFilter: 'blur(10px)',
+                boxShadow: 'var(--shadow-soft)',
+                border: '1px solid rgba(255, 255, 255, 0.2)'
             }}
         >
             {/* Top Row: Unlock Status + Currency Toggle */}
@@ -44,34 +55,22 @@ function SearchFilters({
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => handleChange('unlockStatus', '')}
-                        className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                        style={{
-                            background: !filters.unlockStatus ? 'var(--color-orange-500)' : 'var(--color-cream-50)',
-                            color: !filters.unlockStatus ? 'white' : '#6B7280',
-                            border: !filters.unlockStatus ? 'none' : '1px solid var(--color-cream-200)'
-                        }}
+                        className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                        style={getFilterButtonStyle(!filters.unlockStatus)}
                     >
                         📦 Todos
                     </button>
                     <button
                         onClick={() => handleChange('unlockStatus', 'unlocked')}
-                        className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                        style={{
-                            background: filters.unlockStatus === 'unlocked' ? '#10B981' : 'var(--color-cream-50)',
-                            color: filters.unlockStatus === 'unlocked' ? 'white' : '#6B7280',
-                            border: filters.unlockStatus === 'unlocked' ? 'none' : '1px solid var(--color-cream-200)'
-                        }}
+                        className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                        style={getFilterButtonStyle(filters.unlockStatus === 'unlocked', '#10B981')}
                     >
                         🔓 Desbloqueado
                     </button>
                     <button
                         onClick={() => handleChange('unlockStatus', 'rsim')}
-                        className="px-4 py-2 rounded-xl text-sm font-medium transition-all"
-                        style={{
-                            background: filters.unlockStatus === 'rsim' ? '#F59E0B' : 'var(--color-cream-50)',
-                            color: filters.unlockStatus === 'rsim' ? 'white' : '#6B7280',
-                            border: filters.unlockStatus === 'rsim' ? 'none' : '1px solid var(--color-cream-200)'
-                        }}
+                        className="px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
+                        style={getFilterButtonStyle(filters.unlockStatus === 'rsim', '#F59E0B')}
                     >
                         💳 RSIM
                     </button>
@@ -79,12 +78,12 @@ function SearchFilters({
 
                 {/* Right Side: Comparison Mode + Currency Toggle */}
                 <div className="flex items-center gap-4">
-                    {/* Comparison Mode Toggle */}
+                    {/* Comparison Mode Toggle - ORANGE when active */}
                     <button
                         onClick={onToggleComparisonMode}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
                         style={{
-                            background: comparisonMode ? '#8B5CF6' : 'var(--color-cream-50)',
+                            background: comparisonMode ? 'var(--color-orange-500)' : 'var(--color-cream-50)',
                             color: comparisonMode ? 'white' : '#6B7280',
                             border: comparisonMode ? 'none' : '1px solid var(--color-cream-200)'
                         }}
@@ -92,9 +91,9 @@ function SearchFilters({
                         ⚖️ Comparar
                         {selectedCount > 0 && (
                             <span
-                                className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold"
+                                className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold animate-pulse"
                                 style={{
-                                    background: comparisonMode ? 'rgba(255,255,255,0.2)' : 'var(--color-orange-500)',
+                                    background: comparisonMode ? 'rgba(255,255,255,0.25)' : 'var(--color-orange-500)',
                                     color: 'white'
                                 }}
                             >

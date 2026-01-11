@@ -5,7 +5,6 @@ import {
     extractUniqueStorages,
     detectBadges
 } from '../utils/iphoneDetector';
-import CompareButton from './CompareButton';
 
 /**
  * ProductCard - Estilo e-commerce minimalista com comparação
@@ -40,17 +39,8 @@ function ProductCard({
 
     return (
         <article
-            className={`product-card transition-all ${isSelected ? 'ring-2 ring-orange-400 scale-[1.02]' : ''}`}
+            className={`product-card transition-all duration-200 ${isSelected ? 'ring-2 ring-orange-400 scale-[1.02]' : ''}`}
         >
-            {/* Compare Button */}
-            {onCompareToggle && (
-                <CompareButton
-                    isSelected={isSelected}
-                    onClick={() => onCompareToggle(product)}
-                    disabled={!isSelected && maxCompareReached}
-                />
-            )}
-
             {/* Image */}
             <div
                 className="relative overflow-hidden"
@@ -63,7 +53,7 @@ function ProductCard({
                     <img
                         src={product.images[0]}
                         alt={product.nameTranslated || product.name}
-                        className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+                        className="w-full h-full object-cover"
                         loading="lazy"
                     />
                 ) : (
@@ -72,14 +62,42 @@ function ProductCard({
                     </div>
                 )}
 
-                {/* Model Badge - top left - Liquid Glass */}
+                {/* Selection Checkbox - appears when comparison mode is active */}
+                {onCompareToggle && (
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            onCompareToggle(product);
+                        }}
+                        disabled={!isSelected && maxCompareReached}
+                        className={`absolute top-3 left-3 w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 ${!isSelected && maxCompareReached ? 'opacity-40 cursor-not-allowed' : 'hover:scale-110 cursor-pointer'
+                            }`}
+                        style={{
+                            background: isSelected ? 'var(--color-orange-500)' : 'rgba(255, 255, 255, 0.9)',
+                            border: isSelected ? 'none' : '2px solid var(--color-orange-300)',
+                            backdropFilter: 'blur(4px)',
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                        }}
+                    >
+                        {isSelected && (
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                        )}
+                    </button>
+                )}
+
+                {/* Model Badge - top left (shifted right when checkbox is visible) */}
                 {iphoneModel && (
-                    <span className="absolute top-3 left-3 liquid-glass-badge">
+                    <span
+                        className="absolute top-3 liquid-glass-badge"
+                        style={{ left: onCompareToggle ? '42px' : '12px' }}
+                    >
                         📱 {iphoneModel}
                     </span>
                 )}
 
-                {/* Storage Badge - top right - Liquid Glass Orange */}
+                {/* Storage Badge - top right - ALWAYS visible */}
                 {storage && (
                     <span className="absolute top-3 right-3 liquid-glass-badge liquid-glass-orange">
                         {storage}
