@@ -191,6 +191,122 @@ body {
     color: #047857;
 }
 
+/* ========================================
+   LIQUID GLASS EFFECT - Apple iOS 26 Style
+   Following FlyonUI tutorial: bg-white/10, backdrop-blur-xl
+   ======================================== */
+
+/* Base Liquid Glass */
+.liquid-glass {
+    position: relative;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 12px;
+    box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.4),
+        inset 0 -1px 1px rgba(0, 0, 0, 0.05),
+        0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+/* Liquid Glass Badge - Light/White variant (truly transparent) */
+.liquid-glass-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 10px;
+    /* Low opacity for true glass effect */
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    box-shadow:
+        inset 0 1px 1px rgba(255, 255, 255, 0.5),
+        inset 0 -0.5px 0.5px rgba(0, 0, 0, 0.1),
+        0 4px 12px rgba(0, 0, 0, 0.15);
+    color: #1F2937;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+/* Liquid Glass Badge - Orange (for storage/capacity) */
+.liquid-glass-orange {
+    background: rgba(255, 107, 53, 0.2);
+    border: 1px solid rgba(255, 140, 90, 0.3);
+    box-shadow:
+        inset 0 1px 1px rgba(255, 200, 180, 0.4),
+        inset 0 -0.5px 0.5px rgba(180, 50, 0, 0.1),
+        0 4px 12px rgba(255, 107, 53, 0.25);
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Liquid Glass Badge - Blue (for US/USA version) */
+.liquid-glass-blue {
+    background: rgba(59, 130, 246, 0.2);
+    border: 1px solid rgba(96, 165, 250, 0.3);
+    box-shadow:
+        inset 0 1px 1px rgba(147, 197, 253, 0.4),
+        inset 0 -0.5px 0.5px rgba(29, 78, 216, 0.1),
+        0 4px 12px rgba(59, 130, 246, 0.25);
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Liquid Glass Badge - Green (for unlocked/desbloqueado) */
+.liquid-glass-green {
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+    box-shadow:
+        inset 0 1px 1px rgba(167, 243, 208, 0.4),
+        inset 0 -0.5px 0.5px rgba(4, 120, 87, 0.1),
+        0 4px 12px rgba(16, 185, 129, 0.25);
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Liquid Glass Badge - Purple (for RSIM/special) */
+.liquid-glass-purple {
+    background: rgba(139, 92, 246, 0.2);
+    border: 1px solid rgba(167, 139, 250, 0.3);
+    box-shadow:
+        inset 0 1px 1px rgba(196, 181, 253, 0.4),
+        inset 0 -0.5px 0.5px rgba(91, 33, 182, 0.1),
+        0 4px 12px rgba(139, 92, 246, 0.25);
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Liquid Glass Badge - Red (for warnings) */
+.liquid-glass-red {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid rgba(248, 113, 113, 0.3);
+    box-shadow:
+        inset 0 1px 1px rgba(254, 202, 202, 0.4),
+        inset 0 -0.5px 0.5px rgba(185, 28, 28, 0.1),
+        0 4px 12px rgba(239, 68, 68, 0.25);
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* Liquid Glass Badge - Dark (for model info) */
+.liquid-glass-dark {
+    background: rgba(31, 41, 55, 0.2);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    box-shadow:
+        inset 0 1px 1px rgba(107, 114, 128, 0.3),
+        inset 0 -0.5px 0.5px rgba(0, 0, 0, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.2);
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
 .badge-warning {
     background: #FEF3C7;
     color: #D97706;

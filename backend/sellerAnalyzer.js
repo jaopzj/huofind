@@ -268,6 +268,9 @@ export function formatSellerData(sellerInfo, trustResult) {
 }
 
 function formatNumber(num) {
+    if (!num || num === 0) {
+        return '—'; // Return dash for zero/undefined to show it's not available
+    }
     if (num >= 10000) {
         return (num / 10000).toFixed(1) + '万';
     }

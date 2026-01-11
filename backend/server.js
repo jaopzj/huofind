@@ -4,6 +4,7 @@ import scraper from './scraper.js';
 import { translateProducts } from './translator.js';
 import cache from './cache.js';
 import { extractSellerInfo, calculateTrustScore, formatSellerData } from './sellerAnalyzer.js';
+import { scrapeProductsForComparison } from './productAnalyzer.js';
 import { chromium } from 'playwright';
 
 const app = express();
@@ -357,6 +358,56 @@ app.get('/api/products/:sellerId', (req, res) => {
     } catch (error) {
         console.error('[Server] Erro ao buscar produtos:', error);
         res.status(500).json({ error: 'Erro ao buscar produtos', details: error.message });
+    }
+});
+
+/**
+ * POST /api/compare
+ * Compares multiple products and returns scored analysis
+ * Max 4 products at a time
+ */
+app.post('/api/compare', async (req, res) => {
+    try {
+        const { products } = req.body;
+
+        if (!products || !Array.isArray(products) || products.length < 2) {
+            return res.status(400).json({
+                error: 'At least 2 products are required for comparison'
+            });
+        }
+
+        if (products.length > 4) {
+            return res.status(400).json({
+                error: 'Maximum 4 products can be compared at once'
+            });
+        }
+
+        // Extract URLs from products
+        const productUrls = products.map(p => p.url).filter(Boolean);
+
+        if (productUrls.length < 2) {
+            return res.status(400).json({
+                error: 'Valid product URLs are required'
+            });
+        }
+
+        console.log(`[Server] Comparing ${productUrls.length} products...`);
+
+        // Scrape and compare products
+        const result = await scrapeProductsForComparison(productUrls, (stage, message) => {
+            console.log(`[Compare] ${message}`);
+        });
+
+        console.log(`[Server] Comparison complete. Winner: ${result.winner} with ${result.winnerScore} points`);
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('[Server] Comparison error:', error);
+        res.status(500).json({
+            error: 'Error comparing products',
+            details: error.message
+        });
     }
 });
 

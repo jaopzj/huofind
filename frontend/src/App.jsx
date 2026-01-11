@@ -3,6 +3,8 @@ import HeroSection from './components/HeroSection';
 import SellerCard from './components/SellerCard';
 import SearchFilters from './components/SearchFilters';
 import ProductGrid from './components/ProductGrid';
+import CompareBar from './components/CompareBar';
+import ComparisonModal from './components/ComparisonModal';
 import {
     extractUniqueModels,
     detectIPhoneModel,
@@ -35,6 +37,12 @@ function App() {
     // Estado para etapas de mineração em tempo real
     const [miningStage, setMiningStage] = useState({ stage: '', message: '', count: 0 });
 
+    // Estado para comparação de produtos
+    const [selectedForCompare, setSelectedForCompare] = useState([]);
+    const [comparisonData, setComparisonData] = useState(null);
+    const [isComparing, setIsComparing] = useState(false);
+    const [showComparisonModal, setShowComparisonModal] = useState(false);
+
     // Busca taxa de câmbio quando ativar modo BRL
     useEffect(() => {
         if (showBRL && exchangeRate === 0) {
@@ -53,6 +61,55 @@ function App() {
     const toggleCurrency = () => {
         setShowBRL(prev => !prev);
     };
+
+    // Handlers para comparação de produtos
+    const handleCompareToggle = useCallback((product) => {
+        setSelectedForCompare(prev => {
+            const isSelected = prev.some(p => p.id === product.id);
+            if (isSelected) {
+                return prev.filter(p => p.id !== product.id);
+            }
+            if (prev.length >= 4) return prev; // Max 4 products
+            return [...prev, product];
+        });
+    }, []);
+
+    const handleCompare = useCallback(async () => {
+        if (selectedForCompare.length < 2) return;
+
+        setIsComparing(true);
+        setShowComparisonModal(true);
+        setComparisonData(null);
+
+        try {
+            const response = await fetch('/api/compare', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    products: selectedForCompare.map(p => ({
+                        id: p.id,
+                        url: p.url
+                    }))
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Erro ao comparar produtos');
+            }
+
+            const data = await response.json();
+            setComparisonData(data);
+        } catch (err) {
+            console.error('[App] Erro na comparação:', err);
+            setComparisonData({ error: err.message });
+        } finally {
+            setIsComparing(false);
+        }
+    }, [selectedForCompare]);
+
+    const clearCompareSelection = useCallback(() => {
+        setSelectedForCompare([]);
+    }, []);
 
     // Avalia o vendedor assim que a URL é colada
     const handleUrlChange = useCallback(async (url) => {
@@ -90,6 +147,9 @@ function App() {
         setMiningStage({ stage: 'starting', message: 'Iniciando mineração...', count: 0 });
 
         try {
+            // Flag to track if complete event was received
+            let completedSuccessfully = false;
+
             // Use SSE for real-time progress
             const eventSource = new EventSource(
                 `/api/mine-stream?url=${encodeURIComponent(url)}&limit=${limit}`
@@ -105,6 +165,7 @@ function App() {
             });
 
             eventSource.addEventListener('complete', (event) => {
+                completedSuccessfully = true;
                 const data = JSON.parse(event.data);
                 setProducts(data.products || []);
                 if (data.sellerInfo) {
@@ -130,7 +191,7 @@ function App() {
 
             eventSource.onerror = () => {
                 // Only set error if we haven't received complete event
-                if (products.length === 0) {
+                if (!completedSuccessfully) {
                     setError('Conexão perdida com o servidor');
                     setLoading(false);
                 }
@@ -358,10 +419,36 @@ function App() {
                         </div>
 
                         {/* Products Grid */}
-                        <ProductGrid products={filteredProducts} showBRL={showBRL} exchangeRate={exchangeRate} />
+                        <ProductGrid
+                            products={filteredProducts}
+                            showBRL={showBRL}
+                            exchangeRate={exchangeRate}
+                            selectedForCompare={selectedForCompare}
+                            onCompareToggle={handleCompareToggle}
+                        />
                     </>
                 )}
             </main>
+
+            {/* Comparison Bar - floating at bottom */}
+            <CompareBar
+                selectedProducts={selectedForCompare}
+                onRemove={(id) => setSelectedForCompare(prev => prev.filter(p => p.id !== id))}
+                onCompareClick={handleCompare}
+                onClear={clearCompareSelection}
+                isComparing={isComparing}
+            />
+
+            {/* Comparison Modal */}
+            <ComparisonModal
+                isOpen={showComparisonModal}
+                onClose={() => {
+                    setShowComparisonModal(false);
+                    setComparisonData(null);
+                }}
+                comparisonData={comparisonData}
+                isLoading={isComparing}
+            />
         </div>
     );
 }

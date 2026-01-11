@@ -5,11 +5,19 @@ import {
     extractUniqueStorages,
     detectBadges
 } from '../utils/iphoneDetector';
+import CompareButton from './CompareButton';
 
 /**
- * ProductCard - Estilo e-commerce minimalista
+ * ProductCard - Estilo e-commerce minimalista com comparação
  */
-function ProductCard({ product, showBRL = false, exchangeRate = 0 }) {
+function ProductCard({
+    product,
+    showBRL = false,
+    exchangeRate = 0,
+    isSelected = false,
+    onCompareToggle,
+    maxCompareReached = false
+}) {
     const handleClick = () => {
         if (product.url) {
             window.open(product.url, '_blank');
@@ -31,7 +39,18 @@ function ProductCard({ product, showBRL = false, exchangeRate = 0 }) {
     };
 
     return (
-        <article className="product-card">
+        <article
+            className={`product-card transition-all ${isSelected ? 'ring-2 ring-orange-400 scale-[1.02]' : ''}`}
+        >
+            {/* Compare Button */}
+            {onCompareToggle && (
+                <CompareButton
+                    isSelected={isSelected}
+                    onClick={() => onCompareToggle(product)}
+                    disabled={!isSelected && maxCompareReached}
+                />
+            )}
+
             {/* Image */}
             <div
                 className="relative overflow-hidden"
@@ -53,56 +72,47 @@ function ProductCard({ product, showBRL = false, exchangeRate = 0 }) {
                     </div>
                 )}
 
-                {/* Model Badge - top left */}
+                {/* Model Badge - top left - Liquid Glass */}
                 {iphoneModel && (
-                    <span
-                        className="absolute top-3 left-3 text-xs font-medium px-2 py-1 rounded-lg"
-                        style={{
-                            background: 'rgba(255, 255, 255, 0.95)',
-                            backdropFilter: 'blur(4px)',
-                            color: '#374151',
-                            boxShadow: 'var(--shadow-soft)'
-                        }}
-                    >
+                    <span className="absolute top-3 left-3 liquid-glass-badge">
                         📱 {iphoneModel}
                     </span>
                 )}
 
-                {/* Storage Badge - top right */}
+                {/* Storage Badge - top right - Liquid Glass Orange */}
                 {storage && (
-                    <span
-                        className="absolute top-3 right-3 text-xs font-medium px-2 py-1 rounded-lg"
-                        style={{
-                            background: 'var(--color-orange-500)',
-                            color: 'white',
-                            boxShadow: 'var(--shadow-soft)'
-                        }}
-                    >
+                    <span className="absolute top-3 right-3 liquid-glass-badge liquid-glass-orange">
                         {storage}
                     </span>
                 )}
 
-                {/* Version/Status Badges - bottom */}
+                {/* Version/Status Badges - bottom - Liquid Glass variants */}
                 {badges.length > 0 && (
-                    <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1">
-                        {badges.map((badge, i) => (
-                            <span
-                                key={i}
-                                className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-md"
-                                style={{
-                                    background: badge.bg,
-                                    color: badge.color,
-                                    backdropFilter: 'blur(4px)'
-                                }}
-                            >
-                                {badge.flagSvg ? (
-                                    <img src={badge.flagSvg} alt={badge.label} className="w-4 h-3 rounded-sm" />
-                                ) : (
-                                    <span>{badge.icon}</span>
-                                )}
-                                {badge.label}
-                            </span>
-                        ))}
+                    <div className="absolute bottom-3 left-3 right-3 flex flex-wrap gap-1.5">
+                        {badges.map((badge, i) => {
+                            // Map badge types to Liquid Glass color classes
+                            let glassClass = 'liquid-glass-badge';
+                            if (badge.label?.toLowerCase().includes('eua') || badge.label?.toLowerCase().includes('usa') || badge.label?.toLowerCase().includes('us')) {
+                                glassClass += ' liquid-glass-blue';
+                            } else if (badge.label?.toLowerCase().includes('desbloqueado') || badge.label?.toLowerCase().includes('unlock')) {
+                                glassClass += ' liquid-glass-green';
+                            } else if (badge.label?.toLowerCase().includes('rsim') || badge.label?.toLowerCase().includes('sim')) {
+                                glassClass += ' liquid-glass-purple';
+                            } else if (badge.icon === '🔒' || badge.label?.toLowerCase().includes('bloqueado')) {
+                                glassClass += ' liquid-glass-red';
+                            }
+
+                            return (
+                                <span key={i} className={glassClass}>
+                                    {badge.flagSvg ? (
+                                        <img src={badge.flagSvg} alt={badge.label} className="w-4 h-3 rounded-sm" />
+                                    ) : badge.icon ? (
+                                        <span>{badge.icon}</span>
+                                    ) : null}
+                                    {badge.label}
+                                </span>
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -158,9 +168,15 @@ function ProductCard({ product, showBRL = false, exchangeRate = 0 }) {
 }
 
 /**
- * ProductGrid - Grid responsivo de produtos
+ * ProductGrid - Grid responsivo de produtos com suporte a comparação
  */
-function ProductGrid({ products, showBRL = false, exchangeRate = 0 }) {
+function ProductGrid({
+    products,
+    showBRL = false,
+    exchangeRate = 0,
+    selectedForCompare = [],
+    onCompareToggle
+}) {
     if (!products || products.length === 0) {
         return (
             <div className="flex flex-col items-center justify-center py-16">
@@ -170,6 +186,8 @@ function ProductGrid({ products, showBRL = false, exchangeRate = 0 }) {
         );
     }
 
+    const maxCompareReached = selectedForCompare.length >= 4;
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {products.map((product, index) => (
@@ -178,7 +196,14 @@ function ProductGrid({ products, showBRL = false, exchangeRate = 0 }) {
                     className="animate-fade-in-up"
                     style={{ animationDelay: `${Math.min(index * 30, 300)}ms` }}
                 >
-                    <ProductCard product={product} showBRL={showBRL} exchangeRate={exchangeRate} />
+                    <ProductCard
+                        product={product}
+                        showBRL={showBRL}
+                        exchangeRate={exchangeRate}
+                        isSelected={selectedForCompare.some(p => p.id === product.id)}
+                        onCompareToggle={onCompareToggle}
+                        maxCompareReached={maxCompareReached}
+                    />
                 </div>
             ))}
         </div>
