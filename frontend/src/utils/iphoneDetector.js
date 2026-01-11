@@ -1,6 +1,9 @@
+// Import flag SVGs
+import usaFlag from '../assets/icons/usa.svg';
+import chinaFlag from '../assets/icons/china.svg';
+
 /**
  * Algoritmo de detecção de modelo de iPhone
- * Identifica: iPhone X, XS, XS Max, XR, 11-16, Pro, Pro Max
  */
 export function detectIPhoneModel(product) {
     const name = (product.nameTranslated || product.name || '').toLowerCase();
@@ -138,30 +141,22 @@ export function extractUniqueModels(products) {
 
 /**
  * Algoritmo de detecção de capacidade de armazenamento
- * Identifica: 64GB, 128GB, 256GB, 512GB, 1TB, 2TB
  */
 export function detectStorage(product) {
     const name = (product.nameTranslated || product.name || '').toLowerCase();
     const originalName = (product.nameOriginal || '').toLowerCase();
     const fullText = `${name} ${originalName}`;
 
-    // Padrões para detectar armazenamento (do maior para o menor para evitar conflitos)
+    // Padrões para detectar armazenamento
     const patterns = [
-        // TB (Terabytes)
         { regex: /2\s*tb/i, storage: '2TB' },
         { regex: /1\s*tb/i, storage: '1TB' },
-
-        // GB (Gigabytes) - ordem decrescente
-        { regex: /1024\s*g[b]?/i, storage: '1TB' }, // 1024GB = 1TB
+        { regex: /1024\s*g[b]?/i, storage: '1TB' },
         { regex: /512\s*g[b]?/i, storage: '512GB' },
         { regex: /256\s*g[b]?/i, storage: '256GB' },
         { regex: /128\s*g[b]?/i, storage: '128GB' },
         { regex: /64\s*g[b]?/i, storage: '64GB' },
         { regex: /32\s*g[b]?/i, storage: '32GB' },
-
-        // Padrões em chinês
-        { regex: /2t[b]?/i, storage: '2TB' },
-        { regex: /1t[b]?(?!\d)/i, storage: '1TB' },
     ];
 
     for (const pattern of patterns) {
@@ -170,15 +165,14 @@ export function detectStorage(product) {
         }
     }
 
-    return null; // Armazenamento não detectado
+    return null;
 }
 
 /**
- * Extrai todas as capacidades de armazenamento únicas de uma lista de produtos
+ * Extrai todas as capacidades de armazenamento únicas
  */
 export function extractUniqueStorages(products) {
     const storages = new Set();
-
     products.forEach(product => {
         const storage = detectStorage(product);
         if (storage) {
@@ -186,9 +180,7 @@ export function extractUniqueStorages(products) {
         }
     });
 
-    // Ordena por capacidade (menor para maior)
     const sortOrder = ['32GB', '64GB', '128GB', '256GB', '512GB', '1TB', '2TB'];
-
     return Array.from(storages).sort((a, b) => {
         const indexA = sortOrder.indexOf(a);
         const indexB = sortOrder.indexOf(b);
@@ -197,4 +189,50 @@ export function extractUniqueStorages(products) {
         if (indexB === -1) return -1;
         return indexA - indexB;
     });
+}
+
+/**
+ * Detecta badges baseado no nome do produto
+ */
+export function detectBadges(product) {
+    const name = (product.nameTranslated || product.name || '').toLowerCase();
+    const originalName = (product.nameOriginal || '').toLowerCase();
+    const fullText = `${name} ${originalName}`;
+
+    const badges = [];
+
+    if (/desbloqueado|lockless|unlocked|无锁|官解/.test(fullText)) {
+        badges.push({ type: 'unlocked', label: 'Desbloqueado', icon: '🔓', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)' });
+    }
+
+    if (/com adesivo|adaptador|rsim|r-?sim|卡贴|贴膜/.test(fullText)) {
+        badges.push({ type: 'rsim', label: 'RSIM', icon: '💳', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' });
+    }
+
+    if (/china continental|versão chinesa|国行|ch\/a|版本 chinesa/.test(fullText)) {
+        badges.push({ type: 'china', label: 'China', flagSvg: chinaFlag, color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' });
+    }
+
+    if (/eua|usa|americano|美版|us\/a|版本 eua|versão americana/.test(fullText)) {
+        badges.push({ type: 'usa', label: 'EUA', flagSvg: usaFlag, color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)' });
+    }
+
+    return badges;
+}
+
+/**
+ * Detecta o status do unlock do produto
+ */
+export function detectUnlockStatus(product) {
+    const name = (product.nameTranslated || product.name || '').toLowerCase();
+    const originalName = (product.nameOriginal || '').toLowerCase();
+    const fullText = `${name} ${originalName}`;
+
+    if (/desbloqueado|lockless|unlocked|无锁|官解/.test(fullText)) {
+        return 'unlocked';
+    }
+    if (/com adesivo|adaptador|rsim|r-?sim|卡贴|贴膜/.test(fullText)) {
+        return 'rsim';
+    }
+    return 'unknown';
 }

@@ -2,7 +2,14 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import HeroSection from './components/HeroSection';
 import SellerCard from './components/SellerCard';
 import SearchFilters from './components/SearchFilters';
-import ProductGrid, { extractUniqueModels, detectIPhoneModel, detectStorage, extractUniqueStorages, detectUnlockStatus } from './components/ProductGrid';
+import ProductGrid from './components/ProductGrid';
+import {
+    extractUniqueModels,
+    detectIPhoneModel,
+    detectStorage,
+    extractUniqueStorages,
+    detectUnlockStatus
+} from './utils/iphoneDetector';
 
 function App() {
     const [products, setProducts] = useState([]);
@@ -24,6 +31,9 @@ function App() {
     // Estado para conversão de moeda
     const [showBRL, setShowBRL] = useState(false);
     const [exchangeRate, setExchangeRate] = useState(0);
+
+    // Estado para etapas de mineração em tempo real
+    const [miningStage, setMiningStage] = useState({ stage: '', message: '', count: 0 });
 
     // Busca taxa de câmbio quando ativar modo BRL
     useEffect(() => {
@@ -77,32 +87,59 @@ function App() {
         setLoading(true);
         setError(null);
         setProducts([]);
+        setMiningStage({ stage: 'starting', message: 'Iniciando mineração...', count: 0 });
 
         try {
-            const response = await fetch('/api/mine', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ url, limit, useMock: false })
+            // Use SSE for real-time progress
+            const eventSource = new EventSource(
+                `/api/mine-stream?url=${encodeURIComponent(url)}&limit=${limit}`
+            );
+
+            eventSource.addEventListener('progress', (event) => {
+                const data = JSON.parse(event.data);
+                setMiningStage({
+                    stage: data.stage,
+                    message: data.message,
+                    count: data.count || 0
+                });
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Erro ao minerar produtos');
-            }
+            eventSource.addEventListener('complete', (event) => {
+                const data = JSON.parse(event.data);
+                setProducts(data.products || []);
+                if (data.sellerInfo) {
+                    setSellerInfo(data.sellerInfo);
+                }
+                setIsMockData(data.isMock || false);
+                setFilters(prev => ({ ...prev, iphoneModel: '', storage: '' }));
+                setMiningStage({ stage: 'done', message: 'Concluído!', count: data.products?.length || 0 });
+                setLoading(false);
+                eventSource.close();
+            });
 
-            const data = await response.json();
-            setProducts(data.products || []);
+            eventSource.addEventListener('error', (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    setError(data.message || 'Erro na mineração');
+                } catch {
+                    setError('Erro de conexão com o servidor');
+                }
+                setLoading(false);
+                eventSource.close();
+            });
 
-            if (data.sellerInfo) {
-                setSellerInfo(data.sellerInfo);
-            }
+            eventSource.onerror = () => {
+                // Only set error if we haven't received complete event
+                if (products.length === 0) {
+                    setError('Conexão perdida com o servidor');
+                    setLoading(false);
+                }
+                eventSource.close();
+            };
 
-            setIsMockData(data.isMock || false);
-            setFilters(prev => ({ ...prev, iphoneModel: '', storage: '' }));
         } catch (err) {
             console.error('Erro:', err);
             setError(err.message || 'Erro ao conectar com o servidor');
-        } finally {
             setLoading(false);
         }
     };
@@ -228,7 +265,7 @@ function App() {
                     </>
                 )}
 
-                {/* Loading State */}
+                {/* Loading State with Mining Stages */}
                 {loading && (
                     <div className="min-h-screen flex flex-col items-center justify-center">
                         <div
@@ -238,8 +275,27 @@ function App() {
                                 borderTopColor: 'var(--color-orange-500)'
                             }}
                         ></div>
-                        <p className="font-medium text-lg" style={{ color: '#4B5563' }}>Minerando produtos...</p>
-                        <p className="text-sm mt-2" style={{ color: '#9CA3AF' }}>Isso pode levar alguns segundos</p>
+
+                        {/* Dynamic Stage Display */}
+                        <div className="text-center">
+                            <p className="font-medium text-lg mb-2" style={{ color: '#4B5563' }}>
+                                {miningStage.stage === 'connecting' && '🔌 Conectando ao vendedor...'}
+                                {miningStage.stage === 'navigating' && '🌐 Navegando para página...'}
+                                {miningStage.stage === 'verifying' && '🔍 Verificando vendedor...'}
+                                {miningStage.stage === 'seller_verified' && '✅ Vendedor verificado!'}
+                                {miningStage.stage === 'cards_found' && '📦 Produtos detectados!'}
+                                {miningStage.stage === 'scrolling' && '⏳ Carregando produtos...'}
+                                {miningStage.stage === 'products_found' && `📦 ${miningStage.count} produtos encontrados!`}
+                                {miningStage.stage === 'translating' && '🌐 Traduzindo produtos...'}
+                                {miningStage.stage === 'done' && '✨ Concluído!'}
+                                {miningStage.stage === 'cache' && '⚡ Carregando do cache...'}
+                                {miningStage.stage === 'starting' && '🚀 Iniciando mineração...'}
+                                {!miningStage.stage && 'Minerando produtos...'}
+                            </p>
+                            <p className="text-sm" style={{ color: '#9CA3AF' }}>
+                                {miningStage.message || 'Isso pode levar alguns segundos'}
+                            </p>
+                        </div>
                     </div>
                 )}
 

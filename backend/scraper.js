@@ -28,18 +28,28 @@ class GoofishScraper {
         return this.userAgents[Math.floor(Math.random() * this.userAgents.length)];
     }
 
-    async randomDelay(min = 500, max = 2000) {
+    async randomDelay(min = 300, max = 600) {
         const delay = Math.floor(Math.random() * (max - min + 1)) + min;
         await new Promise(resolve => setTimeout(resolve, delay));
     }
 
-    async scrapeSellerProducts(url, limit = 50) {
+    /**
+     * Scrape products with optional progress callback for real-time updates
+     * @param {string} url - Seller profile URL
+     * @param {number} limit - Max products to extract
+     * @param {Function} onProgress - Optional callback(stage, message, data)
+     */
+    async scrapeSellerProducts(url, limit = 50, onProgress = null) {
+        const emit = (stage, message, data = {}) => {
+            console.log(`[Scraper] ${message}`);
+            if (onProgress) onProgress(stage, message, data);
+        };
         const userId = this.extractUserId(url);
         if (!userId) {
             throw new Error('URL inválida: userId não encontrado');
         }
 
-        console.log(`[Scraper] Iniciando scraping para vendedor: ${userId}`);
+        emit('connecting', 'Conectando ao vendedor...', { userId });
 
         try {
             this.browser = await chromium.launch({
@@ -55,51 +65,49 @@ class GoofishScraper {
 
             const page = await context.newPage();
 
-            console.log(`[Scraper] Navegando para: ${url}`);
+            emit('navigating', 'Navegando para página do vendedor...');
             await page.goto(url, {
-                waitUntil: 'networkidle',
-                timeout: 60000
+                waitUntil: 'domcontentloaded',
+                timeout: 30000
             });
 
-            // Aguarda carregamento
-            console.log('[Scraper] Aguardando carregamento...');
-            await this.randomDelay(3000, 5000);
+            // Aguarda inicial REDUZIDO
+            await this.randomDelay(1000, 1500);
 
             // Extrai informações do vendedor ANTES de scrollar
-            console.log('[Scraper] Extraindo informações do vendedor...');
+            emit('verifying', 'Verificando vendedor...');
             let sellerInfo = null;
             let trustResult = null;
             try {
                 sellerInfo = await extractSellerInfo(page);
                 trustResult = calculateTrustScore(sellerInfo);
-                console.log(`[Scraper] Vendedor: ${sellerInfo.nickname || userId}, Pontuação: ${trustResult.score}/100 (${trustResult.classification})`);
+                emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: trustResult.score });
             } catch (sellerError) {
                 console.error('[Scraper] Erro ao extrair info do vendedor:', sellerError.message);
             }
 
-
-            // Tenta aguardar cards específicos
+            // Tenta aguardar cards específicos (timeout REDUZIDO)
             try {
                 await page.waitForSelector('a[class*="feeds-item-wrap"], [class*="cardWarp"], [class*="ItemCard"]', {
-                    timeout: 15000
+                    timeout: 8000
                 });
-                console.log('[Scraper] Cards de produto detectados!');
+                emit('cards_found', 'Produtos detectados na página!');
             } catch (e) {
-                console.log('[Scraper] Timeout aguardando cards, tentando scroll...');
+                emit('scrolling', 'Carregando mais produtos...');
             }
 
-            // Scroll para carregar mais produtos
-            console.log('[Scraper] Realizando scroll...');
-            const scrollsNeeded = Math.ceil(limit / 8);
+            // Scroll para carregar mais produtos (delays REDUZIDOS)
+            emit('scrolling', 'Carregando produtos...');
+            const scrollsNeeded = Math.min(Math.ceil(limit / 10), 8); // Cap at 8 scrolls
 
             for (let i = 0; i < scrollsNeeded; i++) {
                 await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-                await this.randomDelay(1000, 1500);
+                await this.randomDelay(400, 600);
             }
 
-            // Volta ao topo
+            // Volta ao topo (delay REDUZIDO)
             await page.evaluate(() => window.scrollTo(0, 0));
-            await this.randomDelay(500, 1000);
+            await this.randomDelay(200, 400);
 
             // Extrai produtos
             console.log('[Scraper] Extraindo produtos...');
@@ -242,7 +250,7 @@ class GoofishScraper {
                 return items;
             }, limit);
 
-            console.log(`[Scraper] Extraídos ${products.length} produtos`);
+            emit('products_found', `${products.length} produtos encontrados!`, { count: products.length });
 
             // Se não encontrou produtos, captura debug
             if (products.length === 0) {

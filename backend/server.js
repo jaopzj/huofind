@@ -148,6 +148,81 @@ app.post('/api/evaluate-seller', async (req, res) => {
 });
 
 /**
+ * GET /api/mine-stream
+ * Server-Sent Events endpoint for real-time mining progress
+ */
+app.get('/api/mine-stream', async (req, res) => {
+    const { url, limit = 50 } = req.query;
+
+    if (!url) {
+        return res.status(400).json({ error: 'URL do vendedor é obrigatória' });
+    }
+
+    if (!url.includes('goofish.com') && !url.includes('xianyu.com')) {
+        return res.status(400).json({ error: 'URL deve ser do Goofish' });
+    }
+
+    const userId = scraper.extractUserId(url);
+    if (!userId) {
+        return res.status(400).json({ error: 'userId não encontrado na URL' });
+    }
+
+    // Set SSE headers
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.flushHeaders();
+
+    const sendEvent = (event, data) => {
+        res.write(`event: ${event}\n`);
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+    };
+
+    // Check cache first
+    const cacheKey = `${userId}_${limit}`;
+    if (cache.has(cacheKey)) {
+        console.log(`[Server] Retornando dados do cache: ${userId}`);
+        sendEvent('progress', { stage: 'cache', message: 'Carregando do cache...' });
+        const cachedData = cache.get(cacheKey);
+        sendEvent('complete', { ...cachedData, fromCache: true });
+        return res.end();
+    }
+
+    try {
+        // Progress callback for scraper
+        const onProgress = (stage, message, data = {}) => {
+            sendEvent('progress', { stage, message, ...data });
+        };
+
+        sendEvent('progress', { stage: 'starting', message: 'Iniciando mineração...' });
+
+        // Scrape with progress updates
+        const result = await scraper.scrapeSellerProducts(url, parseInt(limit), onProgress);
+
+        // Translate with progress
+        sendEvent('progress', { stage: 'translating', message: 'Traduzindo produtos...', total: result.products.length });
+
+        const translatedProducts = await translateProducts(result.products);
+        result.products = translatedProducts;
+
+        // Cache result
+        cache.set(cacheKey, result);
+
+        sendEvent('progress', { stage: 'done', message: 'Mineração concluída!' });
+        sendEvent('complete', result);
+
+        console.log(`[Server] Mineração SSE concluída: ${result.productCount} produtos`);
+
+    } catch (error) {
+        console.error('[Server] Erro na mineração SSE:', error.message);
+        sendEvent('error', { message: error.message });
+    }
+
+    res.end();
+});
+
+/**
  * POST /api/mine
  * Inicia mineração de produtos de um vendedor
  */

@@ -1,58 +1,10 @@
-import { detectIPhoneModel, extractUniqueModels, detectStorage, extractUniqueStorages } from '../utils/iphoneDetector';
-
-// Import flag SVGs
-import usaFlag from '../assets/icons/usa.svg';
-import chinaFlag from '../assets/icons/china.svg';
-
-/**
- * Detecta badges baseado no nome do produto
- */
-function detectBadges(product) {
-    const name = (product.nameTranslated || product.name || '').toLowerCase();
-    const originalName = (product.nameOriginal || '').toLowerCase();
-    const fullText = `${name} ${originalName}`;
-
-    const badges = [];
-
-    // Desbloqueado (verde)
-    if (/desbloqueado|lockless|unlocked|无锁|官解/.test(fullText)) {
-        badges.push({ type: 'unlocked', label: 'Desbloqueado', icon: '🔓', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)' });
-    }
-
-    // RSIM/Adesivo (amarelo)
-    if (/com adesivo|adaptador|rsim|r-?sim|卡贴|贴膜/.test(fullText)) {
-        badges.push({ type: 'rsim', label: 'RSIM', icon: '💳', color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.15)' });
-    }
-
-    // Versão Chinesa (vermelho) - com flag SVG
-    if (/china continental|versão chinesa|国行|China|ch\/a|版本 chinesa/.test(fullText)) {
-        badges.push({ type: 'china', label: 'China', flagSvg: chinaFlag, color: '#EF4444', bg: 'rgba(239, 68, 68, 0.15)' });
-    }
-
-    // Versão Americana (azul) - com flag SVG
-    if (/eua|usa|americano|美版|us\/a|版本 eua|versão americana/.test(fullText)) {
-        badges.push({ type: 'usa', label: 'EUA', flagSvg: usaFlag, color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)' });
-    }
-
-    return badges;
-}
-
-/**
- * Detecta o status do unlock do produto
- */
-export function detectUnlockStatus(product) {
-    const name = (product.nameTranslated || product.name || '').toLowerCase();
-    const originalName = (product.nameOriginal || '').toLowerCase();
-    const fullText = `${name} ${originalName}`;
-
-    if (/desbloqueado|lockless|unlocked|无锁|官解/.test(fullText)) {
-        return 'unlocked';
-    }
-    if (/com adesivo|adaptador|rsim|r-?sim|卡贴|贴膜/.test(fullText)) {
-        return 'rsim';
-    }
-    return 'unknown';
-}
+import {
+    detectIPhoneModel,
+    extractUniqueModels,
+    detectStorage,
+    extractUniqueStorages,
+    detectBadges
+} from '../utils/iphoneDetector';
 
 /**
  * ProductCard - Estilo e-commerce minimalista
