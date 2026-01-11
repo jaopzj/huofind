@@ -139,6 +139,7 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
                     type="submit"
                     disabled={isLoading || !url.trim() || !isValidUrl}
                     isLoading={isLoading}
+                    valid={url.trim() && isValidUrl}
                 >
                     Iniciar Mineração
                 </SparkleButton>

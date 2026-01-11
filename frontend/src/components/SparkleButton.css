@@ -1,6 +1,6 @@
 /**
- * SparkleButton CSS - Animated button with sparkle effect
- * Adapted to orange palette (--color-orange-500, --color-orange-600)
+ * SparkleButton CSS - Animated button with mining pickaxe effect
+ * Border animation activates when button has 'valid' class
  */
 
 .sparkle-button {
@@ -28,6 +28,7 @@
     font-weight: 600;
 }
 
+/* Main button background */
 .sparkle-button::before {
     content: "";
     position: absolute;
@@ -47,6 +48,7 @@
     z-index: 0;
 }
 
+/* Hover overlay effect */
 .sparkle-button::after {
     content: "";
     position: absolute;
@@ -75,10 +77,67 @@
     transform: scale(0.98);
 }
 
-/* Disabled state */
+/* ============================================
+   ROTATING BORDER - Only visible when .valid
+   ============================================ */
+.sparkle-button .dots_border {
+    --size_border: calc(100% + 4px);
+    overflow: hidden;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--size_border);
+    height: var(--size_border);
+    background-color: transparent;
+    border-radius: var(--border_radius);
+    z-index: -10;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+/* Show border animation when valid */
+.sparkle-button.valid .dots_border {
+    opacity: 1;
+}
+
+/* The rotating light beam */
+.sparkle-button .dots_border::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(0deg);
+    transform-origin: center center;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg,
+            transparent 0deg,
+            transparent 60deg,
+            rgba(255, 255, 255, 0.9) 90deg,
+            rgba(255, 200, 150, 0.8) 120deg,
+            transparent 150deg,
+            transparent 360deg);
+    animation: none;
+}
+
+/* Activate rotation when valid */
+.sparkle-button.valid .dots_border::before {
+    animation: rotateBorder 2s linear infinite;
+}
+
+@keyframes rotateBorder {
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* ============================================
+   DISABLED STATE
+   ============================================ */
 .sparkle-button.disabled {
     cursor: not-allowed;
-    opacity: 0.6;
+    opacity: 0.5;
     pointer-events: none;
 }
 
@@ -87,7 +146,13 @@
     box-shadow: none;
 }
 
-/* Loading state */
+.sparkle-button.disabled .dots_border {
+    opacity: 0;
+}
+
+/* ============================================
+   LOADING STATE
+   ============================================ */
 .sparkle-button.loading {
     pointer-events: none;
 }
@@ -109,103 +174,115 @@
     }
 }
 
-/* Rotating border dots effect */
-.sparkle-button .dots_border {
-    --size_border: calc(100% + 2px);
-    overflow: hidden;
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: var(--size_border);
-    height: var(--size_border);
-    background-color: transparent;
-    border-radius: var(--border_radius);
-    z-index: -10;
-}
-
-.sparkle-button .dots_border::before {
-    content: "";
-    position: absolute;
-    top: 30%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    transform-origin: left;
-    width: 100%;
-    height: 2rem;
-    background-color: rgba(255, 255, 255, 0.8);
-    mask: linear-gradient(transparent 0%, white 120%);
-    animation: rotate 2s linear infinite;
-}
-
-@keyframes rotate {
-    to {
-        transform: rotate(360deg);
-    }
-}
-
-/* Sparkle SVG */
-.sparkle-button .sparkle {
+/* ============================================
+   MINING ICON (Pickaxe)
+   ============================================ */
+.sparkle-button .mining-icon {
     position: relative;
     z-index: 10;
     width: 1.75rem;
     height: 1.75rem;
+    color: white;
+    transform-origin: center;
+    transition: transform 0.3s ease;
 }
 
-.sparkle-button .sparkle .path {
-    fill: currentColor;
-    stroke: currentColor;
-    transform-origin: center;
+/* Pickaxe digging animation on hover */
+.sparkle-button:is(:hover, :focus) .mining-icon {
+    animation: dig 0.6s ease-in-out infinite;
+}
+
+@keyframes dig {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-15deg);
+    }
+
+    50% {
+        transform: rotate(0deg);
+    }
+
+    75% {
+        transform: rotate(10deg);
+    }
+}
+
+/* Pickaxe parts */
+.sparkle-button .pickaxe-part {
     color: white;
 }
 
-.sparkle-button:is(:hover, :focus) .sparkle .path {
-    animation: path 1.5s linear 0.5s infinite;
+/* Sparks animation */
+.sparkle-button .spark {
+    opacity: 0;
+    transform-origin: center;
 }
 
-.sparkle-button .sparkle .path:nth-child(1) {
-    --scale_path_1: 1.2;
+.sparkle-button:is(:hover, :focus) .spark-1 {
+    animation: sparkle1 0.6s ease-in-out infinite;
 }
 
-.sparkle-button .sparkle .path:nth-child(2) {
-    --scale_path_2: 1.2;
+.sparkle-button:is(:hover, :focus) .spark-2 {
+    animation: sparkle2 0.6s ease-in-out infinite 0.1s;
 }
 
-.sparkle-button .sparkle .path:nth-child(3) {
-    --scale_path_3: 1.2;
+.sparkle-button:is(:hover, :focus) .spark-3 {
+    animation: sparkle3 0.6s ease-in-out infinite 0.2s;
 }
 
-@keyframes path {
+@keyframes sparkle1 {
 
     0%,
-    34%,
-    71%,
     100% {
-        transform: scale(1);
+        opacity: 0;
+        transform: scale(0);
     }
 
-    17% {
-        transform: scale(var(--scale_path_1, 1));
-    }
-
-    49% {
-        transform: scale(var(--scale_path_2, 1));
-    }
-
-    83% {
-        transform: scale(var(--scale_path_3, 1));
+    50% {
+        opacity: 1;
+        transform: scale(1.5);
     }
 }
 
-/* Text with gradient effect */
+@keyframes sparkle2 {
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    50% {
+        opacity: 0.8;
+        transform: scale(1.2);
+    }
+}
+
+@keyframes sparkle3 {
+
+    0%,
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    50% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+}
+
+/* ============================================
+   TEXT
+   ============================================ */
 .sparkle-button .text_button {
     position: relative;
     z-index: 10;
-    background-image: linear-gradient(90deg,
-            rgba(255, 255, 255, 1) 0%,
-            rgba(255, 255, 255, calc(0.7 + var(--active, 0) * 0.3)) 120%);
-    background-clip: text;
-    -webkit-background-clip: text;
     font-size: 1.125rem;
     font-weight: 600;
     color: white;
