@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import SparkleButton from './SparkleButton';
 
 /**
  * HeroSection - Página inicial com logo centralizada e search box
@@ -134,29 +135,13 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
                     </div>
                 </div>
 
-                <button
+                <SparkleButton
                     type="submit"
-                    className="btn-primary w-full flex items-center justify-center gap-2 text-lg py-4"
                     disabled={isLoading || !url.trim() || !isValidUrl}
+                    isLoading={isLoading}
                 >
-                    {isLoading ? (
-                        <>
-                            <div
-                                className="w-5 h-5 rounded-full animate-spin"
-                                style={{
-                                    border: '2px solid white',
-                                    borderTopColor: 'transparent'
-                                }}
-                            ></div>
-                            Minerando...
-                        </>
-                    ) : (
-                        <>
-                            <span>⛏️</span>
-                            Iniciar Mineração
-                        </>
-                    )}
-                </button>
+                    Iniciar Mineração
+                </SparkleButton>
             </form>
 
             {/* Feature Cards */}

@@ -60,7 +60,7 @@ const PATTERNS = {
             '全球无锁', '纯无锁', '全球通用', '全网通',
             '任意运营商', '插卡即用', '不限运营商',
             // Level 3: Additional variations
-            '自由网络', 'factory unlocked', 'unlocked',
+            '自由网络', 'factory unlocked', 'unlocked', 'desbloqueado', 'lockless',
             '原生无锁', '出厂无锁', '官方解锁', '永久解锁',
             '无锁版', '通用版', '解锁机'
         ],

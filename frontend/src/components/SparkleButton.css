@@ -1,0 +1,217 @@
+/**
+ * SparkleButton CSS - Animated button with sparkle effect
+ * Adapted to orange palette (--color-orange-500, --color-orange-600)
+ */
+
+.sparkle-button {
+    --orange-500: #FF6B35;
+    --orange-600: #E85A2B;
+    --orange-400: #FF8C5A;
+    --border_radius: 9999px;
+    --transition: 0.3s ease-in-out;
+
+    cursor: pointer;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    transform-origin: center;
+    padding: 1.125rem 2.5rem;
+    background-color: transparent;
+    border: none;
+    border-radius: var(--border_radius);
+    transform: scale(calc(1 + (var(--active, 0) * 0.05)));
+    transition: transform var(--transition);
+    width: 100%;
+    font-size: 1.125rem;
+    font-weight: 600;
+}
+
+.sparkle-button::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background-color: var(--orange-500);
+    border-radius: var(--border_radius);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.25),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.1),
+        0px 4px 12px -4px rgba(255, 107, 53, calc(0.5 - var(--active, 0) * 0.3)),
+        0 0 0 calc(var(--active, 0) * 0.375rem) rgba(255, 107, 53, 0.4);
+    transition: all var(--transition);
+    z-index: 0;
+}
+
+.sparkle-button::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 140, 90, 0.85);
+    background-image:
+        radial-gradient(at 51% 89%, rgba(255, 200, 160, 0.8) 0px, transparent 50%),
+        radial-gradient(at 100% 100%, rgba(255, 160, 120, 0.7) 0px, transparent 50%),
+        radial-gradient(at 22% 91%, rgba(255, 160, 120, 0.7) 0px, transparent 50%);
+    background-position: top;
+    opacity: var(--active, 0);
+    border-radius: var(--border_radius);
+    transition: opacity var(--transition);
+    z-index: 2;
+}
+
+.sparkle-button:is(:hover, :focus-visible) {
+    --active: 1;
+}
+
+.sparkle-button:active {
+    transform: scale(0.98);
+}
+
+/* Disabled state */
+.sparkle-button.disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+.sparkle-button.disabled::before {
+    background-color: #9CA3AF;
+    box-shadow: none;
+}
+
+/* Loading state */
+.sparkle-button.loading {
+    pointer-events: none;
+}
+
+.sparkle-button .loading-spinner {
+    position: relative;
+    z-index: 10;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Rotating border dots effect */
+.sparkle-button .dots_border {
+    --size_border: calc(100% + 2px);
+    overflow: hidden;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: var(--size_border);
+    height: var(--size_border);
+    background-color: transparent;
+    border-radius: var(--border_radius);
+    z-index: -10;
+}
+
+.sparkle-button .dots_border::before {
+    content: "";
+    position: absolute;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transform-origin: left;
+    width: 100%;
+    height: 2rem;
+    background-color: rgba(255, 255, 255, 0.8);
+    mask: linear-gradient(transparent 0%, white 120%);
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Sparkle SVG */
+.sparkle-button .sparkle {
+    position: relative;
+    z-index: 10;
+    width: 1.75rem;
+    height: 1.75rem;
+}
+
+.sparkle-button .sparkle .path {
+    fill: currentColor;
+    stroke: currentColor;
+    transform-origin: center;
+    color: white;
+}
+
+.sparkle-button:is(:hover, :focus) .sparkle .path {
+    animation: path 1.5s linear 0.5s infinite;
+}
+
+.sparkle-button .sparkle .path:nth-child(1) {
+    --scale_path_1: 1.2;
+}
+
+.sparkle-button .sparkle .path:nth-child(2) {
+    --scale_path_2: 1.2;
+}
+
+.sparkle-button .sparkle .path:nth-child(3) {
+    --scale_path_3: 1.2;
+}
+
+@keyframes path {
+
+    0%,
+    34%,
+    71%,
+    100% {
+        transform: scale(1);
+    }
+
+    17% {
+        transform: scale(var(--scale_path_1, 1));
+    }
+
+    49% {
+        transform: scale(var(--scale_path_2, 1));
+    }
+
+    83% {
+        transform: scale(var(--scale_path_3, 1));
+    }
+}
+
+/* Text with gradient effect */
+.sparkle-button .text_button {
+    position: relative;
+    z-index: 10;
+    background-image: linear-gradient(90deg,
+            rgba(255, 255, 255, 1) 0%,
+            rgba(255, 255, 255, calc(0.7 + var(--active, 0) * 0.3)) 120%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: white;
+    transition: all var(--transition);
+}
+
+.sparkle-button:is(:hover, :focus) .text_button {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+}
