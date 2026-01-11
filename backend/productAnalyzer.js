@@ -317,7 +317,7 @@ function compareProducts(products) {
     } else if (scoreDiff >= 15) {
         recommendation = `${winner.model || 'Product'} is clearly the better choice`;
     } else if (scoreDiff >= 5) {
-        recommendation = `${winner.model || 'Product'} offers better value`;
+        recommendation = `${winner.model || 'Product'} oferece o melhor valor`;
     } else {
         recommendation = 'Both products are comparable options';
     }
@@ -361,15 +361,57 @@ async function extractProductDetails(page) {
             const mainContent = document.querySelector('div[class*="main"], div[class*="container"]');
             const fullText = mainContent?.innerText || document.body.innerText;
 
-            // Extract images
+            // Extract images - CORRECTED for Goofish structure
+            // Uses correct selectors: .carouselItem img, .item-main-window-list-item img, .ant-image-img
             const images = [];
-            const imgEls = document.querySelectorAll('img[class*="carousel"], img[class*="item-img"], .sliderWrapper img');
-            imgEls.forEach(img => {
-                const src = img.src || img.getAttribute('data-src');
-                if (src && src.startsWith('http') && !src.includes('avatar')) {
-                    images.push(src);
+            const seenUrls = new Set();
+
+            // Helper to validate and format image URLs
+            const addImage = (src) => {
+                if (!src) return;
+                // Handle protocol-relative URLs
+                let url = src.startsWith('//') ? 'https:' + src : src;
+                // Skip placeholders, avatars, and tiny images
+                if (url.includes('2-2.png') ||
+                    url.includes('1-1.png') ||
+                    url.includes('avatar') ||
+                    url.includes('placeholder') ||
+                    (url.startsWith('data:') && url.length < 200)) {
+                    return;
                 }
+                // Only add valid http URLs
+                if (url.startsWith('http') && !seenUrls.has(url)) {
+                    seenUrls.add(url);
+                    images.push(url);
+                }
+            };
+
+            // Strategy 1: Carousel items (main gallery images)
+            document.querySelectorAll('[class*="carouselItem"] img, [class*="carousel-item"] img').forEach(img => {
+                addImage(img.src);
+                addImage(img.getAttribute('data-src'));
             });
+
+            // Strategy 2: Thumbnail images
+            document.querySelectorAll('[class*="item-main-window-list-item"] img, [class*="fadeInImg"] img').forEach(img => {
+                addImage(img.src);
+                addImage(img.getAttribute('data-src'));
+            });
+
+            // Strategy 3: Ant Design images (high-res preview)
+            document.querySelectorAll('.ant-image-img').forEach(img => {
+                addImage(img.src);
+            });
+
+            // Strategy 4: Fallback - any other product images
+            if (images.length === 0) {
+                document.querySelectorAll('img').forEach(img => {
+                    const src = img.src || img.getAttribute('data-src');
+                    if (src && (src.includes('alicdn.com') || src.includes('tbcdn.cn'))) {
+                        addImage(src);
+                    }
+                });
+            }
 
             // Extract seller info
             const sellerEl = document.querySelector('a[href*="personal?userId="]');

@@ -38,10 +38,20 @@ function App() {
     const [miningStage, setMiningStage] = useState({ stage: '', message: '', count: 0 });
 
     // Estado para comparação de produtos
+    const [comparisonMode, setComparisonMode] = useState(false);
     const [selectedForCompare, setSelectedForCompare] = useState([]);
     const [comparisonData, setComparisonData] = useState(null);
     const [isComparing, setIsComparing] = useState(false);
     const [showComparisonModal, setShowComparisonModal] = useState(false);
+
+    // Toggle do modo de comparação
+    const toggleComparisonMode = () => {
+        setComparisonMode(prev => !prev);
+        if (comparisonMode) {
+            // Se estamos desligando, limpa a seleção
+            setSelectedForCompare([]);
+        }
+    };
 
     // Busca taxa de câmbio quando ativar modo BRL
     useEffect(() => {
@@ -388,6 +398,9 @@ function App() {
                             availableStorages={availableStorages}
                             showBRL={showBRL}
                             onToggleCurrency={toggleCurrency}
+                            comparisonMode={comparisonMode}
+                            onToggleComparisonMode={toggleComparisonMode}
+                            selectedCount={selectedForCompare.length}
                         />
 
                         {/* Stats Bar */}
@@ -425,6 +438,7 @@ function App() {
                             exchangeRate={exchangeRate}
                             selectedForCompare={selectedForCompare}
                             onCompareToggle={handleCompareToggle}
+                            comparisonMode={comparisonMode}
                         />
                     </>
                 )}

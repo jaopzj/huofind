@@ -1,7 +1,17 @@
 /**
- * SearchFilters - Dropdown style filters with status filter buttons and currency toggle
+ * SearchFilters - Dropdown style filters with status filter buttons, currency toggle, and comparison mode
  */
-function SearchFilters({ filters, onFilterChange, availableModels = [], availableStorages = [], showBRL = false, onToggleCurrency }) {
+function SearchFilters({
+    filters,
+    onFilterChange,
+    availableModels = [],
+    availableStorages = [],
+    showBRL = false,
+    onToggleCurrency,
+    comparisonMode = false,
+    onToggleComparisonMode,
+    selectedCount = 0
+}) {
     const handleChange = (key, value) => {
         onFilterChange({ ...filters, [key]: value });
     };
@@ -67,28 +77,55 @@ function SearchFilters({ filters, onFilterChange, availableModels = [], availabl
                     </button>
                 </div>
 
-                {/* Currency Toggle */}
-                <div className="flex items-center gap-3">
-                    <span className="text-sm" style={{ color: showBRL ? '#9CA3AF' : '#374151', fontWeight: showBRL ? '400' : '600' }}>
-                        ¥ Yuan
-                    </span>
+                {/* Right Side: Comparison Mode + Currency Toggle */}
+                <div className="flex items-center gap-4">
+                    {/* Comparison Mode Toggle */}
                     <button
-                        onClick={onToggleCurrency}
-                        className="relative w-14 h-7 rounded-full transition-all duration-300"
+                        onClick={onToggleComparisonMode}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all"
                         style={{
-                            background: showBRL ? '#10B981' : 'var(--color-cream-200)'
+                            background: comparisonMode ? '#8B5CF6' : 'var(--color-cream-50)',
+                            color: comparisonMode ? 'white' : '#6B7280',
+                            border: comparisonMode ? 'none' : '1px solid var(--color-cream-200)'
                         }}
                     >
-                        <span
-                            className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
-                            style={{
-                                left: showBRL ? '32px' : '4px'
-                            }}
-                        />
+                        ⚖️ Comparar
+                        {selectedCount > 0 && (
+                            <span
+                                className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold"
+                                style={{
+                                    background: comparisonMode ? 'rgba(255,255,255,0.2)' : 'var(--color-orange-500)',
+                                    color: 'white'
+                                }}
+                            >
+                                {selectedCount}
+                            </span>
+                        )}
                     </button>
-                    <span className="text-sm" style={{ color: showBRL ? '#374151' : '#9CA3AF', fontWeight: showBRL ? '600' : '400' }}>
-                        R$ Real
-                    </span>
+
+                    {/* Currency Toggle */}
+                    <div className="flex items-center gap-3">
+                        <span className="text-sm" style={{ color: showBRL ? '#9CA3AF' : '#374151', fontWeight: showBRL ? '400' : '600' }}>
+                            ¥ Yuan
+                        </span>
+                        <button
+                            onClick={onToggleCurrency}
+                            className="relative w-14 h-7 rounded-full transition-all duration-300"
+                            style={{
+                                background: showBRL ? '#10B981' : 'var(--color-cream-200)'
+                            }}
+                        >
+                            <span
+                                className="absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300"
+                                style={{
+                                    left: showBRL ? '32px' : '4px'
+                                }}
+                            />
+                        </button>
+                        <span className="text-sm" style={{ color: showBRL ? '#374151' : '#9CA3AF', fontWeight: showBRL ? '600' : '400' }}>
+                            R$ Real
+                        </span>
+                    </div>
                 </div>
             </div>
 

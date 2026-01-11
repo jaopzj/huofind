@@ -175,7 +175,8 @@ function ProductGrid({
     showBRL = false,
     exchangeRate = 0,
     selectedForCompare = [],
-    onCompareToggle
+    onCompareToggle,
+    comparisonMode = false
 }) {
     if (!products || products.length === 0) {
         return (
@@ -201,7 +202,7 @@ function ProductGrid({
                         showBRL={showBRL}
                         exchangeRate={exchangeRate}
                         isSelected={selectedForCompare.some(p => p.id === product.id)}
-                        onCompareToggle={onCompareToggle}
+                        onCompareToggle={comparisonMode ? onCompareToggle : null}
                         maxCompareReached={maxCompareReached}
                     />
                 </div>
