@@ -221,14 +221,44 @@ class GoofishScraper {
                             }
                         }
 
-                        // Extrai imagem
+                        // Extrai imagem - melhorado para lazy loading
                         let imageUrl = '';
+
+                        // Tenta imagens diretas primeiro
                         const imgs = card.querySelectorAll('img');
                         for (const img of imgs) {
-                            const src = img.src || img.dataset?.src || img.getAttribute('data-src');
-                            if (src && src.startsWith('http')) {
+                            // Verifica múltiplos atributos de lazy loading
+                            const src = img.src ||
+                                img.dataset?.src ||
+                                img.getAttribute('data-src') ||
+                                img.getAttribute('data-lazy-src') ||
+                                img.getAttribute('data-original');
+                            if (src && src.startsWith('http') && !src.includes('placeholder')) {
                                 imageUrl = src;
                                 break;
+                            }
+                        }
+
+                        // Se não encontrou, tenta background-image em divs
+                        if (!imageUrl) {
+                            const imgDivs = card.querySelectorAll('[style*="background"]');
+                            for (const div of imgDivs) {
+                                const style = div.getAttribute('style') || '';
+                                const match = style.match(/url\(["']?(https?:\/\/[^"')]+)["']?\)/);
+                                if (match) {
+                                    imageUrl = match[1];
+                                    break;
+                                }
+                            }
+                        }
+
+                        // Fallback: tenta encontrar qualquer elemento com atributo de imagem
+                        if (!imageUrl) {
+                            const anyWithSrc = card.querySelector('[data-src], [data-lazy-src], [data-original]');
+                            if (anyWithSrc) {
+                                imageUrl = anyWithSrc.getAttribute('data-src') ||
+                                    anyWithSrc.getAttribute('data-lazy-src') ||
+                                    anyWithSrc.getAttribute('data-original');
                             }
                         }
 
