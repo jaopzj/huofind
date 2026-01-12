@@ -226,107 +226,11 @@ export async function extractSellerInfo(page) {
     return sellerInfo;
 }
 
-
-/**
- * Extrai informações detalhadas do vendedor da PÁGINA DO PRODUTO
- * É aqui que conseguimos os dados mais precisos de vendas e tempo de casa.
- * @param {Page} page - Página do produto Playwright
- * @returns {Object} - Dados extraídos (salesCount, monthsActive, etc.)
- */
-export async function extractProductPageSellerInfo(page) {
-    console.log('[SellerAnalyzer] Extraindo detalhes da página do produto...');
-
-    return await page.evaluate(() => {
-        const info = {
-            salesCount: 0,
-            monthsActive: 0,
-            positiveRating: 0,
-            rawData: {}
-        };
-
-        // Helper para converter texto de tempo (ex: "来闲鱼63天" ou "来闲鱼5年") em meses
-        const parseTime = (text) => {
-            if (!text) return 0;
-            let days = 0;
-
-            // Anos
-            const yearMatch = text.match(/(\d+)\s*年/);
-            if (yearMatch) days += parseInt(yearMatch[1]) * 365;
-
-            // Meses
-            const monthMatch = text.match(/(\d+)\s*个月/);
-            if (monthMatch) days += parseInt(monthMatch[1]) * 30;
-
-            // Dias (item-user-info-label--NLTMHARN: "来闲鱼63天")
-            const dayMatch = text.match(/(\d+)\s*天/);
-            if (dayMatch) days += parseInt(dayMatch[1]);
-
-            // Caso especial: "5年" sem dias
-            if (days === 0 && text.includes('年')) {
-                // Tenta pegar o número solto se o regex falhou
-                const num = parseInt(text.replace(/[^\d]/g, ''));
-                if (!isNaN(num)) days = num * 365;
-            }
-
-            return Math.max(1, Math.round(days / 30)); // Mínimo 1 mês
-        };
-
-        // Helper para extrair vendas (ex: "卖出 672 件宝贝")
-        const parseSales = (text) => {
-            if (!text) return 0;
-            const match = text.match(/(\d+)/);
-            return match ? parseInt(match[1]) : 0;
-        };
-
-        // Busca todos os spans/divs que podem conter as infos
-        // Seletor identificado: .item-user-info-label--NLTMHARN
-        const labels = Array.from(document.querySelectorAll('[class*="item-user-info-label"]'));
-
-        // Se não achar pela classe, busca por texto genérico em todos os spans
-        if (labels.length === 0) {
-            const allSpans = document.querySelectorAll('span, div');
-            for (const el of allSpans) {
-                const text = el.innerText || '';
-
-                // Tempo na plataforma
-                if (text.includes('来闲鱼') || text.includes('Coming to Xianyu')) {
-                    info.monthsActive = parseTime(text);
-                    info.rawData.timeText = text;
-                }
-
-                // Vendas
-                if (text.includes('卖出') || text.includes('Sold')) {
-                    info.salesCount = parseSales(text);
-                    info.rawData.salesText = text;
-                }
-            }
-        } else {
-            // Se achou pela classe específica (mais confiável)
-            for (const el of labels) {
-                const text = el.innerText || '';
-
-                if (text.includes('来闲鱼') || text.includes('Comming')) {
-                    info.monthsActive = parseTime(text);
-                    info.rawData.timeText = text;
-                }
-
-                if (text.includes('卖出') || text.includes('Sold')) {
-                    info.salesCount = parseSales(text);
-                    info.rawData.salesText = text;
-                }
-            }
-        }
-
-        return info;
-    });
-}
-
 /**
  * Calcula a pontuação de confiança do vendedor (0-100)
- * Novo Algoritmo (Jan 2026):
- * - Tempo na Plataforma (40 pontos máx)
- * - Vendas Concluídas (30 pontos máx)
- * - Seguidores (30 pontos máx)
+ * Algoritmo simplificado baseado apenas em:
+ * - Seguidores (50 pontos máx)
+ * - Vendas concluídas (50 pontos máx)
  * 
  * @param {Object} seller - Dados do vendedor
  * @returns {Object} - Pontuação e detalhes
@@ -336,78 +240,62 @@ export function calculateTrustScore(seller) {
     const breakdown = {};
 
     // ========================================
-    // 1. TEMPO NA PLATAFORMA (0-40 pontos)
-    // Baseado na tabela solicitada:
-    // 1-3 meses: muito baixo (5 pts)
-    // 4-8 meses: baixo (10 pts)
-    // 9-12 meses: médio (20 pts)
-    // 13-18 meses: ok (28 pts)
-    // 19-24 meses: bom (35 pts)
-    // 25+ meses: muito bom (40 pts)
-    // ========================================
-    const months = seller.monthsActive || 0;
-
-    if (months >= 25) {
-        breakdown.time = 40;       // Muito bom
-    } else if (months >= 19) {
-        breakdown.time = 35;       // Bom
-    } else if (months >= 13) {
-        breakdown.time = 28;       // Ok
-    } else if (months >= 9) {
-        breakdown.time = 20;       // Médio
-    } else if (months >= 4) {
-        breakdown.time = 10;       // Baixo
-    } else if (months >= 1) {
-        breakdown.time = 5;        // Muito baixo
-    } else {
-        breakdown.time = 0;        // Recém-chegado
-    }
-    score += breakdown.time;
-
-    // ========================================
-    // 2. VENDAS CONCLUÍDAS (0-30 pontos)
-    // Dados vêm da página do produto (mais precisos)
-    // ========================================
-    const sales = seller.salesCount || 0;
-
-    if (sales >= 5000) {
-        breakdown.sales = 30;
-    } else if (sales >= 2000) {
-        breakdown.sales = 25;
-    } else if (sales >= 1000) {
-        breakdown.sales = 20;
-    } else if (sales >= 500) {
-        breakdown.sales = 15;
-    } else if (sales >= 200) {
-        breakdown.sales = 10;
-    } else if (sales >= 50) {
-        breakdown.sales = 5;
-    } else {
-        breakdown.sales = 0;
-    }
-    score += breakdown.sales;
-
-    // ========================================
-    // 3. SEGUIDORES (0-30 pontos)
+    // SEGUIDORES (0-50 pontos)
+    // Escala progressiva e realista
     // ========================================
     const followers = seller.followers || 0;
 
-    if (followers >= 10000) {
-        breakdown.followers = 30;
+    if (followers >= 50000) {
+        breakdown.followers = 50;      // 50k+ = máximo
+    } else if (followers >= 30000) {
+        breakdown.followers = 45;      // 30-50k = excelente
+    } else if (followers >= 20000) {
+        breakdown.followers = 40;      // 20-30k = muito bom
+    } else if (followers >= 10000) {
+        breakdown.followers = 35;      // 10-20k = bom
     } else if (followers >= 5000) {
-        breakdown.followers = 25;
-    } else if (followers >= 2000) {
-        breakdown.followers = 20;
+        breakdown.followers = 28;      // 5-10k = acima da média
+    } else if (followers >= 3000) {
+        breakdown.followers = 22;      // 3-5k = médio-alto
     } else if (followers >= 1000) {
-        breakdown.followers = 15;
+        breakdown.followers = 15;      // 1-3k = médio
     } else if (followers >= 500) {
-        breakdown.followers = 10;
+        breakdown.followers = 8;       // 500-1k = baixo
     } else if (followers >= 100) {
-        breakdown.followers = 5;
+        breakdown.followers = 3;       // 100-500 = muito baixo
     } else {
-        breakdown.followers = 0;
+        breakdown.followers = 0;       // <100 = não pontua
     }
     score += breakdown.followers;
+
+    // ========================================
+    // VENDAS CONCLUÍDAS (0-50 pontos)
+    // Escala progressiva e realista
+    // ========================================
+    const sales = seller.salesCount || 0;
+
+    if (sales >= 3000) {
+        breakdown.sales = 50;          // 3k+ vendas = máximo
+    } else if (sales >= 2000) {
+        breakdown.sales = 45;          // 2-3k = excelente
+    } else if (sales >= 1500) {
+        breakdown.sales = 40;          // 1.5-2k = muito bom
+    } else if (sales >= 1000) {
+        breakdown.sales = 35;          // 1-1.5k = bom
+    } else if (sales >= 500) {
+        breakdown.sales = 28;          // 500-1k = acima da média
+    } else if (sales >= 200) {
+        breakdown.sales = 22;          // 200-500 = médio-alto
+    } else if (sales >= 100) {
+        breakdown.sales = 15;          // 100-200 = médio
+    } else if (sales >= 50) {
+        breakdown.sales = 8;           // 50-100 = baixo
+    } else if (sales >= 10) {
+        breakdown.sales = 3;           // 10-50 = muito baixo
+    } else {
+        breakdown.sales = 0;           // <10 = não pontua
+    }
+    score += breakdown.sales;
 
     // ========================================
     // CLASSIFICAÇÃO BASEADA NO SCORE FINAL
@@ -416,19 +304,19 @@ export function calculateTrustScore(seller) {
     let classificationColor;
     let classificationIcon;
 
-    if (score >= 85) {
+    if (score >= 90) {
         classification = 'Excelente';
         classificationColor = 'green';
         classificationIcon = '⭐';
-    } else if (score >= 70) {
+    } else if (score >= 80) {
         classification = 'Confiável';
         classificationColor = 'blue';
         classificationIcon = '👍';
-    } else if (score >= 50) {
+    } else if (score >= 60) {
         classification = 'Moderado';
         classificationColor = 'yellow';
         classificationIcon = '⚠️';
-    } else if (score >= 30) {
+    } else if (score >= 40) {
         classification = 'Iniciante';
         classificationColor = 'orange';
         classificationIcon = '🆕';
