@@ -368,24 +368,14 @@ export function formatSellerData(seller, trustResult) {
 /**
  * Formata números para exibição (ex: 66000 -> "66k")
  */
-/**
- * Formata números para exibição (ex: 66000 -> "66k")
- * Converte notação chinesa (万) para ocidental (k)
- */
 function formatNumber(num) {
     if (!num || num === 0) return '0';
-
-    // Millions
-    if (num >= 1000000) {
-        return `${(num / 1000000).toFixed(1).replace(/\.0$/, '')}m`;
+    if (num >= 10000) {
+        return `${(num / 10000).toFixed(1).replace(/\.0$/, '')}万`;
     }
-
-    // Thousands (replaces 万 logic)
-    // 5.8万 = 58000 -> 58k
     if (num >= 1000) {
         return `${(num / 1000).toFixed(1).replace(/\.0$/, '')}k`;
     }
-
     return num.toString();
 }
 

@@ -21,6 +21,8 @@ function SellerCard({ sellerInfo, variant = 'full' }) {
         // Metrics
         followersFormatted,
         salesCountFormatted,
+        followers,
+        salesCount
     } = sellerInfo;
 
     // Use trustScore, default to 0 if not present
@@ -32,6 +34,34 @@ function SellerCard({ sellerInfo, variant = 'full' }) {
 
     const isTrustworthy = score >= 60;
     const isCompact = variant === 'compact';
+
+    // Helper para formatar números (ex: 5.8万 -> 58k)
+    const formatMetric = (value, formattedValue) => {
+        // Se temos o valor bruto, damos preferência a ele
+        if (typeof value === 'number') {
+            if (value >= 10000) {
+                // Ex: 58000 -> 58k
+                return (value / 1000).toFixed(1).replace('.0', '') + 'k';
+            }
+            if (value >= 1000) {
+                // Ex: 2500 -> 2.5k
+                return (value / 1000).toFixed(1).replace('.0', '') + 'k';
+            }
+            return value.toString();
+        }
+
+        // Se só temos a string formatada (fallback)
+        if (formattedValue) {
+            // Converte 5.8万 para 58k
+            if (formattedValue.includes('万')) {
+                const num = parseFloat(formattedValue.replace('万', ''));
+                return (num * 10).toFixed(1).replace('.0', '') + 'k';
+            }
+            return formattedValue;
+        }
+
+        return '0';
+    };
 
     // Cores baseadas na classificação
     const colorMap = {
@@ -121,14 +151,14 @@ function SellerCard({ sellerInfo, variant = 'full' }) {
                 <div className={`flex items-center ${isCompact ? 'gap-6 w-full justify-around bg-gray-50 p-3 rounded-xl' : 'gap-8 px-6 md:border-l md:border-r border-gray-100 flex-shrink-0'}`}>
                     <div className="text-center">
                         <p className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold`} style={{ color: '#1F2937' }}>
-                            {salesCountFormatted || '0'}
+                            {formatMetric(salesCount, salesCountFormatted)}
                         </p>
                         <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Produtos</p>
                     </div>
 
                     <div className="text-center">
                         <p className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold`} style={{ color: '#1F2937' }}>
-                            {followersFormatted || '0'}
+                            {formatMetric(followers, followersFormatted)}
                         </p>
                         <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Seguidores</p>
                     </div>
