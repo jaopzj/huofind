@@ -86,8 +86,8 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVer
                         className="search-box"
                         style={{
                             paddingLeft: '56px',
-                            paddingRight: isEvaluating ? '180px' : '16px', // Espaço para o loader
-                            borderColor: !isValidUrl ? '#FCA5A5' : isInputFocused ? '#FF6B35' : undefined,
+                            paddingRight: isEvaluating ? '180px' : (isSellerVerified && url.trim()) ? '190px' : '16px', // Espaço para badges
+                            borderColor: !isValidUrl ? '#FCA5A5' : (isSellerVerified && url.trim()) ? '#10B981' : isInputFocused ? '#FF6B35' : undefined,
                             transition: 'padding 0.3s ease'
                         }}
                         placeholder="Cole a URL do perfil do vendedor..."
@@ -117,23 +117,25 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVer
                             <span className="font-medium text-xs whitespace-nowrap">Verificando...</span>
                         </div>
                     )}
+
+                    {/* Verified indicator - INSIDE input (Right side) */}
+                    {isSellerVerified && !isEvaluating && url.trim() && (
+                        <div
+                            className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg pointer-events-none"
+                            style={{
+                                color: '#10B981',
+                                background: 'rgba(16, 185, 129, 0.08)'
+                            }}
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span className="font-medium text-xs whitespace-nowrap">Vendedor verificado!</span>
+                        </div>
+                    )}
                 </div>
 
-                {/* Verified indicator */}
-                {isSellerVerified && !isEvaluating && url.trim() && (
-                    <div
-                        className="flex items-center justify-center gap-2 text-sm mb-4 py-2 px-4 rounded-lg mx-auto w-fit"
-                        style={{
-                            color: '#10B981',
-                            background: 'rgba(16, 185, 129, 0.1)'
-                        }}
-                    >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Vendedor verificado!</span>
-                    </div>
-                )}
+
 
                 {/* Limit Slider */}
                 <div
