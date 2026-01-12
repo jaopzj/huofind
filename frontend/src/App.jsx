@@ -342,7 +342,7 @@ function App() {
                         {/* Seller Card preview (aparece após avaliar) */}
                         {sellerInfo && !loading && (
                             <div className="max-w-2xl mx-auto px-6 animate-fade-in-up">
-                                <SellerCard sellerInfo={sellerInfo} />
+                                <SellerCard sellerInfo={sellerInfo} variant="compact" />
                             </div>
                         )}
                     </>
