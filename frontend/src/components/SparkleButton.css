@@ -114,8 +114,8 @@
     background: conic-gradient(from 0deg,
             transparent 0deg,
             transparent 60deg,
-            rgba(255, 255, 255, 0.9) 90deg,
-            rgba(255, 200, 150, 0.8) 120deg,
+            rgba(236, 144, 116, 0.9) 90deg,
+            rgba(252, 125, 7, 0.801) 120deg,
             transparent 150deg,
             transparent 360deg);
     animation: none;

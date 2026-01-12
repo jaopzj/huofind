@@ -5,6 +5,7 @@ import SearchFilters from './components/SearchFilters';
 import ProductGrid from './components/ProductGrid';
 import CompareBar from './components/CompareBar';
 import ComparisonModal from './components/ComparisonModal';
+import HourglassLoader from './components/HourglassLoader';
 import {
     extractUniqueModels,
     detectIPhoneModel,
@@ -346,37 +347,30 @@ function App() {
                     </>
                 )}
 
-                {/* Loading State with Mining Stages */}
+                {/* Loading State with Hourglass Animation */}
                 {loading && (
                     <div className="min-h-screen flex flex-col items-center justify-center">
-                        <div
-                            className="w-16 h-16 rounded-full animate-spin mb-6"
-                            style={{
-                                border: '4px solid var(--color-cream-200)',
-                                borderTopColor: 'var(--color-orange-500)'
-                            }}
-                        ></div>
-
-                        {/* Dynamic Stage Display */}
-                        <div className="text-center">
-                            <p className="font-medium text-lg mb-2" style={{ color: '#4B5563' }}>
-                                {miningStage.stage === 'connecting' && '🔌 Conectando ao vendedor...'}
-                                {miningStage.stage === 'navigating' && '🌐 Navegando para página...'}
-                                {miningStage.stage === 'verifying' && '🔍 Verificando vendedor...'}
-                                {miningStage.stage === 'seller_verified' && '✅ Vendedor verificado!'}
-                                {miningStage.stage === 'cards_found' && '📦 Produtos detectados!'}
-                                {miningStage.stage === 'scrolling' && '⏳ Carregando produtos...'}
-                                {miningStage.stage === 'products_found' && `📦 ${miningStage.count} produtos encontrados!`}
-                                {miningStage.stage === 'translating' && '🌐 Traduzindo produtos...'}
-                                {miningStage.stage === 'done' && '✨ Concluído!'}
-                                {miningStage.stage === 'cache' && '⚡ Carregando do cache...'}
-                                {miningStage.stage === 'starting' && '🚀 Iniciando mineração...'}
-                                {!miningStage.stage && 'Minerando produtos...'}
+                        <HourglassLoader
+                            message={
+                                miningStage.stage === 'connecting' ? '🔌 Conectando ao vendedor...' :
+                                    miningStage.stage === 'navigating' ? '🌐 Navegando para página...' :
+                                        miningStage.stage === 'verifying' ? '🔍 Verificando vendedor...' :
+                                            miningStage.stage === 'seller_verified' ? '✅ Vendedor verificado!' :
+                                                miningStage.stage === 'cards_found' ? '📦 Produtos detectados!' :
+                                                    miningStage.stage === 'scrolling' ? '⏳ Carregando produtos...' :
+                                                        miningStage.stage === 'products_found' ? `📦 ${miningStage.count} produtos encontrados!` :
+                                                            miningStage.stage === 'translating' ? '🌐 Traduzindo produtos...' :
+                                                                miningStage.stage === 'done' ? '✨ Concluído!' :
+                                                                    miningStage.stage === 'cache' ? '⚡ Carregando do cache...' :
+                                                                        miningStage.stage === 'starting' ? '🚀 Iniciando mineração...' :
+                                                                            'Minerando produtos...'
+                            }
+                        />
+                        {miningStage.message && (
+                            <p className="text-sm mt-2" style={{ color: '#9CA3AF' }}>
+                                {miningStage.message}
                             </p>
-                            <p className="text-sm" style={{ color: '#9CA3AF' }}>
-                                {miningStage.message || 'Isso pode levar alguns segundos'}
-                            </p>
-                        </div>
+                        )}
                     </div>
                 )}
 
