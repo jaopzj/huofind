@@ -190,6 +190,13 @@ app.get('/api/mine-stream', async (req, res) => {
         return res.end();
     }
 
+    // Check seller cache to reuse verification data
+    let existingSellerInfo = null;
+    if (sellerCache.has(userId)) {
+        existingSellerInfo = sellerCache.get(userId);
+        console.log(`[Server] Reutilizando dados do vendedor do cache: ${userId}`);
+    }
+
     try {
         // Progress callback for scraper
         const onProgress = (stage, message, data = {}) => {
@@ -198,8 +205,8 @@ app.get('/api/mine-stream', async (req, res) => {
 
         sendEvent('progress', { stage: 'starting', message: 'Iniciando mineração...' });
 
-        // Scrape with progress updates
-        const result = await scraper.scrapeSellerProducts(url, parseInt(limit), onProgress);
+        // Scrape with progress updates, passing existing seller info
+        const result = await scraper.scrapeSellerProducts(url, parseInt(limit), onProgress, existingSellerInfo);
 
         // Translate with progress
         sendEvent('progress', { stage: 'translating', message: 'Traduzindo produtos...', total: result.products.length });

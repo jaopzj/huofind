@@ -39,7 +39,7 @@ class GoofishScraper {
      * @param {number} limit - Max products to extract
      * @param {Function} onProgress - Optional callback(stage, message, data)
      */
-    async scrapeSellerProducts(url, limit = 50, onProgress = null) {
+    async scrapeSellerProducts(url, limit = 50, onProgress = null, existingSellerInfo = null) {
         const emit = (stage, message, data = {}) => {
             console.log(`[Scraper] ${message}`);
             if (onProgress) onProgress(stage, message, data);
@@ -74,16 +74,27 @@ class GoofishScraper {
             // Aguarda inicial REDUZIDO
             await this.randomDelay(1000, 1500);
 
-            // Extrai informações do vendedor ANTES de scrollar
-            emit('verifying', 'Verificando vendedor...');
+            // Se já temos info do vendedor, usamos ela e pulamos a extração
             let sellerInfo = null;
             let trustResult = null;
-            try {
-                sellerInfo = await extractSellerInfo(page);
-                trustResult = calculateTrustScore(sellerInfo);
-                emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: trustResult.score });
-            } catch (sellerError) {
-                console.error('[Scraper] Erro ao extrair info do vendedor:', sellerError.message);
+
+            if (existingSellerInfo) {
+                emit('verifying', 'Verificando vendedor (dados em cache)...');
+                sellerInfo = existingSellerInfo;
+                // Os dados do cache já estão formatados, então não precisamos recalcular score aqui
+                // Mas precisamos garantir que temos trustClassification e outros campos
+                emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: sellerInfo.trustScore });
+            } else {
+                // Extrai informações do vendedor ANTES de scrollar (se não veio do cache)
+                emit('verifying', 'Verificando vendedor...');
+                try {
+                    const rawInfo = await extractSellerInfo(page);
+                    trustResult = calculateTrustScore(rawInfo);
+                    sellerInfo = formatSellerData(rawInfo, trustResult);
+                    emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: trustResult.score });
+                } catch (sellerError) {
+                    console.error('[Scraper] Erro ao extrair info do vendedor:', sellerError.message);
+                }
             }
 
             // Tenta aguardar cards específicos (timeout REDUZIDO)
