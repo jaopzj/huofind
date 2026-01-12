@@ -336,6 +336,7 @@ function App() {
                             onMine={handleMine}
                             isEvaluating={evaluating}
                             isLoading={loading}
+                            isSellerVerified={sellerInfo !== null && !evaluating}
                         />
 
                         {/* Seller Card preview (aparece após avaliar) */}

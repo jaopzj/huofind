@@ -3,10 +3,18 @@ import SparkleButton from './SparkleButton';
 
 /**
  * HeroSection - Página inicial com logo centralizada e search box
+ * 
+ * Props:
+ * - onUrlChange: chamado quando URL válida é colada
+ * - onMine: chamado quando mineração é iniciada
+ * - isEvaluating: indica se está avaliando o vendedor
+ * - isLoading: indica se está minerando
+ * - isSellerVerified: indica se o vendedor foi verificado com sucesso
  */
-function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
+function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVerified = false }) {
     const [url, setUrl] = useState('');
     const [limit, setLimit] = useState(50);
+    const [isInputFocused, setIsInputFocused] = useState(false);
     const lastEvaluatedUrl = useRef('');
 
     const isValidUrl = url.includes('goofish.com') || url.includes('xianyu.com') || url === '';
@@ -24,10 +32,14 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        if (url.trim() && isValidUrl) {
+        // Só permite minerar se o vendedor foi verificado
+        if (url.trim() && isValidUrl && isSellerVerified) {
             onMine(url.trim(), limit);
         }
     };
+
+    // Botão só é habilitado quando vendedor está verificado
+    const isButtonDisabled = isLoading || !url.trim() || !isValidUrl || !isSellerVerified || isEvaluating;
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
@@ -58,7 +70,13 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
             {/* Search Box */}
             <form onSubmit={handleSubmit} className="w-full max-w-2xl">
                 <div className="relative mb-6">
-                    <div className="absolute left-5 top-1/2 -translate-y-1/2" style={{ color: '#9CA3AF' }}>
+                    {/* Link icon with hover effect */}
+                    <div
+                        className="absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-200"
+                        style={{
+                            color: isInputFocused || url ? '#FF6B35' : '#9CA3AF'
+                        }}
+                    >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                         </svg>
@@ -68,31 +86,55 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
                         className="search-box"
                         style={{
                             paddingLeft: '56px',
-                            borderColor: !isValidUrl ? '#FCA5A5' : undefined
+                            paddingRight: '16px',
+                            borderColor: !isValidUrl ? '#FCA5A5' : isInputFocused ? '#FF6B35' : undefined
                         }}
                         placeholder="Cole a URL do perfil do vendedor..."
                         value={url}
                         onChange={(e) => setUrl(e.target.value)}
+                        onFocus={() => setIsInputFocused(true)}
+                        onBlur={() => setIsInputFocused(false)}
                         disabled={isLoading}
                     />
-                    {isEvaluating && (
-                        <div
-                            className="absolute right-5 top-1/2 -translate-y-1/2 flex items-center gap-2 text-sm"
-                            style={{ color: 'var(--color-orange-500)' }}
-                        >
-                            <div
-                                className="w-4 h-4 rounded-full animate-spin"
-                                style={{
-                                    border: '2px solid var(--color-orange-500)',
-                                    borderTopColor: 'transparent'
-                                }}
-                            ></div>
-                            Avaliando...
-                        </div>
-                    )}
                 </div>
 
-                {/* Limit Slider - IMPROVED */}
+                {/* Evaluating indicator - OUTSIDE the input, below it */}
+                {isEvaluating && (
+                    <div
+                        className="flex items-center justify-center gap-2 text-sm mb-4 py-2 px-4 rounded-lg mx-auto w-fit"
+                        style={{
+                            color: '#FF6B35',
+                            background: 'rgba(255, 107, 53, 0.1)'
+                        }}
+                    >
+                        <div
+                            className="w-4 h-4 rounded-full animate-spin"
+                            style={{
+                                border: '2px solid #FF6B35',
+                                borderTopColor: 'transparent'
+                            }}
+                        ></div>
+                        <span>Verificando vendedor...</span>
+                    </div>
+                )}
+
+                {/* Verified indicator */}
+                {isSellerVerified && !isEvaluating && url.trim() && (
+                    <div
+                        className="flex items-center justify-center gap-2 text-sm mb-4 py-2 px-4 rounded-lg mx-auto w-fit"
+                        style={{
+                            color: '#10B981',
+                            background: 'rgba(16, 185, 129, 0.1)'
+                        }}
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Vendedor verificado!</span>
+                    </div>
+                )}
+
+                {/* Limit Slider */}
                 <div
                     className="mb-6 p-4 rounded-2xl"
                     style={{
@@ -137,11 +179,11 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
 
                 <SparkleButton
                     type="submit"
-                    disabled={isLoading || !url.trim() || !isValidUrl}
+                    disabled={isButtonDisabled}
                     isLoading={isLoading}
-                    valid={url.trim() && isValidUrl}
+                    valid={isSellerVerified && url.trim() && isValidUrl}
                 >
-                    Iniciar Mineração
+                    {isEvaluating ? 'Aguardando verificação...' : 'Iniciar Mineração'}
                 </SparkleButton>
             </form>
 
@@ -153,7 +195,6 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading }) {
                         className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
                         style={{ background: 'rgba(255, 107, 53, 0.1)' }}
                     >
-                        {/* Slot para SVG - por enquanto usa emoji */}
                         <span className="text-xl">🐟</span>
                     </div>
                     <div>
