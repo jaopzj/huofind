@@ -16,6 +16,7 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVer
     const [limit, setLimit] = useState(50);
     const [isInputFocused, setIsInputFocused] = useState(false);
     const lastEvaluatedUrl = useRef('');
+    const [selectedPlatform, setSelectedPlatform] = useState('xianyu');
 
     const isValidUrl = url.includes('goofish.com') || url.includes('xianyu.com') || url === '';
 
@@ -43,29 +44,21 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVer
 
     return (
         <div className="min-h-screen flex flex-col items-center justify-center px-6 py-12">
-            {/* Logo animada */}
-            <div className="animate-float mb-8">
-                <div
-                    className="w-24 h-24 rounded-3xl flex items-center justify-center"
-                    style={{
-                        background: 'linear-gradient(135deg, #FF8C5A 0%, #FF6B35 100%)',
-                        boxShadow: 'var(--shadow-elevated)'
-                    }}
-                >
-                    <span className="text-5xl">🐟</span>
-                </div>
+            {/* Logo Customizada */}
+            <div className="mb-2 mt-[5px]">
+                <img
+                    src="/logo.svg"
+                    alt="Logo Huofind"
+                    className="h-32 md:h-48 w-auto object-contain drop-shadow-2xl"
+                />
             </div>
 
             {/* Headline */}
-            <h1 className="text-4xl md:text-5xl font-bold text-center mb-4" style={{ color: '#1F2937' }}>
+            <h1 className="text-4xl md:text-5xl font-bold text-center mb-12" style={{ color: '#1F2937' }}>
                 Encontre os melhores produtos
                 <br />
-                <span style={{ color: 'var(--color-orange-500)' }}>do Xyaniu</span> em segundos
+                <span className="font-extrabold shiny-text">do Xyaniu</span> em segundos
             </h1>
-
-            <p className="text-lg text-center mb-10 max-w-md" style={{ color: '#6B7280' }}>
-                Mineração inteligente com tradução automática e análise de vendedores
-            </p>
 
             {/* Search Box */}
             <form onSubmit={handleSubmit} className="w-full max-w-2xl">
@@ -192,49 +185,64 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVer
 
             {/* Feature Cards */}
             <div className="flex flex-wrap justify-center gap-4 mt-12 max-w-2xl">
-                {/* Xianyu - Active */}
-                <div className="feature-card flex items-center gap-3 cursor-pointer group">
+                {/* Xianyu - Active/Selectable */}
+                <div
+                    className="feature-card flex items-center gap-3 cursor-pointer group transition-all duration-300"
+                    onClick={() => setSelectedPlatform('xianyu')}
+                    style={{
+                        borderColor: selectedPlatform === 'xianyu' ? 'var(--color-orange-400)' : 'transparent',
+                        background: selectedPlatform === 'xianyu' ? '#FFF' : '#FFF',
+                        boxShadow: selectedPlatform === 'xianyu' ? '0 0 0 3px rgba(255, 107, 53, 0.15)' : 'var(--shadow-soft)'
+                    }}
+                >
                     <div
-                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-colors"
-                        style={{ background: 'rgba(255, 107, 53, 0.1)' }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300"
+                        style={{
+                            background: selectedPlatform === 'xianyu' ? 'var(--color-orange-500)' : 'rgba(255, 107, 53, 0.1)',
+                        }}
                     >
-                        <span className="text-xl">🐟</span>
+                        <img
+                            src="/xyaniu-logo.svg"
+                            alt="Xianyu Icon"
+                            className="w-6 h-6 object-contain"
+                            style={{
+                                filter: selectedPlatform === 'xianyu' ? 'brightness(0) invert(1)' : 'none'
+                            }}
+                        />
                     </div>
                     <div>
-                        <p className="font-semibold" style={{ color: '#1F2937' }}>Xianyu</p>
+                        <p className="font-semibold" style={{ color: selectedPlatform === 'xianyu' ? 'var(--color-orange-600)' : '#1F2937' }}>
+                            Xianyu
+                        </p>
                         <p className="text-xs" style={{ color: '#6B7280' }}>Goofish China</p>
                     </div>
                 </div>
 
-                {/* Feature 2 - Em breve */}
+                {/* Feature 2 - Pinduoduo (Disabled) */}
                 <div className="feature-card-disabled flex items-center gap-3">
                     <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center"
                         style={{ background: '#E5E7EB' }}
                     >
-                        <svg className="w-5 h-5" style={{ color: '#9CA3AF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+                        <span className="text-xl grayscale opacity-50">🛍️</span>
                     </div>
                     <div>
-                        <p className="font-semibold" style={{ color: '#9CA3AF' }}>Em breve...</p>
-                        <p className="text-xs" style={{ color: '#9CA3AF' }}>Nova plataforma</p>
+                        <p className="font-semibold" style={{ color: '#9CA3AF' }}>Yupoo</p>
+                        <p className="text-xs" style={{ color: '#9CA3AF' }}>Em breve</p>
                     </div>
                 </div>
 
-                {/* Feature 3 - Em breve */}
+                {/* Feature 3 - Poizon (Disabled) */}
                 <div className="feature-card-disabled flex items-center gap-3">
                     <div
                         className="w-10 h-10 rounded-xl flex items-center justify-center"
                         style={{ background: '#E5E7EB' }}
                     >
-                        <svg className="w-5 h-5" style={{ color: '#9CA3AF' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
+                        <span className="text-xl grayscale opacity-50">👟</span>
                     </div>
                     <div>
-                        <p className="font-semibold" style={{ color: '#9CA3AF' }}>Em breve...</p>
-                        <p className="text-xs" style={{ color: '#9CA3AF' }}>Nova plataforma</p>
+                        <p className="font-semibold" style={{ color: '#9CA3AF' }}>Taobao</p>
+                        <p className="text-xs" style={{ color: '#9CA3AF' }}>Em breve</p>
                     </div>
                 </div>
             </div>

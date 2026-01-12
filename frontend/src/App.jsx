@@ -291,7 +291,10 @@ function App() {
     const hasResults = products.length > 0;
 
     return (
-        <div className="min-h-screen" style={{ background: 'var(--color-cream-50)' }}>
+        <div className="min-h-screen relative">
+            <div className="grid-pattern-container">
+                <div className="grid-pattern" />
+            </div>
             {/* Header - só aparece quando tem resultados */}
             {hasResults && (
                 <header
@@ -304,7 +307,7 @@ function App() {
                 >
                     <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                            <span className="font-semibold" style={{ color: '#1F2937' }}>Minerador - Xyaniu</span>
+                            <img src="/logo.svg" alt="Huofind Logo" className="h-10 md:h-12 w-auto object-contain" />
                         </div>
                         <button
                             onClick={() => {
@@ -316,12 +319,17 @@ function App() {
                                     maxPrice: '',
                                     sort: '',
                                     iphoneModel: '',
-                                    storage: ''
+                                    storage: '',
+                                    unlockStatus: ''
                                 });
                             }}
-                            className="btn-ghost text-sm"
+                            className="cta-button"
                         >
-                            ← Nova busca
+                            <svg width="13px" height="10px" viewBox="0 0 13 10">
+                                <path d="M12,5 L2,5" />
+                                <polyline points="5 1 1 5 5 9" />
+                            </svg>
+                            <span>Nova busca</span>
                         </button>
                     </div>
                 </header>
