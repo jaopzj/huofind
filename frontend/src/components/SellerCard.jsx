@@ -123,7 +123,7 @@ function SellerCard({ sellerInfo, variant = 'full' }) {
                         <p className={`${isCompact ? 'text-xl' : 'text-2xl'} font-bold`} style={{ color: '#1F2937' }}>
                             {salesCountFormatted || '0'}
                         </p>
-                        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Vendas</p>
+                        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Produtos</p>
                     </div>
 
                     <div className="text-center">
@@ -137,7 +137,7 @@ function SellerCard({ sellerInfo, variant = 'full' }) {
                         <div className="flex flex-col gap-1.5 opacity-80">
                             <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <span className="w-1.5 h-1.5 rounded-full bg-orange-400"></span>
-                                Vendas: <span className="font-medium">{breakdown.sales}/50</span>
+                                Produtos: <span className="font-medium">{breakdown.sales}/50</span>
                             </div>
                             <div className="flex items-center gap-2 text-xs text-gray-500">
                                 <span className="w-1.5 h-1.5 rounded-full bg-blue-400"></span>

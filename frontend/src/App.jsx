@@ -354,7 +354,7 @@ function App() {
                         <WifiLoader message="Minerando..." />
 
                         {/* Stage indicator below the loader */}
-                        <div className="text-center mt-8">
+                        <div className="text-center mt-4">
                             <p className="font-medium text-base" style={{ color: '#4B5563' }}>
                                 {miningStage.stage === 'connecting' && '🔌 Conectando ao vendedor...'}
                                 {miningStage.stage === 'navigating' && '🌐 Navegando para página...'}
