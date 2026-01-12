@@ -341,7 +341,7 @@ function App() {
 
                         {/* Seller Card preview (aparece após avaliar) */}
                         {sellerInfo && !loading && (
-                            <div className="max-w-2xl mx-auto px-6 animate-fade-in-up">
+                            <div className="max-w-4xl mx-auto px-6 animate-fade-in-up">
                                 <SellerCard sellerInfo={sellerInfo} />
                             </div>
                         )}

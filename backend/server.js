@@ -117,30 +117,16 @@ app.post('/api/evaluate-seller', async (req, res) => {
 
         console.log(`[Server] Avaliando vendedor: ${userId}`);
 
-        // Abre navegador apenas para avaliar o vendedor (rápido)
-        const browser = await chromium.launch({ headless: true });
-        const context = await browser.newContext({
-            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            viewport: { width: 1920, height: 1080 },
-            locale: 'zh-CN'
-        });
-        const page = await context.newPage();
 
-        await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Verify seller with advanced multi-page flow
+        const sellerData = await scraper.verifySeller(url);
 
-        const sellerInfo = await extractSellerInfo(page);
-        const trustResult = calculateTrustScore(sellerInfo);
-        const formattedSellerInfo = formatSellerData(sellerInfo, trustResult);
+        // Cache results
+        sellerCache.set(userId, sellerData);
 
-        await browser.close();
+        console.log(`[Server] Vendedor verificado: ${sellerData.nickname} - ${sellerData.trustScore}pts (${sellerData.trustClassification})`);
 
-        // Armazena no cache
-        sellerCache.set(userId, formattedSellerInfo);
-
-        console.log(`[Server] Vendedor avaliado: ${sellerInfo.nickname || userId} - ${trustResult.score}pts (${trustResult.classification})`);
-
-        res.json({ sellerInfo: formattedSellerInfo });
+        res.json(sellerData);
 
     } catch (error) {
         console.error('[Server] Erro ao avaliar vendedor:', error.message);
