@@ -1,5 +1,11 @@
 /**
  * SellerCard - Componente minimalista para exibir pontuação de confiança do vendedor
+ * 
+ * Expected sellerInfo structure from backend:
+ * - avatar, nickname, level
+ * - followers, followersFormatted
+ * - salesCount, salesCountFormatted
+ * - trustScore, trustBreakdown, trustClassification, trustClassificationColor, trustClassificationIcon
  */
 function SellerCard({ sellerInfo }) {
     if (!sellerInfo) return null;
@@ -7,17 +13,28 @@ function SellerCard({ sellerInfo }) {
     const {
         avatar,
         nickname,
-        score,
-        classification,
-        classificationColor,
-        classificationIcon,
-        isTrustworthy,
+        // Trust score fields (prefixed with "trust")
+        trustScore,
+        trustClassification,
+        trustClassificationColor,
+        trustClassificationIcon,
+        trustBreakdown,
+        // Metrics
         followersFormatted,
-        salesFormatted,
+        salesCountFormatted,
         followers,
-        salesCount,
-        breakdown
+        salesCount
     } = sellerInfo;
+
+    // Use trustScore, default to 0 if not present
+    const score = trustScore || 0;
+    const classification = trustClassification || 'Desconhecido';
+    const classificationColor = trustClassificationColor || 'orange';
+    const classificationIcon = trustClassificationIcon || '❓';
+    const breakdown = trustBreakdown || null;
+
+    // Determine if trustworthy (score >= 60)
+    const isTrustworthy = score >= 60;
 
     // Cores baseadas na classificação
     const colorMap = {
@@ -86,12 +103,16 @@ function SellerCard({ sellerInfo }) {
                 style={{ borderTop: '1px solid var(--color-cream-200)' }}
             >
                 <div className="text-center">
-                    <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{salesFormatted || salesCount || '0'}</p>
+                    <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>
+                        {salesCountFormatted || salesCount || '0'}
+                    </p>
                     <p className="text-xs uppercase tracking-wide" style={{ color: '#6B7280' }}>Vendas</p>
                 </div>
                 <div className="h-10" style={{ width: '1px', background: 'var(--color-cream-200)' }}></div>
                 <div className="text-center">
-                    <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{followersFormatted || followers || '0'}</p>
+                    <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>
+                        {followersFormatted || followers || '0'}
+                    </p>
                     <p className="text-xs uppercase tracking-wide" style={{ color: '#6B7280' }}>Seguidores</p>
                 </div>
             </div>
@@ -105,13 +126,13 @@ function SellerCard({ sellerInfo }) {
                             className="badge"
                             style={{ background: colors.bg, color: colors.text }}
                         >
-                            👥 {breakdown.followers}/50
+                            👥 {breakdown.followers || 0}/50
                         </span>
                         <span
                             className="badge"
                             style={{ background: colors.bg, color: colors.text }}
                         >
-                            📦 {breakdown.sales}/50
+                            📦 {breakdown.sales || 0}/50
                         </span>
                     </div>
                 </div>
