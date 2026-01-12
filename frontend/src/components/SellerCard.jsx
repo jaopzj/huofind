@@ -153,7 +153,7 @@ function SellerCard({ sellerInfo, variant = 'full' }) {
                         <div className="text-right hidden md:block">
                             <p className="text-xs text-gray-400 font-medium uppercase mb-0.5">Trust Score</p>
                             <p className="text-sm font-semibold" style={{ color: colors.text }}>
-                                {isTrustworthy ? 'Verificado' : 'Atenção'}
+                                {isTrustworthy ? 'Verificado' : 'Cuidado'}
                             </p>
                         </div>
 

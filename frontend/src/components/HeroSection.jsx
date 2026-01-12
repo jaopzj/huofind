@@ -86,8 +86,9 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVer
                         className="search-box"
                         style={{
                             paddingLeft: '56px',
-                            paddingRight: '16px',
-                            borderColor: !isValidUrl ? '#FCA5A5' : isInputFocused ? '#FF6B35' : undefined
+                            paddingRight: isEvaluating ? '180px' : '16px', // Espaço para o loader
+                            borderColor: !isValidUrl ? '#FCA5A5' : isInputFocused ? '#FF6B35' : undefined,
+                            transition: 'padding 0.3s ease'
                         }}
                         placeholder="Cole a URL do perfil do vendedor..."
                         value={url}
@@ -96,27 +97,27 @@ function HeroSection({ onUrlChange, onMine, isEvaluating, isLoading, isSellerVer
                         onBlur={() => setIsInputFocused(false)}
                         disabled={isLoading}
                     />
-                </div>
 
-                {/* Evaluating indicator - OUTSIDE the input, below it */}
-                {isEvaluating && (
-                    <div
-                        className="flex items-center justify-center gap-2 text-sm mb-4 py-2 px-4 rounded-lg mx-auto w-fit"
-                        style={{
-                            color: '#FF6B35',
-                            background: 'rgba(255, 107, 53, 0.1)'
-                        }}
-                    >
+                    {/* Evaluating indicator - INSIDE input (Right side) */}
+                    {isEvaluating && (
                         <div
-                            className="w-4 h-4 rounded-full animate-spin"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg pointer-events-none"
                             style={{
-                                border: '2px solid #FF6B35',
-                                borderTopColor: 'transparent'
+                                color: '#FF6B35',
+                                background: 'rgba(255, 107, 53, 0.08)'
                             }}
-                        ></div>
-                        <span>Verificando vendedor...</span>
-                    </div>
-                )}
+                        >
+                            <div
+                                className="w-3.5 h-3.5 rounded-full animate-spin"
+                                style={{
+                                    border: '2px solid #FF6B35',
+                                    borderTopColor: 'transparent'
+                                }}
+                            ></div>
+                            <span className="font-medium text-xs whitespace-nowrap">Verificando...</span>
+                        </div>
+                    )}
+                </div>
 
                 {/* Verified indicator */}
                 {isSellerVerified && !isEvaluating && url.trim() && (

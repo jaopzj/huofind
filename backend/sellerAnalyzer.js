@@ -245,21 +245,21 @@ export function calculateTrustScore(seller) {
     // ========================================
     const followers = seller.followers || 0;
 
-    if (followers >= 50000) {
-        breakdown.followers = 50;      // 50k+ = máximo
-    } else if (followers >= 30000) {
-        breakdown.followers = 45;      // 30-50k = excelente
-    } else if (followers >= 20000) {
-        breakdown.followers = 40;      // 20-30k = muito bom
-    } else if (followers >= 10000) {
-        breakdown.followers = 35;      // 10-20k = bom
+    if (followers >= 10000) {
+        breakdown.followers = 50;      // 10k+ = máximo
+    } else if (followers >= 7000) {
+        breakdown.followers = 45;      // 7-10k = excelente
     } else if (followers >= 5000) {
-        breakdown.followers = 28;      // 5-10k = acima da média
+        breakdown.followers = 40;      // 5-7k = muito bom
     } else if (followers >= 3000) {
-        breakdown.followers = 22;      // 3-5k = médio-alto
+        breakdown.followers = 35;      // 3-5k = bom
     } else if (followers >= 1000) {
-        breakdown.followers = 15;      // 1-3k = médio
+        breakdown.followers = 28;      // 1-3k = acima da média
     } else if (followers >= 500) {
+        breakdown.followers = 22;      // 500-1k = médio-alto
+    } else if (followers >= 400) {
+        breakdown.followers = 10;      // 400-500 = médio
+    } else if (followers >= 300) {
         breakdown.followers = 8;       // 500-1k = baixo
     } else if (followers >= 100) {
         breakdown.followers = 3;       // 100-500 = muito baixo
@@ -274,18 +274,18 @@ export function calculateTrustScore(seller) {
     // ========================================
     const sales = seller.salesCount || 0;
 
-    if (sales >= 3000) {
-        breakdown.sales = 50;          // 3k+ vendas = máximo
-    } else if (sales >= 2000) {
-        breakdown.sales = 45;          // 2-3k = excelente
-    } else if (sales >= 1500) {
-        breakdown.sales = 40;          // 1.5-2k = muito bom
+    if (sales >= 1500) {
+        breakdown.sales = 50;          // 1k500+ vendas = máximo
     } else if (sales >= 1000) {
-        breakdown.sales = 35;          // 1-1.5k = bom
+        breakdown.sales = 45;          // 1k-1k500 = excelente
+    } else if (sales >= 750) {
+        breakdown.sales = 40;          // 750-1k = muito bom
     } else if (sales >= 500) {
-        breakdown.sales = 28;          // 500-1k = acima da média
+        breakdown.sales = 35;          // 500-750 = bom
+    } else if (sales >= 300) {
+        breakdown.sales = 28;          // 300-500 = acima da média
     } else if (sales >= 200) {
-        breakdown.sales = 22;          // 200-500 = médio-alto
+        breakdown.sales = 22;          // 200-300 = médio-alto
     } else if (sales >= 100) {
         breakdown.sales = 15;          // 100-200 = médio
     } else if (sales >= 50) {
@@ -312,16 +312,16 @@ export function calculateTrustScore(seller) {
         classification = 'Confiável';
         classificationColor = 'blue';
         classificationIcon = '👍';
-    } else if (score >= 60) {
+    } else if (score >= 40) {
         classification = 'Moderado';
         classificationColor = 'yellow';
         classificationIcon = '⚠️';
-    } else if (score >= 40) {
+    } else if (score >= 30) {
         classification = 'Iniciante';
         classificationColor = 'orange';
         classificationIcon = '🆕';
     } else {
-        classification = 'Atenção';
+        classification = 'Arriscado';
         classificationColor = 'red';
         classificationIcon = '🚨';
     }
