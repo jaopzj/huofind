@@ -30,29 +30,40 @@ export async function extractSellerInfo(page) {
             rawData: {}
         };
 
+        const pageText = document.body.innerText;
+        info.rawData.pageTextSample = pageText.substring(0, 500); // Debug
+
         // Avatar
         const avatarEl = document.querySelector('img[class*="avatar"]');
         if (avatarEl) {
             info.avatar = avatarEl.src;
         }
 
-        // Nickname
-        const nickEl = document.querySelector('[class*="nick"]');
-        if (nickEl) {
-            info.nickname = nickEl.innerText?.trim();
+        // Nickname - busca mais ampla
+        const nickSelectors = [
+            '[class*="nick"]',
+            '[class*="userName"]',
+            '[class*="seller-name"]',
+            '[class*="sellerName"]',
+            'h1[class*="name"]'
+        ];
+        for (const sel of nickSelectors) {
+            const nickEl = document.querySelector(sel);
+            if (nickEl && nickEl.innerText?.trim()) {
+                info.nickname = nickEl.innerText.trim();
+                break;
+            }
         }
 
         // Nível - procura por imagens ou texto com L1-L7
-        const levelIcon = document.querySelector('[class*="levelIcon"], [class*="level"]');
+        const levelIcon = document.querySelector('[class*="levelIcon"], [class*="level"] img');
         if (levelIcon) {
-            // Tenta extrair do src da imagem (ex: L7.png)
             if (levelIcon.src) {
                 const levelMatch = levelIcon.src.match(/[Ll](\d)/);
                 if (levelMatch) {
                     info.level = parseInt(levelMatch[1], 10);
                 }
             }
-            // Tenta extrair do alt ou aria-label
             const alt = levelIcon.alt || levelIcon.getAttribute('aria-label') || '';
             const altMatch = alt.match(/(\d)/);
             if (altMatch && info.level === 0) {
@@ -60,33 +71,72 @@ export async function extractSellerInfo(page) {
             }
         }
 
-        // Fallback: procura texto Lv.X na página
+        // Fallback nível: procura texto Lv.X na página
         if (info.level === 0) {
-            const allText = document.body.innerText;
-            const lvMatch = allText.match(/[Ll][Vv]\.?\s*(\d)/);
+            const lvMatch = pageText.match(/[Ll][Vv]\.?\s*(\d)/);
             if (lvMatch) {
                 info.level = parseInt(lvMatch[1], 10);
             }
         }
 
-        // Seguidores - procura por "X粉丝" ou "Xw粉丝" (w = 万 = 10000)
-        const pageText = document.body.innerText;
-        const followersMatch = pageText.match(/([\d.]+)\s*[wW万]?\s*粉丝/);
-        if (followersMatch) {
-            let count = parseFloat(followersMatch[1]);
-            // Se tem 'w' ou '万', multiplica por 10000
-            if (followersMatch[0].includes('w') || followersMatch[0].includes('万')) {
-                count = count * 10000;
+        // ========================================
+        // SEGUIDORES - múltiplos patterns
+        // ========================================
+        const followersPatterns = [
+            // Pattern 1: "X粉丝" (X followers)
+            /([\d.]+)\s*[wW万]?\s*粉丝/,
+            // Pattern 2: "粉丝X" (followers X)
+            /粉丝\s*[:：]?\s*([\d.]+)\s*[wW万]?/,
+            // Pattern 3: "followers:X" (english)
+            /followers?\s*[:：]?\s*([\d.,]+)/i,
+            // Pattern 4: Número antes de 粉
+            /([\d.]+)\s*[wW万]?\s*粉/,
+            // Pattern 5: Em spans com número
+            /关注.*?([\d.]+)\s*[wW万]?.*?粉丝/s
+        ];
+
+        for (const pattern of followersPatterns) {
+            const match = pageText.match(pattern);
+            if (match) {
+                let count = parseFloat(match[1].replace(/,/g, ''));
+                // Se tem 'w' ou '万', multiplica por 10000
+                if (match[0].includes('w') || match[0].includes('万') || match[0].includes('W')) {
+                    count = count * 10000;
+                }
+                info.followers = Math.round(count);
+                info.rawData.followersText = match[0];
+                break;
             }
-            info.followers = Math.round(count);
-            info.rawData.followersText = followersMatch[0];
         }
 
-        // Tempo na plataforma - procura "X年" (anos) ou "X天" (dias) ou "X天来闲鱼"
+        // Fallback: busca por elementos numéricos perto de "粉丝" ou "关注"
+        if (info.followers === 0) {
+            const allSpans = [...document.querySelectorAll('span, div')];
+            for (const el of allSpans) {
+                const text = el.innerText || '';
+                if (text.includes('粉丝') || text.includes('关注')) {
+                    const numMatch = text.match(/([\d.]+)\s*[wW万]?/);
+                    if (numMatch) {
+                        let count = parseFloat(numMatch[1]);
+                        if (text.includes('w') || text.includes('万') || text.includes('W')) {
+                            count = count * 10000;
+                        }
+                        if (count > 0) {
+                            info.followers = Math.round(count);
+                            info.rawData.followersText = `[fallback] ${text}`;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Tempo na plataforma
         const timePatterns = [
-            /([\d.]+)\s*年来?闲鱼/,  // X anos no Xianyu
-            /([\d.]+)\s*年老店/,      // X anos loja antiga
-            /([\d]+)\s*天来?闲鱼/,   // X dias no Xianyu
+            /([\d.]+)\s*年来?闲鱼/,
+            /([\d.]+)\s*年老店/,
+            /(\d+)\s*天来?闲鱼/,
+            /入驻\s*([\d]+)\s*天/,
         ];
 
         for (const pattern of timePatterns) {
@@ -94,10 +144,8 @@ export async function extractSellerInfo(page) {
             if (timeMatch) {
                 const value = parseFloat(timeMatch[1]);
                 if (timeMatch[0].includes('年')) {
-                    // Anos -> meses
                     info.monthsActive = Math.round(value * 12);
                 } else if (timeMatch[0].includes('天')) {
-                    // Dias -> meses
                     info.monthsActive = Math.round(value / 30);
                 }
                 info.rawData.platformTimeText = timeMatch[0];
@@ -105,21 +153,60 @@ export async function extractSellerInfo(page) {
             }
         }
 
-        // Vendas - procura "已售出 XXXX"
-        const salesMatch = pageText.match(/已售出\s*([\d,]+)/);
-        if (salesMatch) {
-            info.salesCount = parseInt(salesMatch[1].replace(/,/g, ''), 10);
-            info.rawData.salesText = salesMatch[0];
+        // ========================================
+        // VENDAS - múltiplos patterns
+        // ========================================
+        const salesPatterns = [
+            // Pattern 1: "已售出XXXX" ou "已售XXXX"
+            /已售出?\s*([\d,]+)/,
+            // Pattern 2: "XXX件交易"
+            /([\d,]+)\s*件?\s*交易/,
+            // Pattern 3: "卖出XXX"
+            /卖出\s*([\d,]+)/,
+            // Pattern 4: "成交XXX"
+            /成交\s*([\d,]+)/,
+            // Pattern 5: "销量XXX"
+            /销量\s*([\d,]+)/,
+            // Pattern 6: "XXX笔交易" ou "XXX笔成交"
+            /([\d,]+)\s*笔\s*(交易|成交)/
+        ];
+
+        for (const pattern of salesPatterns) {
+            const match = pageText.match(pattern);
+            if (match) {
+                info.salesCount = parseInt(match[1].replace(/,/g, ''), 10);
+                info.rawData.salesText = match[0];
+                break;
+            }
         }
 
-        // Sesame Credit (芝麻分) - bônus de confiança
+        // Fallback vendas: busca elementos com números grandes
+        if (info.salesCount === 0) {
+            const allSpans = [...document.querySelectorAll('span, div')];
+            for (const el of allSpans) {
+                const text = el.innerText || '';
+                if (text.includes('售') || text.includes('交易') || text.includes('成交')) {
+                    const numMatch = text.match(/([\d,]+)/);
+                    if (numMatch) {
+                        const count = parseInt(numMatch[1].replace(/,/g, ''), 10);
+                        if (count > 10) { // Pelo menos 10 vendas
+                            info.salesCount = count;
+                            info.rawData.salesText = `[fallback] ${text}`;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Sesame Credit
         const sesameMatch = pageText.match(/芝麻分?\s*[:：]?\s*(\d+)/);
         if (sesameMatch) {
             info.sesameCreditScore = parseInt(sesameMatch[1], 10);
             info.rawData.sesameText = sesameMatch[0];
         }
 
-        // Taxa de avaliação positiva - procura "X好评" vs "全部X"
+        // Taxa de avaliação positiva
         const positiveMatch = pageText.match(/(\d+)\s*好评/);
         const totalMatch = pageText.match(/全部\s*(\d+)/);
         if (positiveMatch && totalMatch) {
@@ -129,7 +216,6 @@ export async function extractSellerInfo(page) {
                 info.positiveRating = Math.round((positive / total) * 100);
             }
         } else if (positiveMatch) {
-            // Se não encontrou total, assume 95% como baseline
             info.positiveRating = 95;
         }
 
@@ -137,12 +223,14 @@ export async function extractSellerInfo(page) {
     });
 
     console.log('[SellerAnalyzer] Dados extraídos:', {
+        nickname: sellerInfo.nickname,
         level: sellerInfo.level,
         followers: sellerInfo.followers,
         monthsActive: sellerInfo.monthsActive,
         salesCount: sellerInfo.salesCount,
         positiveRating: sellerInfo.positiveRating,
-        sesameCreditScore: sellerInfo.sesameCreditScore
+        sesameCreditScore: sellerInfo.sesameCreditScore,
+        rawData: sellerInfo.rawData
     });
 
     return sellerInfo;
