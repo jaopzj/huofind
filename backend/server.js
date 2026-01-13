@@ -1,3 +1,6 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import scraper from './scraper.js';
@@ -6,6 +9,22 @@ import cache from './cache.js';
 import { extractSellerInfo, calculateTrustScore, formatSellerData } from './sellerAnalyzer.js';
 import { scrapeProductsForComparison } from './productAnalyzer.js';
 import { chromium } from 'playwright';
+
+// Auth imports
+import { registerUser, loginUser, refreshAccessToken, logoutUser } from './auth.js';
+import { authMiddleware, optionalAuthMiddleware } from './authMiddleware.js';
+
+// Mining limits system (unified)
+import {
+    miningLimitMiddleware,
+    incrementMiningCount,
+    startMiningSession,
+    endMiningSession,
+    getUserMiningData,
+    TIER_LIMITS
+} from './miningLimits.js';
+import { TIERS, getTierInfo } from './tiers.js';
+import browserPool from './browserPool.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -87,6 +106,132 @@ app.get('/api/exchange-rate', async (req, res) => {
     }
 });
 
+// ============================================
+// AUTH ROUTES
+// ============================================
+
+/**
+ * POST /api/auth/register
+ * Register a new user
+ */
+app.post('/api/auth/register', async (req, res) => {
+    try {
+        const { email, password, name } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                error: 'Email e senha são obrigatórios',
+                code: 'MISSING_FIELDS'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                error: 'Senha deve ter pelo menos 6 caracteres',
+                code: 'WEAK_PASSWORD'
+            });
+        }
+
+        const result = await registerUser(email, password, name);
+
+        if (result.error) {
+            return res.status(400).json(result);
+        }
+
+        res.status(201).json(result);
+    } catch (err) {
+        console.error('[Server] Register error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * POST /api/auth/login
+ * Login user with email and password
+ */
+app.post('/api/auth/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                error: 'Email e senha são obrigatórios',
+                code: 'MISSING_FIELDS'
+            });
+        }
+
+        const result = await loginUser(email, password);
+
+        if (result.error) {
+            return res.status(401).json(result);
+        }
+
+        res.json(result);
+    } catch (err) {
+        console.error('[Server] Login error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token
+ */
+app.post('/api/auth/refresh', async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (!refreshToken) {
+            return res.status(400).json({
+                error: 'Refresh token é obrigatório',
+                code: 'MISSING_TOKEN'
+            });
+        }
+
+        const result = await refreshAccessToken(refreshToken);
+
+        if (result.error) {
+            return res.status(401).json(result);
+        }
+
+        res.json(result);
+    } catch (err) {
+        console.error('[Server] Refresh error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * POST /api/auth/logout
+ * Logout user (invalidate refresh token)
+ */
+app.post('/api/auth/logout', async (req, res) => {
+    try {
+        const { refreshToken } = req.body;
+
+        if (refreshToken) {
+            await logoutUser(refreshToken);
+        }
+
+        res.json({ success: true, message: 'Logout realizado com sucesso' });
+    } catch (err) {
+        console.error('[Server] Logout error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * GET /api/auth/me
+ * Get current user info (requires auth)
+ */
+app.get('/api/auth/me', authMiddleware, (req, res) => {
+    res.json({ user: req.user });
+});
+
+// ============================================
+// END AUTH ROUTES
+// ============================================
+
 /**
  * POST /api/evaluate-seller
  * Avalia rapidamente o vendedor sem scraping de produtos
@@ -151,8 +296,9 @@ app.post('/api/evaluate-seller', async (req, res) => {
 /**
  * GET /api/mine-stream
  * Server-Sent Events endpoint for real-time mining progress
+ * REQUER autenticação - verifica limites no Supabase
  */
-app.get('/api/mine-stream', async (req, res) => {
+app.get('/api/mine-stream', authMiddleware, miningLimitMiddleware, async (req, res) => {
     const { url, limit = 50 } = req.query;
 
     if (!url) {
@@ -163,10 +309,13 @@ app.get('/api/mine-stream', async (req, res) => {
         return res.status(400).json({ error: 'URL deve ser do Goofish' });
     }
 
-    const userId = scraper.extractUserId(url);
-    if (!userId) {
+    const sellerId = scraper.extractUserId(url);
+    if (!sellerId) {
         return res.status(400).json({ error: 'userId não encontrado na URL' });
     }
+
+    // User ID from auth middleware (always present now)
+    const userId = req.user.id;
 
     // Set SSE headers
     res.setHeader('Content-Type', 'text/event-stream');
@@ -181,9 +330,9 @@ app.get('/api/mine-stream', async (req, res) => {
     };
 
     // Check cache first
-    const cacheKey = `${userId}_${limit}`;
+    const cacheKey = `${sellerId}_${limit}`;
     if (cache.has(cacheKey)) {
-        console.log(`[Server] Retornando dados do cache: ${userId}`);
+        console.log(`[Server] Retornando dados do cache: ${sellerId}`);
         sendEvent('progress', { stage: 'cache', message: 'Carregando do cache...' });
         const cachedData = cache.get(cacheKey);
         sendEvent('complete', { ...cachedData, fromCache: true });
@@ -192,10 +341,13 @@ app.get('/api/mine-stream', async (req, res) => {
 
     // Check seller cache to reuse verification data
     let existingSellerInfo = null;
-    if (sellerCache.has(userId)) {
-        existingSellerInfo = sellerCache.get(userId);
-        console.log(`[Server] Reutilizando dados do vendedor do cache: ${userId}`);
+    if (sellerCache.has(sellerId)) {
+        existingSellerInfo = sellerCache.get(sellerId);
+        console.log(`[Server] Reutilizando dados do vendedor do cache: ${sellerId}`);
     }
+
+    // Start tracking mining session
+    startMiningSession(userId, url);
 
     try {
         // Progress callback for scraper
@@ -203,7 +355,7 @@ app.get('/api/mine-stream', async (req, res) => {
             sendEvent('progress', { stage, message, ...data });
         };
 
-        sendEvent('progress', { stage: 'starting', message: 'Iniciando mineração...' });
+        sendEvent('progress', { stage: 'starting', message: 'Iniciando mineração...', miningInfo: req.miningInfo });
 
         // Scrape with progress updates, passing existing seller info
         const result = await scraper.scrapeSellerProducts(url, parseInt(limit), onProgress, existingSellerInfo);
@@ -217,14 +369,20 @@ app.get('/api/mine-stream', async (req, res) => {
         // Cache result
         cache.set(cacheKey, result);
 
+        // Increment mining count in Supabase
+        await incrementMiningCount(userId);
+
         sendEvent('progress', { stage: 'done', message: 'Mineração concluída!' });
-        sendEvent('complete', result);
+        sendEvent('complete', { ...result, miningInfo: req.miningInfo });
 
         console.log(`[Server] Mineração SSE concluída: ${result.productCount} produtos`);
 
     } catch (error) {
         console.error('[Server] Erro na mineração SSE:', error.message);
         sendEvent('error', { message: error.message });
+    } finally {
+        // End mining session tracking
+        endMiningSession(userId);
     }
 
     res.end();
@@ -420,18 +578,136 @@ app.post('/api/compare', async (req, res) => {
 
 /**
  * GET /api/health
- * Health check
+ * Health check with system status
  */
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/api/health', async (req, res) => {
+    try {
+        const browserStats = browserPool.getStats();
+
+        res.json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            browserPool: browserStats,
+            tiers: Object.values(TIERS).map(t => ({
+                name: t.name,
+                displayName: t.displayName,
+                limit: t.miningLimit === Infinity ? 'unlimited' : t.miningLimit
+            }))
+        });
+    } catch (err) {
+        res.json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            error: err.message
+        });
+    }
 });
 
-// Inicia servidor
-app.listen(PORT, () => {
-    console.log(`
-╔════════════════════════════════════════════╗
-║   Goofish Miner Backend                    ║
-║   Server running on http://localhost:${PORT}  ║
-╚════════════════════════════════════════════╝
-  `);
+/**
+ * GET /api/tiers
+ * Get available subscription tiers
+ */
+app.get('/api/tiers', (req, res) => {
+    res.json({
+        tiers: Object.values(TIERS).map(t => getTierInfo(t.name))
+    });
 });
+
+/**
+ * GET /api/user/mining-status
+ * Get current user's mining usage based on tier
+ */
+app.get('/api/user/mining-status', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const data = await getUserMiningData(userId);
+        const limit = TIER_LIMITS[data.tier] || TIER_LIMITS.guest;
+
+        res.json({
+            tier: getTierInfo(data.tier),
+            used: data.miningCount,
+            limit: limit === Infinity ? 'unlimited' : limit,
+            remaining: limit === Infinity ? 'unlimited' : Math.max(0, limit - data.miningCount),
+            canMine: limit === Infinity || data.miningCount < limit
+        });
+    } catch (error) {
+        console.error('[Server] Error in mining-status:', error);
+        res.status(500).json({ error: 'Erro ao buscar status de mineração' });
+    }
+});
+
+// ============================================
+// SERVER STARTUP
+// ============================================
+
+const startServer = async () => {
+    try {
+        console.log('[Server] Initializing systems...');
+
+        // Initialize browser pool
+        try {
+            await browserPool.init();
+            console.log('[Server] ✓ Browser pool initialized (3 browsers)');
+        } catch (err) {
+            console.warn('[Server] ⚠ Browser pool unavailable:', err.message);
+        }
+
+        console.log('[Server] ✓ Mining limits system ready (Supabase)');
+
+        // Start Express server
+        const server = app.listen(PORT, () => {
+            console.log(`
+╔════════════════════════════════════════════════════════╗
+║   Huofind Backend                                      ║
+║   Server running on http://localhost:${PORT}              ║
+║                                                        ║
+║   Account Tiers:                                       ║
+║   👤 Visitante: 10 minerações/IP                        ║
+║   ⬡ Bronze: 50 minerações                              ║
+║   ◆ Prata:  150 minerações                             ║
+║   ★ Ouro:   Ilimitado                                  ║
+║                                                        ║
+║   Features:                                            ║
+║   ✓ Tier-based mining with Supabase persistence        ║
+║   ✓ Device fingerprinting & IP tracking                ║
+║   ✓ Browser Pool: 3 reusable instances                 ║
+╚════════════════════════════════════════════════════════╝
+            `);
+        });
+
+        // Graceful shutdown
+        const gracefulShutdown = async (signal) => {
+            console.log(`\n[Server] ${signal} received. Shutting down gracefully...`);
+
+            server.close(async () => {
+                console.log('[Server] HTTP server closed');
+
+                try {
+                    await browserPool.shutdown();
+                    console.log('[Server] All connections closed. Goodbye!');
+                    process.exit(0);
+                } catch (err) {
+                    console.error('[Server] Error during shutdown:', err);
+                    process.exit(1);
+                }
+            });
+
+            // Force exit after 30 seconds
+            setTimeout(() => {
+                console.error('[Server] Forced shutdown after timeout');
+                process.exit(1);
+            }, 30000);
+        };
+
+        process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+        process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+    } catch (err) {
+        console.error('[Server] Failed to start:', err);
+        process.exit(1);
+    }
+};
+
+// Start the server
+startServer();
+

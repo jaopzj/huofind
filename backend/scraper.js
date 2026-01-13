@@ -1,8 +1,14 @@
 import { chromium } from 'playwright';
 import { extractSellerInfo, calculateTrustScore, formatSellerData } from './sellerAnalyzer.js';
+import browserPool from './browserPool.js';
 
 /**
  * Scraper para perfis de vendedores da Goofish
+ * 
+ * Supports two modes:
+ * 1. Direct mode (scrapeSellerProducts) - creates own browser, used for standalone calls
+ * 2. Pooled mode (scrapeWithPool) - uses browser pool, recommended for queue workers
+ * 
  * Seletores baseados em análise real do DOM:
  * - Cards: a[class^="feeds-item-wrap"] ou [class*="cardWarp"]
  * - Título: div do conteúdo, primeiro span com texto
@@ -107,159 +113,239 @@ class GoofishScraper {
                 emit('scrolling', 'Carregando mais produtos...');
             }
 
-            // Scroll para carregar mais produtos (delays REDUZIDOS)
+            // Smart Scrolling: Continue until we have enough products OR no new products appear
             emit('scrolling', 'Carregando produtos...');
-            const scrollsNeeded = Math.min(Math.ceil(limit / 10), 8); // Cap at 8 scrolls
+            const MAX_SCROLLS = 50; // Prevent infinite loops
+            const PRODUCTS_PER_SCROLL = 10; // Approximate products loaded per scroll
+            let lastCardCount = 0;
+            let noNewCardsCount = 0;
 
-            for (let i = 0; i < scrollsNeeded; i++) {
-                await page.evaluate(() => window.scrollBy(0, window.innerHeight));
-                await this.randomDelay(400, 600);
-            }
-
-            // Volta ao topo (delay REDUZIDO)
-            await page.evaluate(() => window.scrollTo(0, 0));
-            await this.randomDelay(200, 400);
-
-            // Extrai produtos
-            console.log('[Scraper] Extraindo produtos...');
-            const products = await page.evaluate((maxProducts) => {
-                const items = [];
-                const seenIds = new Set();
-
-                // Seletores baseados na análise real do DOM Goofish
-                // O card do produto é um elemento <a> com classe começando com "feeds-item-wrap"
-                // ou contendo "cardWarp"
-                const cards = document.querySelectorAll('a[class*="feeds-item-wrap"], a[class*="cardWarp"], div[class*="feeds-item-wrap"], div[class*="cardWarp"]');
-
-                console.log(`[Browser] Encontrados ${cards.length} cards de produto`);
-
-                cards.forEach((card, index) => {
-                    if (maxProducts > 0 && items.length >= maxProducts) return;
-
-                    try {
-                        // O card de produto já é um link <a>, então pega o href dele
-                        const productUrl = card.tagName === 'A' ? card.href : (card.querySelector('a')?.href || '');
-
-                        // Verifica se é um link de item
-                        if (!productUrl.includes('/item')) return;
-
-                        // Extrai ID do produto
-                        let productId = null;
-                        const idMatch = productUrl.match(/id=(\d+)/);
-                        if (idMatch) {
-                            productId = idMatch[1];
-                        } else {
-                            const itemIdMatch = productUrl.match(/item\/(\d+)/);
-                            if (itemIdMatch) {
-                                productId = itemIdMatch[1];
-                            }
-                        }
-
-                        if (!productId || seenIds.has(productId)) return;
-                        seenIds.add(productId);
-
-                        // Extrai título - está no primeiro bloco de texto do conteúdo
-                        // O card tem geralmente: [div imagem] [div conteúdo]
-                        // O conteúdo tem: [span título] ... [span preço]
-                        let title = '';
-
-                        // Procura spans dentro do card que possam ser títulos
-                        const allSpans = card.querySelectorAll('span');
-                        for (const span of allSpans) {
-                            const text = span.textContent?.trim();
-                            // O título geralmente é o texto mais longo que não é preço
-                            if (text &&
-                                text.length > 10 &&
-                                text.length < 300 &&
-                                !text.includes('¥') &&
-                                !text.match(/^\d+$/) &&
-                                !text.includes('人想要') &&
-                                !text.includes('人付款')) {
-                                title = text;
-                                break;
-                            }
-                        }
-
-                        // Fallback: pega todo o texto do card e filtra
-                        if (!title) {
-                            const cardText = card.textContent?.trim();
-                            // Remove preços e contadores
-                            const cleanText = cardText?.replace(/¥[\d,.]+/g, '').replace(/\d+人(想要|付款)/g, '').trim();
-                            if (cleanText && cleanText.length > 5) {
-                                title = cleanText.slice(0, 100);
-                            }
-                        }
-
-                        // Extrai preço
-                        // Estrutura real do DOM Goofish:
-                        // <div class="price-wrap--XXX">
-                        //   <span class="sign--XXX">¥</span>
-                        //   <span class="number--XXX">2840</span>  <-- ESTE é o preço
-                        // </div>
-                        // <div class="price-desc--XXX">
-                        //   <div class="text--XXX">1084人想要</div>  <-- Este é o contador (NÃO É PREÇO)
-                        // </div>
-                        let price = 0;
-
-                        // SOLUÇÃO: Buscar especificamente o span com classe "number" que contém APENAS o preço
-                        // Tenta encontrar o span numérico mais provável (geralmente class="number--XXX")
-                        const priceNumberSpan = card.querySelector('span[class*="number"], [class*="priceText"]');
-                        if (priceNumberSpan) {
-                            const priceText = priceNumberSpan.textContent?.replace(/[^\d.]/g, '').trim();
-                            if (priceText) {
-                                price = parseFloat(priceText);
-                            }
-                        }
-
-                        // Fallback 1: buscar dentro do container price-wrap
-                        if (!price || price === 0) {
-                            const priceWrap = card.querySelector('div[class*="price-wrap"], [class*="priceWrap"], [class*="price-box"]');
-                            if (priceWrap) {
-                                // Pega o texto completo e tenta extrair o número após o ¥
-                                const wrapText = priceWrap.textContent?.replace(/[^\d.]/g, '').trim();
-                                if (wrapText) {
-                                    price = parseFloat(wrapText);
-                                }
-                            }
-                        }
-
-                        // Fallback 2: regex no conteúdo total do card como última alternativa
-                        if (!price || price === 0) {
-                            const cardText = card.textContent || '';
-                            const priceMatch = cardText.match(/¥\s*([\d,.]+)/);
-                            if (priceMatch) {
-                                price = parseFloat(priceMatch[1].replace(',', '.'));
-                            }
-                        }
-
-                        // Extrai imagem
-                        let imageUrl = '';
-                        const imgs = card.querySelectorAll('img');
-                        for (const img of imgs) {
-                            const src = img.src || img.dataset?.src || img.getAttribute('data-src');
-                            if (src && src.startsWith('http')) {
-                                imageUrl = src;
-                                break;
-                            }
-                        }
-
-                        if (title || price > 0) {
-                            items.push({
-                                id: productId,
-                                name: title || `Produto #${productId}`,
-                                price,
-                                priceFormatted: price > 0 ? `¥ ${price}` : '¥ --',
-                                url: productUrl,
-                                images: imageUrl ? [imageUrl] : []
-                            });
-                        }
-                    } catch (err) {
-                        // Ignora erros individuais
-                    }
+            for (let scrollAttempt = 0; scrollAttempt < MAX_SCROLLS; scrollAttempt++) {
+                // Check how many cards are currently loaded
+                const currentCardCount = await page.evaluate(() => {
+                    return document.querySelectorAll('a[class*="feeds-item-wrap"], a[class*="cardWarp"], div[class*="feeds-item-wrap"], div[class*="cardWarp"]').length;
                 });
 
-                return items;
-            }, limit);
+                // If we have enough products, stop scrolling
+                if (currentCardCount >= limit) {
+                    emit('scrolling', `Produtos suficientes carregados: ${currentCardCount}/${limit}`);
+                    break;
+                }
+
+                // Check if new products were loaded
+                if (currentCardCount === lastCardCount) {
+                    noNewCardsCount++;
+                    // If 3 consecutive scrolls yield no new products, seller has no more
+                    if (noNewCardsCount >= 3) {
+                        emit('scrolling', `Vendedor tem apenas ${currentCardCount} produtos disponíveis`);
+                        break;
+                    }
+                } else {
+                    noNewCardsCount = 0;
+                    lastCardCount = currentCardCount;
+                }
+
+                // Scroll down
+                await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+                await this.randomDelay(400, 700);
+
+                // Progress update every 10 scrolls
+                if ((scrollAttempt + 1) % 10 === 0) {
+                    emit('scrolling', `Carregando... ${currentCardCount} produtos encontrados`);
+                }
+            }
+
+            // Extraction Phase: Scroll through page again, collecting products incrementally
+            // This is necessary because Goofish uses virtualization (only visible items are in DOM)
+            emit('extracting', 'Extraindo produtos...');
+            console.log('[Scraper] Extraindo produtos...');
+
+            // Scroll back to top
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await this.randomDelay(500, 800);
+
+            // Collect products incrementally during scroll
+            const allProducts = new Map(); // Use Map to deduplicate by ID
+            const MAX_EXTRACTION_SCROLLS = 150; // Increased for larger limits with virtualization
+            let extractionScrolls = 0;
+            let lastProductCount = 0;
+            let stagnantScrolls = 0;
+            let lastScrollPosition = 0;
+
+            while (allProducts.size < limit && extractionScrolls < MAX_EXTRACTION_SCROLLS) {
+                // Extract products currently visible in the viewport
+                const visibleProducts = await page.evaluate(() => {
+                    const items = [];
+                    const cards = document.querySelectorAll('a[class*="feeds-item-wrap"], a[class*="cardWarp"], div[class*="feeds-item-wrap"], div[class*="cardWarp"]');
+
+                    cards.forEach((card) => {
+                        try {
+                            const productUrl = card.tagName === 'A' ? card.href : (card.querySelector('a')?.href || '');
+                            if (!productUrl.includes('/item')) return;
+
+                            // Extract product ID
+                            let productId = null;
+                            const idMatch = productUrl.match(/id=(\d+)/);
+                            if (idMatch) {
+                                productId = idMatch[1];
+                            } else {
+                                const itemIdMatch = productUrl.match(/item\/(\d+)/);
+                                if (itemIdMatch) productId = itemIdMatch[1];
+                            }
+                            if (!productId) return;
+
+                            // Extract title
+                            let title = '';
+                            const allSpans = card.querySelectorAll('span');
+                            for (const span of allSpans) {
+                                const text = span.textContent?.trim();
+                                if (text && text.length > 10 && text.length < 300 &&
+                                    !text.includes('¥') && !text.match(/^\d+$/) &&
+                                    !text.includes('人想要') && !text.includes('人付款')) {
+                                    title = text;
+                                    break;
+                                }
+                            }
+                            if (!title) {
+                                const cardText = card.textContent?.trim();
+                                const cleanText = cardText?.replace(/¥[\d,.]+/g, '').replace(/\d+人(想要|付款)/g, '').trim();
+                                if (cleanText && cleanText.length > 5) title = cleanText.slice(0, 100);
+                            }
+
+                            // Extract price
+                            let price = 0;
+                            const priceNumberSpan = card.querySelector('span[class*="number"], [class*="priceText"]');
+                            if (priceNumberSpan) {
+                                const priceText = priceNumberSpan.textContent?.replace(/[^\d.]/g, '').trim();
+                                if (priceText) price = parseFloat(priceText);
+                            }
+                            if (!price) {
+                                const priceWrap = card.querySelector('div[class*="price-wrap"], [class*="priceWrap"]');
+                                if (priceWrap) {
+                                    const wrapText = priceWrap.textContent?.replace(/[^\d.]/g, '').trim();
+                                    if (wrapText) price = parseFloat(wrapText);
+                                }
+                            }
+                            if (!price) {
+                                const priceMatch = (card.textContent || '').match(/¥\s*([\d,.]+)/);
+                                if (priceMatch) price = parseFloat(priceMatch[1].replace(',', '.'));
+                            }
+
+                            // Extract image - check multiple lazy-loading attributes
+                            let imageUrl = '';
+                            const imgs = card.querySelectorAll('img');
+                            for (const img of imgs) {
+                                // Check common lazy-loading attribute patterns
+                                const src = img.src ||
+                                    img.dataset?.src ||
+                                    img.dataset?.original ||
+                                    img.dataset?.lazyload ||
+                                    img.getAttribute('data-src') ||
+                                    img.getAttribute('data-original') ||
+                                    img.getAttribute('data-lazyload') ||
+                                    img.getAttribute('data-lazy-src');
+
+                                // Also check srcset for responsive images
+                                if (!src && img.srcset) {
+                                    const srcsetParts = img.srcset.split(',')[0];
+                                    const srcsetUrl = srcsetParts?.split(' ')[0]?.trim();
+                                    if (srcsetUrl && srcsetUrl.startsWith('http')) {
+                                        imageUrl = srcsetUrl;
+                                        break;
+                                    }
+                                }
+
+                                if (src && src.startsWith('http')) {
+                                    imageUrl = src;
+                                    break;
+                                }
+                            }
+
+                            // Fallback: check for background-image in card's image container
+                            if (!imageUrl) {
+                                const imgContainer = card.querySelector('[class*="img"], [class*="cover"], [class*="photo"], [class*="pic"]');
+                                if (imgContainer) {
+                                    const bgImage = window.getComputedStyle(imgContainer).backgroundImage;
+                                    const bgMatch = bgImage?.match(/url\(["']?(https?:\/\/[^"']+)["']?\)/);
+                                    if (bgMatch) {
+                                        imageUrl = bgMatch[1];
+                                    }
+                                }
+                            }
+
+                            if (title || price > 0) {
+                                items.push({
+                                    id: productId,
+                                    name: title || `Produto #${productId}`,
+                                    price,
+                                    priceFormatted: price > 0 ? `¥ ${price}` : '¥ --',
+                                    url: productUrl,
+                                    images: imageUrl ? [imageUrl] : []
+                                });
+                            }
+                        } catch (err) {
+                            // Ignore individual errors
+                        }
+                    });
+                    return items;
+                });
+
+                // Add newly found products to the collection
+                for (const product of visibleProducts) {
+                    if (!allProducts.has(product.id) && allProducts.size < limit) {
+                        allProducts.set(product.id, product);
+                    }
+                }
+
+                // Get current scroll position to detect if we're at the end
+                const scrollInfo = await page.evaluate(() => ({
+                    scrollY: window.scrollY,
+                    scrollHeight: document.documentElement.scrollHeight,
+                    clientHeight: window.innerHeight
+                }));
+
+                const atPageEnd = scrollInfo.scrollY + scrollInfo.clientHeight >= scrollInfo.scrollHeight - 100;
+
+                // Check for stagnation (no new products found)
+                if (allProducts.size === lastProductCount) {
+                    stagnantScrolls++;
+
+                    // If we're at page end AND no new products, we've truly exhausted the list
+                    if (atPageEnd && stagnantScrolls >= 5) {
+                        console.log(`[Scraper] Reached end of page with ${allProducts.size} products.`);
+                        break;
+                    }
+
+                    // Increased threshold to 15 AND require scroll position to not advance
+                    if (stagnantScrolls >= 15 && scrollInfo.scrollY === lastScrollPosition) {
+                        console.log(`[Scraper] No new products after ${stagnantScrolls} scrolls at same position, stopping.`);
+                        break;
+                    }
+
+                    // If stuck, try a larger scroll jump to skip virtualized recycled elements
+                    if (stagnantScrolls >= 5 && stagnantScrolls % 5 === 0) {
+                        await page.evaluate(() => window.scrollBy(0, window.innerHeight * 3));
+                        await this.randomDelay(800, 1200);
+                    }
+                } else {
+                    stagnantScrolls = 0;
+                    lastProductCount = allProducts.size;
+                }
+
+                lastScrollPosition = scrollInfo.scrollY;
+
+                // Scroll down for next batch (larger scroll to avoid revisiting same products)
+                await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
+                await this.randomDelay(500, 800);
+                extractionScrolls++;
+
+                // Progress update
+                if (extractionScrolls % 10 === 0) {
+                    emit('extracting', `Extraindo... ${allProducts.size}/${limit} produtos`);
+                }
+            }
+
+            const products = Array.from(allProducts.values());
 
             emit('products_found', `${products.length} produtos encontrados!`, { count: products.length });
 
@@ -317,6 +403,238 @@ class GoofishScraper {
                 this.browser = null;
             }
 
+            throw error;
+        }
+    }
+
+    /**
+     * Scrape products using the browser pool
+     * Recommended for queue workers - more memory efficient
+     * @param {string} url - Seller profile URL
+     * @param {number} limit - Max products to extract
+     * @param {Function} onProgress - Optional callback(stage, message, data)
+     * @param {Object} existingSellerInfo - Cached seller info to skip re-extraction
+     */
+    async scrapeWithPool(url, limit = 50, onProgress = null, existingSellerInfo = null) {
+        const emit = (stage, message, data = {}) => {
+            console.log(`[Scraper] ${message}`);
+            if (onProgress) onProgress(stage, message, data);
+        };
+
+        const userId = this.extractUserId(url);
+        if (!userId) {
+            throw new Error('URL inválida: userId não encontrado');
+        }
+
+        emit('connecting', 'Conectando ao vendedor...', { userId });
+
+        // Acquire browser from pool
+        const { page, release } = await browserPool.acquire();
+
+        try {
+            emit('navigating', 'Navegando para página do vendedor...');
+            await page.goto(url, {
+                waitUntil: 'domcontentloaded',
+                timeout: 30000
+            });
+
+            await this.randomDelay(1000, 1500);
+
+            // Extract seller info if not cached
+            let sellerInfo = null;
+            let trustResult = null;
+
+            if (existingSellerInfo) {
+                emit('verifying', 'Verificando vendedor (dados em cache)...');
+                sellerInfo = existingSellerInfo;
+                emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: sellerInfo.trustScore });
+            } else {
+                emit('verifying', 'Verificando vendedor...');
+                try {
+                    const { extractSellerInfo, calculateTrustScore, formatSellerData } = await import('./sellerAnalyzer.js');
+                    const rawInfo = await extractSellerInfo(page);
+                    trustResult = calculateTrustScore(rawInfo);
+                    sellerInfo = formatSellerData(rawInfo, trustResult);
+                    emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: trustResult.score });
+                } catch (sellerError) {
+                    console.error('[Scraper] Erro ao extrair info do vendedor:', sellerError.message);
+                }
+            }
+
+            // Wait for cards
+            try {
+                await page.waitForSelector('a[class*="feeds-item-wrap"], [class*="cardWarp"], [class*="ItemCard"]', {
+                    timeout: 8000
+                });
+                emit('cards_found', 'Produtos detectados na página!');
+            } catch (e) {
+                emit('scrolling', 'Carregando mais produtos...');
+            }
+
+            // Smart scrolling - same logic as scrapeSellerProducts
+            emit('scrolling', 'Carregando produtos...');
+            const MAX_SCROLLS = 50;
+            let lastCardCount = 0;
+            let noNewCardsCount = 0;
+
+            for (let scrollAttempt = 0; scrollAttempt < MAX_SCROLLS; scrollAttempt++) {
+                const currentCardCount = await page.evaluate(() => {
+                    return document.querySelectorAll('a[class*="feeds-item-wrap"], a[class*="cardWarp"], div[class*="feeds-item-wrap"], div[class*="cardWarp"]').length;
+                });
+
+                if (currentCardCount >= limit) {
+                    emit('scrolling', `Produtos suficientes carregados: ${currentCardCount}/${limit}`);
+                    break;
+                }
+
+                if (currentCardCount === lastCardCount) {
+                    noNewCardsCount++;
+                    if (noNewCardsCount >= 3) {
+                        emit('scrolling', `Vendedor tem apenas ${currentCardCount} produtos disponíveis`);
+                        break;
+                    }
+                } else {
+                    noNewCardsCount = 0;
+                    lastCardCount = currentCardCount;
+                }
+
+                await page.evaluate(() => window.scrollBy(0, window.innerHeight));
+                await this.randomDelay(400, 700);
+
+                if ((scrollAttempt + 1) % 10 === 0) {
+                    emit('scrolling', `Carregando... ${currentCardCount} produtos encontrados`);
+                }
+            }
+
+            // Extraction phase - simplified version using same extraction logic
+            emit('extracting', 'Extraindo produtos...');
+            await page.evaluate(() => window.scrollTo(0, 0));
+            await this.randomDelay(500, 800);
+
+            const allProducts = new Map();
+            const MAX_EXTRACTION_SCROLLS = 150;
+            let extractionScrolls = 0;
+            let lastProductCount = 0;
+            let stagnantScrolls = 0;
+            let lastScrollPosition = 0;
+
+            while (allProducts.size < limit && extractionScrolls < MAX_EXTRACTION_SCROLLS) {
+                const visibleProducts = await page.evaluate(() => {
+                    const items = [];
+                    const cards = document.querySelectorAll('a[class*="feeds-item-wrap"], a[class*="cardWarp"], div[class*="feeds-item-wrap"], div[class*="cardWarp"]');
+
+                    cards.forEach((card) => {
+                        try {
+                            const productUrl = card.tagName === 'A' ? card.href : (card.querySelector('a')?.href || '');
+                            if (!productUrl.includes('/item')) return;
+
+                            let productId = null;
+                            const idMatch = productUrl.match(/id=(\d+)/);
+                            if (idMatch) productId = idMatch[1];
+                            else {
+                                const itemIdMatch = productUrl.match(/item\/(\d+)/);
+                                if (itemIdMatch) productId = itemIdMatch[1];
+                            }
+                            if (!productId) return;
+
+                            let title = '';
+                            const allSpans = card.querySelectorAll('span');
+                            for (const span of allSpans) {
+                                const text = span.textContent?.trim();
+                                if (text && text.length > 10 && text.length < 300 &&
+                                    !text.includes('¥') && !text.match(/^\d+$/) &&
+                                    !text.includes('人想要') && !text.includes('人付款')) {
+                                    title = text;
+                                    break;
+                                }
+                            }
+
+                            let price = 0;
+                            const priceMatch = (card.textContent || '').match(/¥\s*([\d,.]+)/);
+                            if (priceMatch) price = parseFloat(priceMatch[1].replace(',', '.'));
+
+                            let imageUrl = '';
+                            const imgs = card.querySelectorAll('img');
+                            for (const img of imgs) {
+                                const src = img.src || img.dataset?.src || img.getAttribute('data-src');
+                                if (src && src.startsWith('http')) {
+                                    imageUrl = src;
+                                    break;
+                                }
+                            }
+
+                            if (title || price > 0) {
+                                items.push({
+                                    id: productId,
+                                    name: title || `Produto #${productId}`,
+                                    price,
+                                    priceFormatted: price > 0 ? `¥ ${price}` : '¥ --',
+                                    url: productUrl,
+                                    images: imageUrl ? [imageUrl] : []
+                                });
+                            }
+                        } catch (err) { }
+                    });
+                    return items;
+                });
+
+                for (const product of visibleProducts) {
+                    if (!allProducts.has(product.id) && allProducts.size < limit) {
+                        allProducts.set(product.id, product);
+                    }
+                }
+
+                const scrollInfo = await page.evaluate(() => ({
+                    scrollY: window.scrollY,
+                    scrollHeight: document.documentElement.scrollHeight,
+                    clientHeight: window.innerHeight
+                }));
+
+                const atPageEnd = scrollInfo.scrollY + scrollInfo.clientHeight >= scrollInfo.scrollHeight - 100;
+
+                if (allProducts.size === lastProductCount) {
+                    stagnantScrolls++;
+                    if (atPageEnd && stagnantScrolls >= 5) break;
+                    if (stagnantScrolls >= 15 && scrollInfo.scrollY === lastScrollPosition) break;
+                    if (stagnantScrolls >= 5 && stagnantScrolls % 5 === 0) {
+                        await page.evaluate(() => window.scrollBy(0, window.innerHeight * 3));
+                        await this.randomDelay(800, 1200);
+                    }
+                } else {
+                    stagnantScrolls = 0;
+                    lastProductCount = allProducts.size;
+                }
+
+                lastScrollPosition = scrollInfo.scrollY;
+                await page.evaluate(() => window.scrollBy(0, window.innerHeight * 2));
+                await this.randomDelay(500, 800);
+                extractionScrolls++;
+
+                if (extractionScrolls % 10 === 0) {
+                    emit('extracting', `Extraindo... ${allProducts.size}/${limit} produtos`);
+                }
+            }
+
+            const products = Array.from(allProducts.values());
+            emit('products_found', `${products.length} produtos encontrados!`, { count: products.length });
+
+            // Release browser back to pool
+            await release();
+
+            const formattedSellerInfo = sellerInfo && trustResult
+                ? formatSellerData(sellerInfo, trustResult)
+                : sellerInfo;
+
+            return {
+                sellerId: userId,
+                sellerInfo: formattedSellerInfo,
+                productCount: products.length,
+                products: products.map(p => ({ ...p, sellerId: userId }))
+            };
+
+        } catch (error) {
+            console.error('[Scraper] Erro:', error.message);
+            await release();
             throw error;
         }
     }

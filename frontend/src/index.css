@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700;800&display=swap');
 
 @import "tailwindcss";
 
@@ -18,7 +18,7 @@
     --color-cream-200: #FFEEE0;
     --color-cream-300: #FFE4D1;
 
-    --font-family-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-family-sans: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif;
 
     --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.02);
     --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.06);
@@ -52,9 +52,105 @@
     }
 }
 
+/* Diagonal moving pattern for auth pages - GPU accelerated */
+@keyframes diagonalMove {
+    0% {
+        transform: translate3d(0, 0, 0);
+    }
+
+    100% {
+        transform: translate3d(100px, 199px, 0);
+    }
+}
+
+/* Floating bubbles - unified container animation for all bubbles together */
+@keyframes bubblesEnterExit {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    8% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    92% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* Subtle floating motion while visible - infinite loop */
+@keyframes gentleFloat1 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-4px);
+    }
+}
+
+@keyframes gentleFloat2 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+@keyframes gentleFloat3 {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes bubbleGlow {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.15);
+    }
+
+    50% {
+        box-shadow: 0 6px 25px rgba(255, 255, 255, 0.25);
+    }
+}
+
+/* Slide fade transition */
+@keyframes slideFadeIn {
+    0% {
+        opacity: 0;
+        transform: scale(1.02);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
 /* Base styles */
 html {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Lexend', -apple-system, BlinkMacSystemFont, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
 }
@@ -551,4 +647,74 @@ input[type="range"]::-moz-range-thumb {
 
 .cta-button:active {
     transform: scale(0.96);
+}
+
+/* ============================================
+   Mining Limit Card Animations
+   ============================================ */
+
+/* Shake animation for error state */
+@keyframes mining-limit-shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-4px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(4px);
+    }
+}
+
+.mining-limit-card-shake {
+    animation: mining-limit-shake 0.5s ease-in-out;
+}
+
+/* Icon spin animation */
+@keyframes mining-limit-spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+.mining-limit-icon-spin {
+    display: inline-block;
+    animation: mining-limit-spin 0.6s ease-out;
+}
+
+/* Error content fade in */
+.mining-limit-error-content {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* Card error state styling */
+.mining-limit-card-error {
+    animation: mining-limit-pulse 2s ease-in-out infinite;
+}
+
+@keyframes mining-limit-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 20px rgba(239, 68, 68, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 4px 30px rgba(239, 68, 68, 0.35);
+    }
 }

@@ -6,6 +6,8 @@ import ProductGrid from './components/ProductGrid';
 import CompareBar from './components/CompareBar';
 import ComparisonModal from './components/ComparisonModal';
 import WifiLoader from './components/WifiLoader';
+import AuthCard from './components/AuthCard';
+import { useAuth } from './contexts/AuthContext';
 import {
     extractUniqueModels,
     detectIPhoneModel,
@@ -13,8 +15,19 @@ import {
     extractUniqueStorages,
     detectUnlockStatus
 } from './utils/iphoneDetector';
+import {
+    detectAppleWatchModel,
+    detectWatchSize,
+    detectCondition,
+    extractUniqueWatchModels,
+    extractUniqueWatchSizes
+} from './utils/appleWatchDetector';
 
 function App() {
+    // Auth state
+    const { user, isAuthenticated, loading: authLoading, logout } = useAuth();
+    const [authMode, setAuthMode] = useState('login'); // 'login' | 'register'
+
     const [products, setProducts] = useState([]);
     const [loading, setLoading] = useState(false);
     const [evaluating, setEvaluating] = useState(false);
@@ -26,10 +39,18 @@ function App() {
         minPrice: '',
         maxPrice: '',
         sort: '',
+        // iPhone filters
         iphoneModel: '',
         storage: '',
-        unlockStatus: ''
+        unlockStatus: '',
+        // Apple Watch filters
+        watchModel: '',
+        watchSize: '',
+        watchCondition: ''
     });
+
+    // Category state for dynamic filters
+    const [selectedCategory, setSelectedCategory] = useState('iphone');
 
     // Estado para conversão de moeda
     const [showBRL, setShowBRL] = useState(false);
@@ -44,6 +65,116 @@ function App() {
     const [comparisonData, setComparisonData] = useState(null);
     const [isComparing, setIsComparing] = useState(false);
     const [showComparisonModal, setShowComparisonModal] = useState(false);
+
+    // Estado para limite de mineração
+    const [miningInfo, setMiningInfo] = useState(null);
+    const [showLimitError, setShowLimitError] = useState(false);
+
+    // ===== PERSISTÊNCIA DE SESSÃO DE MINERAÇÃO =====
+    // Restaura sessão salva ao carregar a página
+    useEffect(() => {
+        try {
+            const savedSession = localStorage.getItem('huofind_mining_session');
+            if (savedSession) {
+                const session = JSON.parse(savedSession);
+                const sessionAge = Date.now() - (session.timestamp || 0);
+                const MAX_SESSION_AGE = 24 * 60 * 60 * 1000; // 24 horas
+
+                if (sessionAge < MAX_SESSION_AGE) {
+                    console.log('[App] Restaurando sessão de mineração salva...');
+                    if (session.products?.length > 0) {
+                        setProducts(session.products);
+                    }
+                    if (session.sellerInfo) {
+                        setSellerInfo(session.sellerInfo);
+                    }
+                    if (session.selectedCategory) {
+                        setSelectedCategory(session.selectedCategory);
+                    }
+                    if (session.filters) {
+                        setFilters(prev => ({ ...prev, ...session.filters }));
+                    }
+                    console.log(`[App] Sessão restaurada: ${session.products?.length || 0} produtos`);
+                } else {
+                    // Sessão expirada, limpa
+                    localStorage.removeItem('huofind_mining_session');
+                    console.log('[App] Sessão expirada, removida do storage');
+                }
+            }
+        } catch (err) {
+            console.error('[App] Erro ao restaurar sessão:', err);
+        }
+    }, []);
+
+    // Salva sessão quando produtos ou vendedor mudam
+    useEffect(() => {
+        if (products.length > 0 || sellerInfo) {
+            const session = {
+                products,
+                sellerInfo,
+                selectedCategory,
+                filters: {
+                    iphoneModel: filters.iphoneModel,
+                    storage: filters.storage,
+                    watchModel: filters.watchModel,
+                    watchSize: filters.watchSize
+                },
+                timestamp: Date.now()
+            };
+            localStorage.setItem('huofind_mining_session', JSON.stringify(session));
+            console.log('[App] Sessão salva no localStorage');
+        }
+    }, [products, sellerInfo, selectedCategory, filters.iphoneModel, filters.storage, filters.watchModel, filters.watchSize]);
+
+    // Função para limpar sessão manualmente (pode ser usada em um botão "Nova Mineração")
+    const clearMiningSession = useCallback(() => {
+        localStorage.removeItem('huofind_mining_session');
+        setProducts([]);
+        setSellerInfo(null);
+        setFilters({
+            keyword: '',
+            minPrice: '',
+            maxPrice: '',
+            sort: '',
+            iphoneModel: '',
+            storage: '',
+            unlockStatus: '',
+            watchModel: '',
+            watchSize: '',
+            watchCondition: ''
+        });
+        console.log('[App] Sessão de mineração limpa');
+    }, []);
+
+    // Fetch mining status when user is authenticated
+    useEffect(() => {
+        const fetchMiningStatus = async () => {
+            if (!isAuthenticated) {
+                setMiningInfo(null);
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('accessToken');
+                const response = await fetch('/api/user/mining-status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setMiningInfo({
+                        tier: data.tier?.name || 'guest',
+                        used: data.used || 0,
+                        limit: data.limit === 'unlimited' ? Infinity : (data.limit || 10)
+                    });
+                }
+            } catch (err) {
+                console.error('[App] Error fetching mining status:', err);
+            }
+        };
+
+        fetchMiningStatus();
+    }, [isAuthenticated]);
 
     // Toggle do modo de comparação
     const toggleComparisonMode = () => {
@@ -163,8 +294,10 @@ function App() {
             let receivedAnyEvent = false;
 
             // Use SSE for real-time progress
+            // Include token as query param since EventSource can't send headers
+            const token = localStorage.getItem('accessToken');
             const eventSource = new EventSource(
-                `/api/mine-stream?url=${encodeURIComponent(url)}&limit=${limit}`
+                `/api/mine-stream?url=${encodeURIComponent(url)}&limit=${limit}&token=${token}`
             );
 
             eventSource.onopen = () => {
@@ -193,6 +326,10 @@ function App() {
                 setFilters(prev => ({ ...prev, iphoneModel: '', storage: '' }));
                 setMiningStage({ stage: 'done', message: 'Concluído!', count: data.products?.length || 0 });
                 setLoading(false);
+
+                // Update mining count
+                setMiningInfo(prev => prev ? { ...prev, used: prev.used + 1 } : null);
+
                 eventSource.close();
             });
 
@@ -200,7 +337,20 @@ function App() {
                 receivedAnyEvent = true;
                 try {
                     const data = JSON.parse(event.data);
-                    setError(data.message || 'Erro na mineração');
+                    // Check if it's a specific limit error
+                    if (data.code === 'TIER_LIMIT_EXCEEDED') {
+                        setShowLimitError(true);
+                        // Also update current limit info if available
+                        if (data.used !== undefined) {
+                            setMiningInfo({
+                                tier: data.tier || 'guest',
+                                used: data.used,
+                                limit: data.limit
+                            });
+                        }
+                    } else {
+                        setError(data.message || 'Erro na mineração');
+                    }
                 } catch {
                     setError('Erro de conexão com o servidor');
                 }
@@ -226,14 +376,19 @@ function App() {
         }
     };
 
-    // Extrai modelos e armazenamentos disponíveis
+    // Extrai modelos e armazenamentos disponíveis (iPhone)
     const availableModels = useMemo(() => extractUniqueModels(products), [products]);
     const availableStorages = useMemo(() => extractUniqueStorages(products), [products]);
+
+    // Extrai modelos e tamanhos disponíveis (Apple Watch)
+    const availableWatchModels = useMemo(() => extractUniqueWatchModels(products), [products]);
+    const availableWatchSizes = useMemo(() => extractUniqueWatchSizes(products), [products]);
 
     // Filtra e ordena produtos localmente
     const filteredProducts = useMemo(() => {
         let result = [...products];
 
+        // iPhone filters
         if (filters.iphoneModel) {
             result = result.filter(p => detectIPhoneModel(p) === filters.iphoneModel);
         }
@@ -244,6 +399,26 @@ function App() {
 
         if (filters.unlockStatus) {
             result = result.filter(p => detectUnlockStatus(p) === filters.unlockStatus);
+        }
+
+        // Apple Watch filters
+        if (filters.watchModel) {
+            result = result.filter(p => detectAppleWatchModel(p) === filters.watchModel);
+        }
+
+        if (filters.watchSize) {
+            result = result.filter(p => detectWatchSize(p) === filters.watchSize);
+        }
+
+        if (filters.watchCondition) {
+            result = result.filter(p => {
+                const condition = detectCondition(p);
+                if (!condition) return false;
+                const score = condition.score;
+                if (filters.watchCondition === '99+') return score >= 99;
+                if (filters.watchCondition === '95+') return score >= 95;
+                return true;
+            });
         }
 
         if (filters.keyword) {
@@ -290,6 +465,23 @@ function App() {
     // Se já tem produtos, mostra a view de resultados
     const hasResults = products.length > 0;
 
+    // Auth loading state
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-cream-50)' }}>
+                <div className="grid-pattern-container">
+                    <div className="grid-pattern" />
+                </div>
+                <WifiLoader message="Carregando..." />
+            </div>
+        );
+    }
+
+    // Not authenticated - show auth card
+    if (!isAuthenticated) {
+        return <AuthCard />;
+    }
+
     return (
         <div className="min-h-screen relative">
             <div className="grid-pattern-container">
@@ -331,6 +523,20 @@ function App() {
                             </svg>
                             <span>Nova busca</span>
                         </button>
+
+                        {/* User Menu */}
+                        <div className="flex items-center gap-3 ml-4">
+                            <span className="text-sm font-medium" style={{ color: '#6B7280' }}>
+                                {user?.name || user?.email?.split('@')[0]}
+                            </span>
+                            <button
+                                onClick={logout}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-red-50"
+                                style={{ color: '#DC2626' }}
+                            >
+                                Sair
+                            </button>
+                        </div>
                     </div>
                 </header>
             )}
@@ -345,6 +551,11 @@ function App() {
                             isEvaluating={evaluating}
                             isLoading={loading}
                             isSellerVerified={sellerInfo !== null && !evaluating}
+                            selectedCategory={selectedCategory}
+                            onCategoryChange={setSelectedCategory}
+                            miningInfo={miningInfo}
+                            showLimitError={showLimitError}
+                            onDismissLimitError={() => setShowLimitError(false)}
                         />
 
                         {/* Seller Card preview (aparece após avaliar) */}
@@ -412,11 +623,14 @@ function App() {
                             onFilterChange={setFilters}
                             availableModels={availableModels}
                             availableStorages={availableStorages}
+                            availableWatchModels={availableWatchModels}
+                            availableWatchSizes={availableWatchSizes}
                             showBRL={showBRL}
                             onToggleCurrency={toggleCurrency}
                             comparisonMode={comparisonMode}
                             onToggleComparisonMode={toggleComparisonMode}
                             selectedCount={selectedForCompare.length}
+                            category={selectedCategory}
                         />
 
                         {/* Stats Bar */}
