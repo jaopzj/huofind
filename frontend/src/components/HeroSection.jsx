@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import SparkleButton from './SparkleButton';
 import MiningLimitCard from './MiningLimitCard';
+import SavedSellersPanel from './SavedSellersPanel';
 
 // Available categories with their display info
 const CATEGORIES = [
@@ -303,6 +304,12 @@ function HeroSection({
                     {isEvaluating ? 'Aguardando verificação...' : 'Iniciar Mineração'}
                 </SparkleButton>
             </form >
+
+            {/* Saved Sellers - Quick Access */}
+            <SavedSellersPanel onSelectSeller={(sellerUrl) => {
+                setUrl(sellerUrl);
+                lastEvaluatedUrl.current = ''; // Reset to trigger evaluation
+            }} />
 
             {/* Feature Cards */}
             < div className="flex flex-wrap justify-center gap-4 mt-12 max-w-2xl" >

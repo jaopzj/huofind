@@ -25,6 +25,13 @@ import {
 } from './miningLimits.js';
 import { TIERS, getTierInfo } from './tiers.js';
 import browserPool from './browserPool.js';
+import {
+    getSavedSellers,
+    saveSeller,
+    updateSeller,
+    deleteSeller,
+    SELLER_ICONS
+} from './savedSellers.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -633,6 +640,81 @@ app.get('/api/user/mining-status', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('[Server] Error in mining-status:', error);
         res.status(500).json({ error: 'Erro ao buscar status de mineração' });
+    }
+});
+
+// ============================================
+// SAVED SELLERS ENDPOINTS
+// ============================================
+
+/**
+ * GET /api/saved-sellers
+ * List user's saved sellers
+ */
+app.get('/api/saved-sellers', authMiddleware, async (req, res) => {
+    try {
+        const sellers = await getSavedSellers(req.user.id);
+        res.json({ sellers, icons: SELLER_ICONS });
+    } catch (error) {
+        console.error('[Server] Error getting saved sellers:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/saved-sellers
+ * Save a new seller
+ */
+app.post('/api/saved-sellers', authMiddleware, async (req, res) => {
+    try {
+        const { nickname, sellerUrl, sellerId, sellerName, sellerAvatar, iconType, iconValue } = req.body;
+
+        if (!nickname || !sellerUrl) {
+            return res.status(400).json({ error: 'Apelido e URL são obrigatórios' });
+        }
+
+        const seller = await saveSeller(req.user.id, {
+            nickname,
+            sellerUrl,
+            sellerId,
+            sellerName,
+            sellerAvatar,
+            iconType,
+            iconValue
+        });
+
+        res.status(201).json({ seller });
+    } catch (error) {
+        console.error('[Server] Error saving seller:', error);
+        res.status(error.message.includes('apelido') ? 400 : 500).json({ error: error.message });
+    }
+});
+
+/**
+ * PUT /api/saved-sellers/:id
+ * Update a saved seller
+ */
+app.put('/api/saved-sellers/:id', authMiddleware, async (req, res) => {
+    try {
+        const seller = await updateSeller(req.user.id, req.params.id, req.body);
+        res.json({ seller });
+    } catch (error) {
+        console.error('[Server] Error updating seller:', error);
+        res.status(error.message.includes('apelido') ? 400 : 500).json({ error: error.message });
+    }
+});
+
+/**
+ * DELETE /api/saved-sellers/:id
+ * Delete a saved seller
+ */
+app.delete('/api/saved-sellers/:id', authMiddleware, async (req, res) => {
+    try {
+        await deleteSeller(req.user.id, req.params.id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Server] Error deleting seller:', error);
+        res.status(500).json({ error: error.message });
     }
 });
 

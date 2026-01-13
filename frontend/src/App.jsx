@@ -70,6 +70,9 @@ function App() {
     const [miningInfo, setMiningInfo] = useState(null);
     const [showLimitError, setShowLimitError] = useState(false);
 
+    // Estado para URL atual (para salvar vendedor)
+    const [currentMiningUrl, setCurrentMiningUrl] = useState('');
+
     // ===== PERSISTÊNCIA DE SESSÃO DE MINERAÇÃO =====
     // Restaura sessão salva ao carregar a página
     useEffect(() => {
@@ -258,6 +261,7 @@ function App() {
         setEvaluating(true);
         setSellerInfo(null);
         setError(null);
+        setCurrentMiningUrl(url);
 
         try {
             const response = await fetch('/api/evaluate-seller', {
@@ -282,7 +286,30 @@ function App() {
         }
     }, []);
 
+    // Salvar vendedor
+    const handleSaveSeller = async (sellerData) => {
+        const token = localStorage.getItem('accessToken');
+        if (!token) throw new Error('Você precisa estar logado para salvar vendedores');
+
+        const response = await fetch('/api/saved-sellers', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(sellerData)
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Erro ao salvar vendedor');
+
+        return data.seller;
+    };
+
     const handleMine = async (url, limit) => {
+        // Guardar URL para uso no salvamento de vendedor
+        setCurrentMiningUrl(url);
+
         setLoading(true);
         setError(null);
         setProducts([]);
@@ -561,7 +588,12 @@ function App() {
                         {/* Seller Card preview (aparece após avaliar) */}
                         {sellerInfo && !loading && (
                             <div className="max-w-2xl mx-auto px-6 animate-fade-in-up">
-                                <SellerCard sellerInfo={sellerInfo} variant="compact" />
+                                <SellerCard
+                                    sellerInfo={sellerInfo}
+                                    variant="compact"
+                                    sellerUrl={currentMiningUrl}
+                                    onSaveSeller={handleSaveSeller}
+                                />
                             </div>
                         )}
                     </>
@@ -615,7 +647,13 @@ function App() {
                 {hasResults && !loading && (
                     <>
                         {/* Seller Card */}
-                        {sellerInfo && <SellerCard sellerInfo={sellerInfo} />}
+                        {sellerInfo && (
+                            <SellerCard
+                                sellerInfo={sellerInfo}
+                                sellerUrl={currentMiningUrl}
+                                onSaveSeller={handleSaveSeller}
+                            />
+                        )}
 
                         {/* Filters */}
                         <SearchFilters
