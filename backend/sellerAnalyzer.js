@@ -55,14 +55,27 @@ export async function extractSellerInfo(page) {
 
         // ========================================
         // LEVEL - img com levelIcon no class
-        // Exemplo: img.levelIcon--x9YcHlL5
+        // Mapeamento direto de URLs para níveis
         // ========================================
+        const LEVEL_IMAGES = {
+            'https://gw.alicdn.com/imgextra/i2/O1CN01Udtw241IH8Oxl4Nb3_!!6000000000867-2-tps-264-60.png': 7, // L7
+            'https://gw.alicdn.com/imgextra/i1/O1CN01YFiTRl1UXPs4fba4R_!!6000000002527-2-tps-204-60.png': 3, // L3
+            'https://gw.alicdn.com/imgextra/i3/O1CN01aFW69W24xos3kmpTd_!!6000000007458-2-tps-264-60.png': 5, // L5
+            'https://gw.alicdn.com/imgextra/i1/O1CN01uclCPK1gQnXDBTZBl_!!6000000004137-2-tps-204-60.png': 4, // L4
+            'https://gw.alicdn.com/imgextra/i3/O1CN01Ud13t923m56Q1T9Th_!!6000000007297-2-tps-264-60.png': 6, // L6
+        };
+
         const levelImg = document.querySelector('img[class*="levelIcon"]');
         if (levelImg && levelImg.src) {
-            // Extrai L7 do src ou do caminho
-            const srcMatch = levelImg.src.match(/L(\d)/i);
-            if (srcMatch) {
-                info.level = parseInt(srcMatch[1], 10);
+            // Primeiro tenta mapear diretamente pela URL
+            if (LEVEL_IMAGES[levelImg.src]) {
+                info.level = LEVEL_IMAGES[levelImg.src];
+            } else {
+                // Fallback: tenta extrair do padrão L{número} no src
+                const srcMatch = levelImg.src.match(/L(\d)/i);
+                if (srcMatch) {
+                    info.level = parseInt(srcMatch[1], 10);
+                }
             }
             info.rawData.levelSrc = levelImg.src;
         }

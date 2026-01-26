@@ -1,5 +1,5 @@
 /**
- * SearchFilters - Dropdown style filters with status filter buttons, currency toggle, and comparison mode
+ * SearchFilters - Dropdown style filters with status filter buttons and currency toggle
  * Supports category-based filter rendering (iPhone, Apple Watch, Generic)
  */
 function SearchFilters({
@@ -11,9 +11,6 @@ function SearchFilters({
     availableWatchSizes = [],
     showBRL = false,
     onToggleCurrency,
-    comparisonMode = false,
-    onToggleComparisonMode,
-    selectedCount = 0,
     category = 'iphone' // 'iphone' | 'applewatch' | 'generic'
 }) {
     // Determine which category-specific filters to show
@@ -92,32 +89,8 @@ function SearchFilters({
                     </div>
                 )}
 
-                {/* Right Side: Comparison Mode + Currency Toggle */}
+                {/* Right Side: Currency Toggle */}
                 <div className="flex items-center gap-4">
-                    {/* Comparison Mode Toggle - ORANGE when active */}
-                    <button
-                        onClick={onToggleComparisonMode}
-                        className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all duration-200 hover:scale-105 hover:shadow-md active:scale-95"
-                        style={{
-                            background: comparisonMode ? 'var(--color-orange-500)' : 'var(--color-cream-50)',
-                            color: comparisonMode ? 'white' : '#6B7280',
-                            border: comparisonMode ? 'none' : '1px solid var(--color-cream-200)'
-                        }}
-                    >
-                        ⚖️ Comparar
-                        {selectedCount > 0 && (
-                            <span
-                                className="ml-1 px-2 py-0.5 rounded-full text-xs font-bold animate-pulse"
-                                style={{
-                                    background: comparisonMode ? 'rgba(255,255,255,0.25)' : 'var(--color-orange-500)',
-                                    color: 'white'
-                                }}
-                            >
-                                {selectedCount}
-                            </span>
-                        )}
-                    </button>
-
                     {/* Currency Toggle */}
                     <div className="flex items-center gap-3">
                         <span className="text-sm" style={{ color: showBRL ? '#9CA3AF' : '#374151', fontWeight: showBRL ? '400' : '600' }}>

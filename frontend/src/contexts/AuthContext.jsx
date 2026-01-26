@@ -11,6 +11,9 @@ export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [pendingEmailConfirmation, setPendingEmailConfirmation] = useState(() => {
+        return localStorage.getItem('pendingEmailConfirmation') || null;
+    }); // { email, name }
 
     // Check for existing session on mount
     useEffect(() => {
@@ -92,19 +95,81 @@ export function AuthProvider({ children }) {
             if (!response.ok) {
                 setError(data.error || 'Erro ao cadastrar');
                 setLoading(false);
-                return false;
+                return { success: false };
             }
 
-            // Store tokens
+            // Check if email confirmation is required
+            if (data.requiresEmailConfirmation) {
+                const pendingData = { email, name };
+                setPendingEmailConfirmation(pendingData);
+                localStorage.setItem('pendingEmailConfirmation', JSON.stringify(pendingData));
+                setLoading(false);
+                return { success: true, needsEmailConfirmation: true };
+            }
+
+            // Store tokens (if no email confirmation needed)
             localStorage.setItem('accessToken', data.accessToken);
             localStorage.setItem('refreshToken', data.refreshToken);
             setUser(data.user);
             setLoading(false);
-            return true;
+            return { success: true, needsEmailConfirmation: false };
         } catch (err) {
             console.error('[Auth] Register error:', err);
             setError('Erro de conexão. Tente novamente.');
             setLoading(false);
+            return { success: false };
+        }
+    }, []);
+
+    // Check if email has been confirmed (polling)
+    const checkEmailConfirmation = useCallback(async (email) => {
+        try {
+            const response = await fetch(`${API_URL}/api/auth/check-email-confirmed`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.confirmed) {
+                // Email confirmed, now log the user in
+                if (data.accessToken && data.refreshToken) {
+                    localStorage.setItem('accessToken', data.accessToken);
+                    localStorage.setItem('refreshToken', data.refreshToken);
+                    setUser(data.user);
+                    setPendingEmailConfirmation(null);
+                }
+                return { confirmed: true, user: data.user };
+            }
+
+            return { confirmed: false };
+        } catch (err) {
+            console.error('[Auth] Check email confirmation error:', err);
+            return { confirmed: false, error: err.message };
+        }
+    }, []);
+
+    // Resend confirmation email
+    const resendConfirmationEmail = useCallback(async (email) => {
+        try {
+            const response = await fetch(`${API_URL}/api/auth/resend-confirmation`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || 'Erro ao reenviar e-mail');
+                return false;
+            }
+
+            return true;
+        } catch (err) {
+            console.error('[Auth] Resend confirmation error:', err);
+            setError('Erro de conexão.');
             return false;
         }
     }, []);
@@ -168,10 +233,14 @@ export function AuthProvider({ children }) {
         loading,
         error,
         isAuthenticated: !!user,
+        pendingEmailConfirmation,
         register,
         login,
         logout,
-        clearError: () => setError(null)
+        checkEmailConfirmation,
+        resendConfirmationEmail,
+        clearError: () => setError(null),
+        clearPendingEmail: () => setPendingEmailConfirmation(null)
     };
 
     return (

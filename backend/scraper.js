@@ -231,46 +231,58 @@ class GoofishScraper {
                                 if (priceMatch) price = parseFloat(priceMatch[1].replace(',', '.'));
                             }
 
-                            // Extract image - check multiple lazy-loading attributes
+                            // ========================================
+                            // IMAGE EXTRACTION - Target specific feeds-image class
+                            // ========================================
+
                             let imageUrl = '';
-                            const imgs = card.querySelectorAll('img');
-                            for (const img of imgs) {
-                                // Check common lazy-loading attribute patterns
-                                const src = img.src ||
-                                    img.dataset?.src ||
-                                    img.dataset?.original ||
-                                    img.dataset?.lazyload ||
-                                    img.getAttribute('data-src') ||
-                                    img.getAttribute('data-original') ||
-                                    img.getAttribute('data-lazyload') ||
-                                    img.getAttribute('data-lazy-src');
 
-                                // Also check srcset for responsive images
-                                if (!src && img.srcset) {
-                                    const srcsetParts = img.srcset.split(',')[0];
-                                    const srcsetUrl = srcsetParts?.split(' ')[0]?.trim();
-                                    if (srcsetUrl && srcsetUrl.startsWith('http')) {
-                                        imageUrl = srcsetUrl;
-                                        break;
+                            // 1. PRIORITY: Look for product image with feeds-image class
+                            const feedsImg = card.querySelector('img[class*="feeds-image"]');
+                            if (feedsImg) {
+                                const src = feedsImg.getAttribute('data-actualsrc') ||
+                                    feedsImg.getAttribute('data-src') ||
+                                    feedsImg.getAttribute('data-lazy-src') ||
+                                    feedsImg.getAttribute('src') ||
+                                    feedsImg.src;
+
+                                if (src && src.length > 30 && !src.includes('base64')) {
+                                    // Reject known placeholder patterns
+                                    const isPlaceholder = /tps-\d+-\d+\.png/i.test(src) ||
+                                        /blank\.(gif|png|jpg)/i.test(src) ||
+                                        /placeholder/i.test(src);
+                                    if (!isPlaceholder) {
+                                        imageUrl = src;
                                     }
-                                }
-
-                                if (src && src.startsWith('http')) {
-                                    imageUrl = src;
-                                    break;
                                 }
                             }
 
-                            // Fallback: check for background-image in card's image container
+                            // 2. Fallback: check canvas with data-src (lazy loading)
                             if (!imageUrl) {
-                                const imgContainer = card.querySelector('[class*="img"], [class*="cover"], [class*="photo"], [class*="pic"]');
-                                if (imgContainer) {
-                                    const bgImage = window.getComputedStyle(imgContainer).backgroundImage;
-                                    const bgMatch = bgImage?.match(/url\(["']?(https?:\/\/[^"']+)["']?\)/);
-                                    if (bgMatch) {
-                                        imageUrl = bgMatch[1];
+                                const canvas = card.querySelector('canvas[class*="feeds-image"]');
+                                if (canvas) {
+                                    const cSrc = canvas.getAttribute('data-src') || canvas.getAttribute('data-actualsrc');
+                                    if (cSrc && cSrc.length > 30 && !cSrc.includes('base64') && !/tps-\d+-\d+\.png/i.test(cSrc)) {
+                                        imageUrl = cSrc;
                                     }
                                 }
+                            }
+
+                            // 3. Normalize URL if found
+                            if (imageUrl) {
+                                if (imageUrl.startsWith('//')) imageUrl = 'https:' + imageUrl;
+                            }
+
+                            // If no valid image found, imageUrl stays empty
+                            // Frontend will display "Sem imagem" placeholder
+
+                            // Clean and normalize URL
+                            if (imageUrl) {
+                                if (imageUrl.startsWith('//')) imageUrl = 'https:' + imageUrl;
+
+                                // Remove common Alibaba thumbnail suffixes
+                                imageUrl = imageUrl.replace(/(_\d+x\d+.*?\.(jpg|png|webp|jpeg|gif))$/i, '');
+                                imageUrl = imageUrl.replace(/(\_\.\w+)$/i, '');
                             }
 
                             if (title || price > 0) {
@@ -292,7 +304,14 @@ class GoofishScraper {
 
                 // Add newly found products to the collection
                 for (const product of visibleProducts) {
-                    if (!allProducts.has(product.id) && allProducts.size < limit) {
+                    const existing = allProducts.get(product.id);
+
+                    // Add if new
+                    if (!existing && allProducts.size < limit) {
+                        allProducts.set(product.id, product);
+                    }
+                    // Update if existing product was poor (no image) and we found a better one
+                    else if (existing && (!existing.images || existing.images.length === 0) && (product.images && product.images.length > 0)) {
                         allProducts.set(product.id, product);
                     }
                 }
@@ -553,14 +572,45 @@ class GoofishScraper {
                             const priceMatch = (card.textContent || '').match(/¥\s*([\d,.]+)/);
                             if (priceMatch) price = parseFloat(priceMatch[1].replace(',', '.'));
 
+                            // ========================================
+                            // IMAGE EXTRACTION - Target specific feeds-image class
+                            // ========================================
+
                             let imageUrl = '';
-                            const imgs = card.querySelectorAll('img');
-                            for (const img of imgs) {
-                                const src = img.src || img.dataset?.src || img.getAttribute('data-src');
-                                if (src && src.startsWith('http')) {
-                                    imageUrl = src;
-                                    break;
+
+                            // 1. PRIORITY: Look for product image with feeds-image class
+                            const feedsImg = card.querySelector('img[class*="feeds-image"]');
+                            if (feedsImg) {
+                                const src = feedsImg.getAttribute('data-actualsrc') ||
+                                    feedsImg.getAttribute('data-src') ||
+                                    feedsImg.getAttribute('data-lazy-src') ||
+                                    feedsImg.getAttribute('src') ||
+                                    feedsImg.src;
+
+                                if (src && src.length > 30 && !src.includes('base64')) {
+                                    const isPlaceholder = /tps-\d+-\d+\.png/i.test(src) ||
+                                        /blank\.(gif|png|jpg)/i.test(src) ||
+                                        /placeholder/i.test(src);
+                                    if (!isPlaceholder) {
+                                        imageUrl = src;
+                                    }
                                 }
+                            }
+
+                            // 2. Fallback: check canvas with feeds-image class
+                            if (!imageUrl) {
+                                const canvas = card.querySelector('canvas[class*="feeds-image"]');
+                                if (canvas) {
+                                    const cSrc = canvas.getAttribute('data-src') || canvas.getAttribute('data-actualsrc');
+                                    if (cSrc && cSrc.length > 30 && !cSrc.includes('base64') && !/tps-\d+-\d+\.png/i.test(cSrc)) {
+                                        imageUrl = cSrc;
+                                    }
+                                }
+                            }
+
+                            // 3. Normalize URL
+                            if (imageUrl && imageUrl.startsWith('//')) {
+                                imageUrl = 'https:' + imageUrl;
                             }
 
                             if (title || price > 0) {
@@ -579,7 +629,10 @@ class GoofishScraper {
                 });
 
                 for (const product of visibleProducts) {
-                    if (!allProducts.has(product.id) && allProducts.size < limit) {
+                    const existing = allProducts.get(product.id);
+                    if (!existing && allProducts.size < limit) {
+                        allProducts.set(product.id, product);
+                    } else if (existing && (!existing.images || existing.images.length === 0) && (product.images && product.images.length > 0)) {
                         allProducts.set(product.id, product);
                     }
                 }
@@ -634,8 +687,9 @@ class GoofishScraper {
 
         } catch (error) {
             console.error('[Scraper] Erro:', error.message);
-            await release();
             throw error;
+        } finally {
+            await release();
         }
     }
 

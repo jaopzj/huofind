@@ -1,21 +1,25 @@
 import {
-    detectIPhoneModel,
-    extractUniqueModels,
     detectStorage,
     extractUniqueStorages,
     detectBadges
 } from '../utils/iphoneDetector';
+import {
+    detectProductModel,
+    getModelIcon,
+    extractUniqueProductModels
+} from '../utils/modelDetector';
+import SaveBookmarkButton from './SaveBookmarkButton';
 
 /**
- * ProductCard - Estilo e-commerce minimalista com comparação
+ * ProductCard - Estilo e-commerce minimalista com salvamento
  */
 function ProductCard({
     product,
     showBRL = false,
     exchangeRate = 0,
-    isSelected = false,
-    onCompareToggle,
-    maxCompareReached = false
+    isSaved = false,
+    onSaveToggle,
+    category = 'iphone'
 }) {
     const handleClick = () => {
         if (product.url) {
@@ -23,7 +27,8 @@ function ProductCard({
         }
     };
 
-    const iphoneModel = detectIPhoneModel(product);
+    const model = detectProductModel(product, category);
+    const modelIcon = getModelIcon(category);
     const storage = detectStorage(product);
     const badges = detectBadges(product);
 
@@ -39,7 +44,7 @@ function ProductCard({
 
     return (
         <article
-            className={`product-card transition-all duration-200 ${isSelected ? 'ring-2 ring-orange-400 scale-[1.02]' : ''}`}
+            className="product-card transition-all duration-200"
         >
             {/* Image */}
             <div
@@ -55,6 +60,11 @@ function ProductCard({
                         alt={product.nameTranslated || product.name}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.style.display = 'none';
+                            e.target.parentNode.innerHTML = '<div class="w-full h-full flex items-center justify-center"><span class="text-4xl opacity-30">📦</span></div>';
+                        }}
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center">
@@ -62,38 +72,12 @@ function ProductCard({
                     </div>
                 )}
 
-                {/* Selection Checkbox - appears when comparison mode is active */}
-                {onCompareToggle && (
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            onCompareToggle(product);
-                        }}
-                        disabled={!isSelected && maxCompareReached}
-                        className={`absolute top-3 left-3 w-6 h-6 rounded-lg flex items-center justify-center transition-all duration-200 ${!isSelected && maxCompareReached ? 'opacity-40 cursor-not-allowed' : 'hover:scale-110 cursor-pointer'
-                            }`}
-                        style={{
-                            background: isSelected ? 'var(--color-orange-500)' : 'rgba(255, 255, 255, 0.9)',
-                            border: isSelected ? 'none' : '2px solid var(--color-orange-300)',
-                            backdropFilter: 'blur(4px)',
-                            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                        }}
-                    >
-                        {isSelected && (
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                            </svg>
-                        )}
-                    </button>
-                )}
-
-                {/* Model Badge - top left (shifted right when checkbox is visible) */}
-                {iphoneModel && (
+                {/* Model Badge - top left */}
+                {model && (
                     <span
-                        className="absolute top-3 liquid-glass-badge"
-                        style={{ left: onCompareToggle ? '42px' : '12px' }}
+                        className="absolute top-3 left-3 liquid-glass-badge"
                     >
-                        📱 {iphoneModel}
+                        {modelIcon} {model}
                     </span>
                 )}
 
@@ -155,46 +139,57 @@ function ProductCard({
                     </p>
                 )}
 
-                {/* Price + Link Button */}
-                <div className="flex items-center justify-between gap-2">
+                {/* Price Row */}
+                <div className="flex items-center justify-between mb-3">
                     <p
-                        className="text-lg font-bold"
+                        className="text-2xl font-bold"
                         style={{ color: 'var(--color-orange-500)' }}
                     >
                         {formatPrice()}
                     </p>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            handleClick();
-                        }}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium transition-all hover:scale-105"
-                        style={{
-                            background: 'var(--color-orange-500)',
-                            color: 'white'
-                        }}
-                    >
-                        Ver anúncio
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                    </button>
+
+                    {/* Bookmark Save Button */}
+                    {onSaveToggle && (
+                        <SaveBookmarkButton
+                            isSaved={isSaved}
+                            onToggle={() => onSaveToggle(product)}
+                            size={18}
+                        />
+                    )}
                 </div>
+
+                {/* Action Button - Full Width */}
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleClick();
+                    }}
+                    className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
+                    style={{
+                        background: 'var(--color-orange-500)',
+                        color: 'white'
+                    }}
+                >
+                    Ver anúncio
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                </button>
             </div>
         </article>
     );
 }
 
 /**
- * ProductGrid - Grid responsivo de produtos com suporte a comparação
+ * ProductGrid - Grid responsivo de produtos com suporte a salvamento
  */
 function ProductGrid({
     products,
     showBRL = false,
     exchangeRate = 0,
-    selectedForCompare = [],
-    onCompareToggle,
-    comparisonMode = false
+    savedProductUrls = [],
+    onSaveToggle,
+    category = 'iphone'
 }) {
     if (!products || products.length === 0) {
         return (
@@ -204,8 +199,6 @@ function ProductGrid({
             </div>
         );
     }
-
-    const maxCompareReached = selectedForCompare.length >= 4;
 
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
@@ -219,9 +212,9 @@ function ProductGrid({
                         product={product}
                         showBRL={showBRL}
                         exchangeRate={exchangeRate}
-                        isSelected={selectedForCompare.some(p => p.id === product.id)}
-                        onCompareToggle={comparisonMode ? onCompareToggle : null}
-                        maxCompareReached={maxCompareReached}
+                        isSaved={savedProductUrls.includes(product.url)}
+                        onSaveToggle={onSaveToggle}
+                        category={category}
                     />
                 </div>
             ))}
@@ -229,5 +222,5 @@ function ProductGrid({
     );
 }
 
-export { extractUniqueModels, detectIPhoneModel, detectStorage, extractUniqueStorages };
+export { extractUniqueProductModels, detectProductModel, detectStorage, extractUniqueStorages };
 export default ProductGrid;

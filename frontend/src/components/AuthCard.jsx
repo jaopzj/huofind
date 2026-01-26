@@ -1,11 +1,21 @@
-import { useState, useMemo, useRef, useEffect } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
  * AuthCard - Unified authentication card with smooth transitions between Login and Register
  */
 function AuthCard() {
-    const { login, register, error, loading, clearError } = useAuth();
+    const {
+        login,
+        register,
+        error,
+        loading,
+        clearError,
+        pendingEmailConfirmation,
+        setPendingEmailConfirmation,
+        checkEmailConfirmation,
+        resendConfirmationEmail
+    } = useAuth();
 
     // Mode: 'login' or 'register'
     const [mode, setMode] = useState('login');
@@ -22,7 +32,12 @@ function AuthCard() {
     const [registerConfirmPassword, setRegisterConfirmPassword] = useState('');
     const [showRegisterPassword, setShowRegisterPassword] = useState(false);
     const [registerStep, setRegisterStep] = useState(1);
+    const [agreedToTerms, setAgreedToTerms] = useState(false);
     const [localError, setLocalError] = useState('');
+    const [emailConfirmed, setEmailConfirmed] = useState(false);
+    const [resending, setResending] = useState(false);
+    const [resendSuccess, setResendSuccess] = useState(false);
+    const pollingRef = useRef(null);
 
     // Content height animation
     const contentRef = useRef(null);
@@ -62,8 +77,8 @@ function AuthCard() {
 
     // Validation for register step 2
     const isStep2Valid = useMemo(() => {
-        return registerPassword.length >= 6 && registerPassword === registerConfirmPassword;
-    }, [registerPassword, registerConfirmPassword]);
+        return registerPassword.length >= 8 && registerPassword === registerConfirmPassword && agreedToTerms;
+    }, [registerPassword, registerConfirmPassword, agreedToTerms]);
 
     const displayError = localError || error;
 
@@ -93,16 +108,76 @@ function AuthCard() {
         e.preventDefault();
         clearError();
         setLocalError('');
-        if (!isStep2Valid) {
-            if (registerPassword.length < 6) {
-                setLocalError('A senha deve ter pelo menos 6 caracteres');
-            } else {
-                setLocalError('As senhas não coincidem');
-            }
+
+        if (registerPassword.length < 8) {
+            setLocalError('A senha deve ter pelo menos 8 caracteres');
             return;
         }
-        await register(registerEmail, registerPassword, registerName);
+
+        if (registerPassword !== registerConfirmPassword) {
+            setLocalError('As senhas não coincidem');
+            return;
+        }
+
+        if (!agreedToTerms) {
+            setLocalError('Você precisa aceitar os Termos e a Política de Privacidade');
+            return;
+        }
+
+        const result = await register(registerEmail, registerPassword, registerName);
+        if (result.success && result.needsEmailConfirmation) {
+            setRegisterStep(3);
+        }
     };
+
+    // Check for pending email confirmation on mount
+    useEffect(() => {
+        if (pendingEmailConfirmation) {
+            setMode('register');
+            setRegisterStep(3);
+            setRegisterEmail(pendingEmailConfirmation.email || pendingEmailConfirmation);
+        }
+    }, [pendingEmailConfirmation]);
+
+    // Polling for email confirmation
+    useEffect(() => {
+        if (registerStep === 3 && registerEmail && !emailConfirmed) {
+            pollingRef.current = setInterval(async () => {
+                const result = await checkEmailConfirmation(registerEmail);
+                if (result.confirmed) {
+                    clearInterval(pollingRef.current);
+                    setEmailConfirmed(true);
+                    // Clear pending status as it's now confirmed
+                    if (setPendingEmailConfirmation) {
+                        setPendingEmailConfirmation(null);
+                        localStorage.removeItem('pendingEmailConfirmation');
+                    }
+                    // Wait for animation, then redirect
+                    setTimeout(() => {
+                        window.location.pathname = '/';
+                    }, 2500);
+                }
+            }, 3000);
+
+            return () => {
+                if (pollingRef.current) {
+                    clearInterval(pollingRef.current);
+                }
+            };
+        }
+    }, [registerStep, registerEmail, emailConfirmed, checkEmailConfirmation, setPendingEmailConfirmation]);
+
+    // Resend email handler
+    const handleResendEmail = useCallback(async () => {
+        setResending(true);
+        setResendSuccess(false);
+        const success = await resendConfirmationEmail(registerEmail);
+        setResending(false);
+        if (success) {
+            setResendSuccess(true);
+            setTimeout(() => setResendSuccess(false), 3000);
+        }
+    }, [registerEmail, resendConfirmationEmail]);
 
     const switchToRegister = () => {
         clearError();
@@ -230,8 +305,10 @@ function AuthCard() {
                                     {mode === 'login'
                                         ? 'Faça login para continuar'
                                         : registerStep === 1
-                                            ? 'Etapa 1 de 2: Seus dados'
-                                            : 'Etapa 2 de 2: Crie sua senha'
+                                            ? 'Etapa 1 de 3: Seus dados'
+                                            : registerStep === 2
+                                                ? 'Etapa 2 de 3: Crie sua senha'
+                                                : 'Etapa 3 de 3: Confirme seu e-mail'
                                     }
                                 </p>
                             </div>
@@ -245,7 +322,11 @@ function AuthCard() {
                                     />
                                     <div
                                         className="h-1 flex-1 rounded-full transition-all duration-300"
-                                        style={{ background: registerStep === 2 ? '#ff6b35' : '#E5E7EB' }}
+                                        style={{ background: registerStep >= 2 ? '#ff6b35' : '#E5E7EB' }}
+                                    />
+                                    <div
+                                        className="h-1 flex-1 rounded-full transition-all duration-300"
+                                        style={{ background: registerStep >= 3 ? '#ff6b35' : '#E5E7EB' }}
                                     />
                                 </div>
                             )}
@@ -360,7 +441,7 @@ function AuthCard() {
                                 <div className="space-y-6">
                                     <div>
                                         <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
-                                            Nome
+                                            Nome*
                                         </label>
                                         <input
                                             type="text"
@@ -389,7 +470,7 @@ function AuthCard() {
 
                                     <div>
                                         <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
-                                            E-mail
+                                            E-mail*
                                         </label>
                                         <input
                                             type="email"
@@ -436,7 +517,7 @@ function AuthCard() {
                                 <form onSubmit={handleRegisterSubmit} className="space-y-6">
                                     <div>
                                         <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
-                                            Senha
+                                            Senha*
                                         </label>
                                         <div className="relative">
                                             <input
@@ -460,7 +541,7 @@ function AuthCard() {
                                                     e.target.style.background = '#F9FAFB';
                                                     e.target.style.boxShadow = 'none';
                                                 }}
-                                                placeholder="Mínimo 6 caracteres"
+                                                placeholder="Mínimo 8 caracteres"
                                             />
                                             <button
                                                 type="button"
@@ -479,35 +560,91 @@ function AuthCard() {
                                                 )}
                                             </button>
                                         </div>
+                                        {registerPassword && registerPassword.length < 8 && (
+                                            <p className="text-xs text-red-500 mt-1.5 font-medium ml-1 flex items-center gap-1 animate-fade-in-up">
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                A senha precisa de no mínimo 8 caracteres
+                                            </p>
+                                        )}
                                     </div>
 
                                     <div>
                                         <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
-                                            Confirmar Senha
+                                            Confirmar Senha*
                                         </label>
-                                        <input
-                                            type="password"
-                                            value={registerConfirmPassword}
-                                            onChange={(e) => setRegisterConfirmPassword(e.target.value)}
-                                            className="w-full px-5 py-4 rounded-xl text-base transition-all duration-200"
-                                            style={{
-                                                background: '#F9FAFB',
-                                                border: '1px solid #E5E7EB',
-                                                outline: 'none',
-                                                color: '#111827'
-                                            }}
-                                            onFocus={(e) => {
-                                                e.target.style.borderColor = '#ff6b35';
-                                                e.target.style.background = 'white';
-                                                e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
-                                            }}
-                                            onBlur={(e) => {
-                                                e.target.style.borderColor = '#E5E7EB';
-                                                e.target.style.background = '#F9FAFB';
-                                                e.target.style.boxShadow = 'none';
-                                            }}
-                                            placeholder="Digite novamente"
-                                        />
+                                        <div className="relative">
+                                            <input
+                                                type="password"
+                                                value={registerConfirmPassword}
+                                                onChange={(e) => setRegisterConfirmPassword(e.target.value)}
+                                                className="w-full px-5 py-4 rounded-xl text-base transition-all duration-200"
+                                                style={{
+                                                    background: '#F9FAFB',
+                                                    border: registerConfirmPassword && registerPassword !== registerConfirmPassword ? '1px solid #FECACA' : '1px solid #E5E7EB',
+                                                    outline: 'none',
+                                                    color: '#111827'
+                                                }}
+                                                onFocus={(e) => {
+                                                    e.target.style.borderColor = '#ff6b35';
+                                                    e.target.style.background = 'white';
+                                                    e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
+                                                }}
+                                                onBlur={(e) => {
+                                                    e.target.style.borderColor = registerConfirmPassword && registerPassword !== registerConfirmPassword ? '#FECACA' : '#E5E7EB';
+                                                    e.target.style.background = '#F9FAFB';
+                                                    e.target.style.boxShadow = 'none';
+                                                }}
+                                                placeholder="Digite novamente"
+                                            />
+                                        </div>
+                                        {registerConfirmPassword && registerPassword !== registerConfirmPassword && (
+                                            <p className="text-xs text-red-500 mt-1.5 font-medium ml-1 flex items-center gap-1 animate-fade-in-up">
+                                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                                As senhas não coincidem
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    <div className="flex items-start gap-3 py-2">
+                                        <div className="flex items-center h-6">
+                                            <input
+                                                id="legal-terms"
+                                                type="checkbox"
+                                                checked={agreedToTerms}
+                                                onChange={(e) => setAgreedToTerms(e.target.checked)}
+                                                className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer transition-all appearance-none border-2 checked:bg-orange-500 checked:border-orange-500 relative"
+                                                style={{
+                                                    accentColor: '#ff6b35',
+                                                    backgroundImage: agreedToTerms ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E")` : 'none',
+                                                    backgroundSize: '80% 80%',
+                                                    backgroundPosition: 'center',
+                                                    backgroundRepeat: 'no-repeat'
+                                                }}
+                                            />
+                                        </div>
+                                        <label htmlFor="legal-terms" className="text-sm text-gray-500 leading-tight cursor-pointer select-none">
+                                            Eu concordo com os{' '}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); window.location.pathname = '/terms'; }}
+                                                className="font-bold text-gray-700 hover:text-orange-500 transition-colors underline decoration-gray-200 underline-offset-4"
+                                            >
+                                                Termos de Uso
+                                            </button>
+                                            {' '}e{' '}
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.preventDefault(); window.location.pathname = '/privacy'; }}
+                                                className="font-bold text-gray-700 hover:text-orange-500 transition-colors underline decoration-gray-200 underline-offset-4"
+                                            >
+                                                Política de Privacidade
+                                            </button>
+                                            {' '}do site.
+                                        </label>
                                     </div>
 
                                     <div className="flex gap-3 mt-4">
@@ -536,6 +673,130 @@ function AuthCard() {
                                         </button>
                                     </div>
                                 </form>
+                            )}
+
+                            {/* REGISTER FORM - STEP 3: EMAIL CONFIRMATION */}
+                            {mode === 'register' && registerStep === 3 && (
+                                <div className="text-center space-y-6 py-4">
+                                    {!emailConfirmed ? (
+                                        <>
+                                            {/* Animated envelope icon */}
+                                            <div className="flex justify-center">
+                                                <div
+                                                    className="w-24 h-24 rounded-full flex items-center justify-center"
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
+                                                        animation: 'pulse 2s ease-in-out infinite'
+                                                    }}
+                                                >
+                                                    <svg
+                                                        className="w-12 h-12"
+                                                        style={{ color: '#FF6B35' }}
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={1.5}
+                                                            d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            <div>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                                    Verifique seu e-mail
+                                                </h3>
+                                                <p className="text-gray-500 text-sm">
+                                                    Enviamos um link de confirmação para:
+                                                </p>
+                                                <p className="text-gray-900 font-semibold mt-1">
+                                                    {registerEmail}
+                                                </p>
+                                            </div>
+
+                                            {/* Loading spinner */}
+                                            <div className="flex items-center justify-center gap-3 py-4">
+                                                <div
+                                                    className="w-5 h-5 border-2 border-orange-200 border-t-orange-500 rounded-full"
+                                                    style={{ animation: 'spin 1s linear infinite' }}
+                                                />
+                                                <span className="text-sm text-gray-500">Aguardando confirmação...</span>
+                                            </div>
+
+                                            {/* Resend button */}
+                                            <div className="pt-4">
+                                                <button
+                                                    type="button"
+                                                    onClick={handleResendEmail}
+                                                    disabled={resending}
+                                                    className="text-sm font-medium transition-all duration-200 hover:underline"
+                                                    style={{ color: resending ? '#9CA3AF' : '#FF6B35' }}
+                                                >
+                                                    {resending ? 'Reenviando...' : 'Reenviar e-mail'}
+                                                </button>
+                                                {resendSuccess && (
+                                                    <p className="text-green-600 text-xs mt-2 animate-fade-in-up">
+                                                        ✓ E-mail reenviado com sucesso!
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <p className="text-xs text-gray-400 pt-4">
+                                                Não recebeu? Verifique sua caixa de spam.
+                                            </p>
+                                        </>
+                                    ) : (
+                                        /* Success state */
+                                        <div className="animate-fade-in-up">
+                                            <div className="flex justify-center mb-6">
+                                                <div
+                                                    className="w-24 h-24 rounded-full flex items-center justify-center"
+                                                    style={{
+                                                        background: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)',
+                                                        animation: 'scaleIn 0.5s ease-out'
+                                                    }}
+                                                >
+                                                    <svg
+                                                        className="w-12 h-12 text-green-600"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        viewBox="0 0 24 24"
+                                                        style={{ animation: 'checkmark 0.5s ease-out 0.2s both' }}
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth={2.5}
+                                                            d="M5 13l4 4L19 7"
+                                                        />
+                                                    </svg>
+                                                </div>
+                                            </div>
+
+                                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                                E-mail confirmado! 🎉
+                                            </h3>
+                                            <p className="text-gray-500 text-sm">
+                                                Redirecionando para a plataforma...
+                                            </p>
+
+                                            {/* Loading bar */}
+                                            <div className="mt-6 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full rounded-full"
+                                                    style={{
+                                                        background: '#10B981',
+                                                        animation: 'loadingBar 2s ease-out forwards'
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             )}
 
                             {/* Footer Section */}
@@ -569,9 +830,24 @@ function AuthCard() {
                                 </p>
 
                                 <div className="flex justify-center gap-8 pt-6 border-t border-gray-100">
-                                    <button className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors">Política de Privacidade</button>
-                                    <button className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors">Termos</button>
-                                    <button className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors">Suporte</button>
+                                    <button
+                                        onClick={() => window.location.pathname = '/terms'}
+                                        className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors"
+                                    >
+                                        Termos de Uso
+                                    </button>
+                                    <button
+                                        onClick={() => window.location.pathname = '/privacy'}
+                                        className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors"
+                                    >
+                                        Política de Privacidade
+                                    </button>
+                                    <button
+                                        onClick={() => window.open('https://t.me/huofind_suporte', '_blank')}
+                                        className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors"
+                                    >
+                                        Suporte
+                                    </button>
                                 </div>
                             </div>
                         </div>

@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yupoo Scraper</title>
+    <style>
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #232340;
+            --accent: #6c5ce7;
+            --accent-light: #a29bfe;
+            --accent-green: #00d26a;
+            --accent-orange: #ffa726;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0b0;
+            --success: #00d26a;
+            --error: #ff5252;
+            --warning: #ffa726;
+            --border-radius: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+        }
+
+        .form-card {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            min-width: 300px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem 1.25rem;
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--border-radius);
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(108, 92, 231, 0.2);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-secondary);
+            opacity: 0.6;
+        }
+
+        .btn {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--accent), #8b7cf7);
+            border: none;
+            border-radius: var(--border-radius);
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            white-space: nowrap;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(108, 92, 231, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .status {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            display: none;
+        }
+
+        .status.loading {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: rgba(108, 92, 231, 0.1);
+            color: var(--accent-light);
+        }
+
+        .status.success {
+            display: block;
+            background: rgba(0, 210, 106, 0.1);
+            color: var(--success);
+        }
+
+        .status.error {
+            display: block;
+            background: rgba(255, 82, 82, 0.1);
+            color: var(--error);
+        }
+
+        .result-card {
+            background: var(--bg-secondary);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            display: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .result-card.visible {
+            display: block;
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .result-header h3 {
+            font-size: 1.125rem;
+            font-weight: 600;
+        }
+
+        .result-stats {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+            min-width: 70px;
+        }
+
+        .stat-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-light);
+        }
+
+        .stat-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-copy,
+        .btn-filter,
+        .btn-debug {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-copy {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-copy:hover {
+            background: var(--accent);
+        }
+
+        .btn-filter {
+            background: linear-gradient(135deg, var(--accent-green), #4ade80);
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-filter:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 210, 106, 0.4);
+        }
+
+        .btn-filter:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-debug {
+            background: linear-gradient(135deg, var(--accent-orange), #ff9800);
+            color: white;
+            font-weight: 600;
+        }
+
+        .btn-debug:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 167, 38, 0.4);
+        }
+
+        .json-container {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow: auto;
+        }
+
+        pre {
+            margin: 0;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.75rem;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .category-stats {
+            margin-top: 1rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+        }
+
+        .category-stats h4 {
+            font-size: 0.875rem;
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .category-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            font-size: 0.8rem;
+        }
+
+        .category-name {
+            color: var(--text-secondary);
+        }
+
+        .category-count {
+            font-weight: 600;
+            color: var(--accent-light);
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            overflow: auto;
+            padding: 2rem;
+        }
+
+        .modal-content {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: var(--bg-secondary);
+            border-radius: 12px;
+            padding: 2rem;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .modal-header h2 {
+            font-size: 1.5rem;
+        }
+
+        .modal-close {
+            background: var(--bg-card);
+            border: none;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .modal-close:hover {
+            background: var(--error);
+        }
+
+        .modal-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .modal-section h3 {
+            font-size: 1rem;
+            color: var(--accent-light);
+            margin-bottom: 1rem;
+        }
+
+        .modal-list {
+            background: var(--bg-card);
+            border-radius: 8px;
+            padding: 1rem;
+            max-height: 400px;
+            overflow: auto;
+        }
+
+        .modal-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .modal-tip {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            background: var(--bg-card);
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            .modal-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔍 Yupoo Scraper</h1>
+            <p>Cole o link de um vendedor Yupoo para extrair e categorizar anúncios</p>
+        </header>
+
+        <div class="form-card">
+            <div class="input-group">
+                <div class="input-wrapper">
+                    <label for="vendorUrl">URL do Vendedor</label>
+                    <input type="text" id="vendorUrl" placeholder="https://vendedor.x.yupoo.com/albums"
+                        autocomplete="off">
+                </div>
+                <button class="btn" id="scrapeBtn" onclick="startScraping()">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 12a9 9 0 11-6.219-8.56" />
+                        <polyline points="21 3 21 9 15 9" />
+                    </svg>
+                    Scrape / Gerar JSON
+                </button>
+            </div>
+            <div class="status" id="status"></div>
+        </div>
+
+        <!-- Scraping Result Card -->
+        <div class="result-card" id="resultCard">
+            <div class="result-header">
+                <h3>📦 Resultado do Scraping</h3>
+                <div class="result-stats" id="resultStats"></div>
+                <div class="btn-group">
+                    <button class="btn-filter" id="filterBtn" onclick="filterProducts()">🏷️ Filtrar JSON</button>
+                    <button class="btn-copy" onclick="copyJson('scrape')">📋 Copiar</button>
+                </div>
+            </div>
+            <div class="json-container">
+                <pre id="jsonOutput"></pre>
+            </div>
+        </div>
+
+        <!-- Filtered Result Card -->
+        <div class="result-card" id="filteredCard">
+            <div class="result-header">
+                <h3>🏷️ Resultado Filtrado</h3>
+                <div class="result-stats" id="filteredStats"></div>
+                <div class="btn-group">
+                    <button class="btn-filter" id="cleanBtn" onclick="cleanProducts()">🧹 Limpar Resultados</button>
+                    <button class="btn-debug" onclick="showUnrecognized()">⚠️ Ver não reconhecidos</button>
+                    <button class="btn-copy" onclick="copyJson('filtered')">📋 Copiar JSON</button>
+                </div>
+            </div>
+            <div class="category-stats" id="categoryStats"></div>
+            <div class="json-container" style="margin-top: 1rem;">
+                <pre id="filteredJsonOutput"></pre>
+            </div>
+        </div>
+
+        <!-- Cleaned Result Card -->
+        <div class="result-card" id="cleanedCard">
+            <div class="result-header">
+                <h3>✨ Resultado Limpo</h3>
+                <div class="result-stats" id="cleanedStats"></div>
+                <div class="btn-group">
+                    <button class="btn-copy" onclick="copyJson('cleaned')">📋 Copiar JSON Limpo</button>
+                    <button class="btn-filter" style="background: linear-gradient(135deg, #00b4db, #0083b0);"
+                        onclick="downloadCleanedJson()">⬇️ Download JSON</button>
+                </div>
+            </div>
+            <div class="category-stats" id="cleanedCategoryStats"></div>
+            <div class="json-container" style="margin-top: 1rem;">
+                <pre id="cleanedJsonOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para itens não reconhecidos -->
+    <div id="debugModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>⚠️ Itens Não Reconhecidos</h2>
+                <button class="modal-close" onclick="closeModal()">✕ Fechar</button>
+            </div>
+            <div class="modal-grid">
+                <div class="modal-section">
+                    <h3>🏷️ Marcas não encontradas (<span id="totalSemMarca">0</span>)</h3>
+                    <div class="modal-list" id="marcasNaoEncontradas">
+                        <p style="color:var(--text-secondary);">Nenhum dado ainda</p>
+                    </div>
+                </div>
+                <div class="modal-section">
+                    <h3>📦 Categorias desconhecidas (<span id="totalSemCategoria">0</span>)</h3>
+                    <div class="modal-list" id="categoriasDesconhecidas">
+                        <p style="color:var(--text-secondary);">Nenhum dado ainda</p>
+                    </div>
+                </div>
+                <div class="modal-section">
+                    <h3>👟 Batches desconhecidas (<span id="totalSemBatch">0</span>)</h3>
+                    <div class="modal-list" id="batchesDesconhecidas">
+                        <p style="color:var(--text-secondary);">Nenhum dado ainda</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-tip">
+                💡 <strong>Dica:</strong> Analise os títulos acima para identificar padrões de marcas ou categorias que
+                podem ser adicionados ao arquivo <code>filter.js</code>.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let scrapeData = null;
+        let filteredData = null;
+        let cleanedData = null;
+
+        async function startScraping() {
+            const urlInput = document.getElementById('vendorUrl');
+            const btn = document.getElementById('scrapeBtn');
+            const resultCard = document.getElementById('resultCard');
+            const filteredCard = document.getElementById('filteredCard');
+            const cleanedCard = document.getElementById('cleanedCard');
+            const url = urlInput.value.trim();
+
+            if (!url) { showStatus('error', '❌ Por favor, insira a URL do vendedor'); return; }
+            if (!url.includes('yupoo.com')) { showStatus('error', '❌ URL inválida. Use uma URL Yupoo'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div> Scraping...';
+            resultCard.classList.remove('visible');
+            filteredCard.classList.remove('visible');
+            cleanedCard.classList.remove('visible');
+            showStatus('loading', 'Buscando produtos... Isso pode levar alguns segundos.');
+
+            try {
+                const response = await fetch('/api/scrape', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ url })
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Erro desconhecido');
+
+                scrapeData = data;
+                displayScrapeResult(data);
+                showStatus('success', `✅ Scraping concluído em ${data.duration_seconds}s`);
+            } catch (error) {
+                showStatus('error', `❌ Erro: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-6.219-8.56"/><polyline points="21 3 21 9 15 9"/></svg> Scrape / Gerar JSON`;
+            }
+        }
+
+        async function filterProducts() {
+            const btn = document.getElementById('filterBtn');
+            const filteredCard = document.getElementById('filteredCard');
+            const cleanedCard = document.getElementById('cleanedCard');
+
+            if (!scrapeData) { showStatus('error', '❌ Faça o scraping primeiro'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:5px;"></span> Filtrando...';
+            cleanedCard.classList.remove('visible');
+
+            try {
+                const response = await fetch('/api/filter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(scrapeData)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Erro desconhecido');
+
+                filteredData = data;
+                displayFilteredResult(data);
+                showStatus('success', `✅ Filtragem concluída em ${data.filter_duration_seconds}s`);
+            } catch (error) {
+                showStatus('error', `❌ Erro na filtragem: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🏷️ Filtrar JSON';
+            }
+        }
+
+        async function cleanProducts() {
+            const btn = document.getElementById('cleanBtn');
+            const cleanedCard = document.getElementById('cleanedCard');
+
+            if (!filteredData) { showStatus('error', '❌ Faça a filtragem primeiro'); return; }
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;vertical-align:middle;margin-right:5px;"></span> Limpando...';
+
+            try {
+                const response = await fetch('/api/clean', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(filteredData)
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.message || 'Erro desconhecido');
+
+                cleanedData = data;
+                displayCleanedResult(data);
+                showStatus('success', `✅ Limpeza concluída! Removidos: ${data.stats.removidos} | Restantes: ${data.stats.total}`);
+            } catch (error) {
+                showStatus('error', `❌ Erro na limpeza: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '🧹 Limpar Resultados';
+            }
+        }
+
+        function showStatus(type, message) {
+            const status = document.getElementById('status');
+            status.className = 'status ' + type;
+            status.innerHTML = type === 'loading' ? `<div class="spinner"></div> ${message}` : message;
+        }
+
+        function displayScrapeResult(data) {
+            document.getElementById('resultStats').innerHTML = `
+                <div class="stat"><span class="stat-value">${data.total_products}</span><span class="stat-label">Produtos</span></div>
+                <div class="stat"><span class="stat-value">${data.total_pages}</span><span class="stat-label">Páginas</span></div>
+                <div class="stat"><span class="stat-value">${data.duration_seconds}s</span><span class="stat-label">Tempo</span></div>
+            `;
+            document.getElementById('jsonOutput').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('resultCard').classList.add('visible');
+        }
+
+        function displayFilteredResult(data) {
+            const semMarca = data.debug?.total_sem_marca || 0;
+            const semCategoria = data.debug?.total_sem_categoria || 0;
+            const semBatch = data.debug?.total_batch_desconhecida || 0;
+
+            document.getElementById('filteredStats').innerHTML = `
+                <div class="stat"><span class="stat-value">${data.stats.total}</span><span class="stat-label">Total</span></div>
+                <div class="stat"><span class="stat-value">${data.stats.com_preco}</span><span class="stat-label">Com Preço</span></div>
+                <div class="stat"><span class="stat-value">${data.stats.com_marca}</span><span class="stat-label">Com Marca</span></div>
+                <div class="stat" style="background:${semMarca > 0 ? 'rgba(255,167,38,0.2)' : 'var(--bg-card)'}">
+                    <span class="stat-value" style="color:${semMarca > 0 ? '#ffa726' : 'var(--accent-light)'}">${semMarca}</span>
+                    <span class="stat-label">Sem Marca</span>
+                </div>
+                <div class="stat" style="background:${semBatch > 0 ? 'rgba(255,167,38,0.2)' : 'var(--bg-card)'}">
+                    <span class="stat-value" style="color:${semBatch > 0 ? '#ffa726' : 'var(--accent-light)'}">${semBatch}</span>
+                    <span class="stat-label">Sem Batch</span>
+                </div>
+            `;
+
+            const categories = data.stats.por_categoria || {};
+            const categoryItems = Object.entries(categories).sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => `
+                    <div class="category-item" style="${name === 'Desconhecido' ? 'background:rgba(255,167,38,0.2)' : ''}">
+                        <span class="category-name">${name}</span>
+                        <span class="category-count" style="${name === 'Desconhecido' ? 'color:#ffa726' : ''}">${count}</span>
+                    </div>
+                `).join('');
+
+            document.getElementById('categoryStats').innerHTML = `
+                <h4>📊 Produtos por Categoria</h4>
+                <div class="category-grid">${categoryItems}</div>
+            `;
+
+            document.getElementById('filteredJsonOutput').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('filteredCard').classList.add('visible');
+        }
+
+        function displayCleanedResult(data) {
+            document.getElementById('cleanedStats').innerHTML = `
+                <div class="stat" style="background:rgba(0,210,106,0.2)"><span class="stat-value" style="color:#00d26a">${data.stats.total}</span><span class="stat-label">Produtos</span></div>
+                <div class="stat"><span class="stat-value">${data.stats.removidos}</span><span class="stat-label">Removidos</span></div>
+                <div class="stat"><span class="stat-value">${data.stats.com_preco}</span><span class="stat-label">Com Preço</span></div>
+                <div class="stat"><span class="stat-value">${Object.keys(data.stats.por_marca || {}).length}</span><span class="stat-label">Marcas</span></div>
+            `;
+
+            const categories = data.stats.por_categoria || {};
+            const categoryItems = Object.entries(categories).sort((a, b) => b[1] - a[1])
+                .map(([name, count]) => `
+                    <div class="category-item">
+                        <span class="category-name">${name}</span>
+                        <span class="category-count">${count}</span>
+                    </div>
+                `).join('');
+
+            document.getElementById('cleanedCategoryStats').innerHTML = `
+                <h4>📊 Produtos por Categoria (Limpo)</h4>
+                <div class="category-grid">${categoryItems}</div>
+            `;
+
+            document.getElementById('cleanedJsonOutput').textContent = JSON.stringify(data, null, 2);
+            document.getElementById('cleanedCard').classList.add('visible');
+        }
+
+        function showUnrecognized() {
+            if (!filteredData?.debug) { alert('Faça a filtragem primeiro!'); return; }
+
+            document.getElementById('totalSemMarca').textContent = filteredData.debug.total_sem_marca || 0;
+            document.getElementById('totalSemCategoria').textContent = filteredData.debug.total_sem_categoria || 0;
+
+            const marcas = filteredData.debug.marcas_nao_encontradas || [];
+            document.getElementById('marcasNaoEncontradas').innerHTML = marcas.length > 0
+                ? marcas.map((t, i) => `<div class="modal-item">${i + 1}. ${t.substring(0, 120)}${t.length > 120 ? '...' : ''}</div>`).join('')
+                : '<p style="color:var(--success)">✅ Todas as marcas foram reconhecidas!</p>';
+
+            const categorias = filteredData.debug.categorias_desconhecidas || [];
+            document.getElementById('categoriasDesconhecidas').innerHTML = categorias.length > 0
+                ? categorias.map((t, i) => `<div class="modal-item">${i + 1}. ${t.substring(0, 120)}${t.length > 120 ? '...' : ''}</div>`).join('')
+                : '<p style="color:var(--success)">✅ Todas as categorias foram reconhecidas!</p>';
+
+            const batches = filteredData.debug.batches_desconhecidas || [];
+            document.getElementById('totalSemBatch').textContent = filteredData.debug.total_batch_desconhecida || 0;
+            document.getElementById('batchesDesconhecidas').innerHTML = batches.length > 0
+                ? batches.map((t, i) => `<div class="modal-item">${i + 1}. ${t.substring(0, 120)}${t.length > 120 ? '...' : ''}</div>`).join('')
+                : '<p style="color:var(--success)">✅ Todas as batches foram reconhecidas!</p>';
+
+            document.getElementById('debugModal').style.display = 'block';
+        }
+
+        function closeModal() { document.getElementById('debugModal').style.display = 'none'; }
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+        function copyJson(type) {
+            let data;
+            if (type === 'cleaned') data = cleanedData;
+            else if (type === 'filtered') data = filteredData;
+            else data = scrapeData;
+
+            if (!data) return;
+            navigator.clipboard.writeText(JSON.stringify(data, null, 2)).then(() => {
+                let selector;
+                if (type === 'cleaned') selector = '#cleanedCard .btn-copy';
+                else if (type === 'filtered') selector = '#filteredCard .btn-copy';
+                else selector = '#resultCard .btn-copy';
+
+                const btn = document.querySelector(selector);
+                const orig = btn.textContent;
+                btn.textContent = '✅ Copiado!';
+                setTimeout(() => btn.textContent = orig, 2000);
+            });
+        }
+
+        function downloadCleanedJson() {
+            if (!cleanedData) return;
+
+            // Extrai o nome do vendedor da URL
+            let filename = 'yupoo-products.json';
+
+            try {
+                if (cleanedData.vendor && cleanedData.vendor.url) {
+                    const urlObj = new URL(cleanedData.vendor.url);
+                    // Pega o subdomínio (ex: taurus-reps.x.yupoo.com -> taurus-reps)
+                    const parts = urlObj.hostname.split('.');
+                    if (parts.length > 0) {
+                        const vendorName = parts[0];
+                        filename = `${vendorName}-products.json`;
+                    }
+                }
+            } catch (e) {
+                console.error('Erro ao gerar nome do arquivo:', e);
+            }
+
+            const dataStr = JSON.stringify(cleanedData, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        document.getElementById('vendorUrl').addEventListener('keypress', e => { if (e.key === 'Enter') startScraping(); });
+    </script>
+</body>
+
+</html>

@@ -11,17 +11,20 @@ import { scrapeProductsForComparison } from './productAnalyzer.js';
 import { chromium } from 'playwright';
 
 // Auth imports
-import { registerUser, loginUser, refreshAccessToken, logoutUser } from './auth.js';
+import { registerUser, loginUser, refreshAccessToken, logoutUser, checkEmailConfirmed, resendConfirmationEmail } from './auth.js';
 import { authMiddleware, optionalAuthMiddleware } from './authMiddleware.js';
 
-// Mining limits system (unified)
+// Mining credits system (unified)
 import {
     miningLimitMiddleware,
-    incrementMiningCount,
+    consumeCredit,
     startMiningSession,
     endMiningSession,
-    getUserMiningData,
-    TIER_LIMITS
+    getUserCreditsData,
+    checkAndRenewCredits,
+    getNextRenewalDate,
+    TIER_CREDITS,
+    TIER_MINING_MAX_PRODUCTS
 } from './miningLimits.js';
 import { TIERS, getTierInfo } from './tiers.js';
 import browserPool from './browserPool.js';
@@ -32,6 +35,28 @@ import {
     deleteSeller,
     SELLER_ICONS
 } from './savedSellers.js';
+import {
+    getSavedProducts,
+    saveProduct,
+    deleteProduct as deleteProductById,
+    deleteProductByUrl,
+    getSaveCount,
+    isProductSaved,
+    TIER_SAVE_LIMITS
+} from './savedProducts.js';
+import {
+    getCollections,
+    createCollection,
+    updateCollection,
+    deleteCollection,
+    moveProductToCollection,
+    TIER_COLLECTION_LIMITS,
+    COLLECTION_ICONS,
+    COLLECTION_COLORS
+} from './productCollections.js';
+import supabase from './supabase.js';
+import bcrypt from 'bcryptjs';
+import multer from 'multer';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -132,9 +157,9 @@ app.post('/api/auth/register', async (req, res) => {
             });
         }
 
-        if (password.length < 6) {
+        if (password.length < 8) {
             return res.status(400).json({
-                error: 'Senha deve ter pelo menos 6 caracteres',
+                error: 'Senha deve ter pelo menos 8 caracteres',
                 code: 'WEAK_PASSWORD'
             });
         }
@@ -235,8 +260,372 @@ app.get('/api/auth/me', authMiddleware, (req, res) => {
     res.json({ user: req.user });
 });
 
+/**
+ * POST /api/auth/check-email-confirmed
+ * Check if user's email has been confirmed (for polling)
+ */
+app.post('/api/auth/check-email-confirmed', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email é obrigatório' });
+        }
+
+        const result = await checkEmailConfirmed(email);
+        res.json(result);
+    } catch (err) {
+        console.error('[Server] Check email confirmed error:', err);
+        res.status(500).json({ confirmed: false, error: 'Erro interno' });
+    }
+});
+
+/**
+ * POST /api/auth/resend-confirmation
+ * Resend confirmation email
+ */
+app.post('/api/auth/resend-confirmation', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({ error: 'Email é obrigatório' });
+        }
+
+        const result = await resendConfirmationEmail(email);
+
+        if (result.error) {
+            return res.status(400).json(result);
+        }
+
+        res.json(result);
+    } catch (err) {
+        console.error('[Server] Resend confirmation error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
 // ============================================
-// END AUTH ROUTES
+// USER PROFILE ENDPOINTS
+// ============================================
+
+
+/**
+ * PUT /api/user/profile
+ * Update user name
+ */
+app.put('/api/user/profile', authMiddleware, async (req, res) => {
+    try {
+        const { name } = req.body;
+        const userId = req.user.id;
+
+        if (!name || name.trim().length < 2) {
+            return res.status(400).json({ error: 'Nome deve ter pelo menos 2 caracteres' });
+        }
+
+        const { data, error } = await supabase
+            .from('users')
+            .update({ name: name.trim() })
+            .eq('id', userId)
+            .select('id, name, email')
+            .single();
+
+        if (error) {
+            console.error('[Profile] Error updating name:', error);
+            return res.status(500).json({ error: 'Erro ao atualizar nome' });
+        }
+
+        console.log(`[Profile] Name updated for user ${userId}: ${name.trim()}`);
+        res.json({ success: true, user: data });
+    } catch (err) {
+        console.error('[Profile] Error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * PUT /api/user/email
+ * Update user email (requires current password)
+ */
+app.put('/api/user/email', authMiddleware, async (req, res) => {
+    try {
+        const { newEmail, password } = req.body;
+        const userId = req.user.id;
+
+        if (!newEmail || !password) {
+            return res.status(400).json({ error: 'Email e senha são obrigatórios' });
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+            return res.status(400).json({ error: 'Email inválido' });
+        }
+
+        // Get current user with password hash
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('password_hash')
+            .eq('id', userId)
+            .single();
+
+        if (fetchError || !user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Senha incorreta' });
+        }
+
+        // Check if email already exists
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('id')
+            .eq('email', newEmail.toLowerCase())
+            .single();
+
+        if (existingUser && existingUser.id !== userId) {
+            return res.status(400).json({ error: 'Este email já está em uso' });
+        }
+
+        // Update email
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ email: newEmail.toLowerCase() })
+            .eq('id', userId);
+
+        if (updateError) {
+            console.error('[Profile] Error updating email:', updateError);
+            return res.status(500).json({ error: 'Erro ao atualizar email' });
+        }
+
+        console.log(`[Profile] Email updated for user ${userId}: ${newEmail}`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Profile] Error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * PUT /api/user/password
+ * Update user password
+ */
+app.put('/api/user/password', authMiddleware, async (req, res) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user.id;
+
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({ error: 'Senhas são obrigatórias' });
+        }
+
+        if (newPassword.length < 8) {
+            return res.status(400).json({ error: 'Nova senha deve ter pelo menos 8 caracteres' });
+        }
+
+        // Get current user with password hash
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('password_hash')
+            .eq('id', userId)
+            .single();
+
+        if (fetchError || !user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        // Verify current password
+        const isValidPassword = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Senha atual incorreta' });
+        }
+
+        // Hash new password
+        const salt = await bcrypt.genSalt(10);
+        const newPasswordHash = await bcrypt.hash(newPassword, salt);
+
+        // Update password
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({ password_hash: newPasswordHash })
+            .eq('id', userId);
+
+        if (updateError) {
+            console.error('[Profile] Error updating password:', updateError);
+            return res.status(500).json({ error: 'Erro ao atualizar senha' });
+        }
+
+        console.log(`[Profile] Password updated for user ${userId}`);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('[Profile] Error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * POST /api/user/avatar
+ * Upload user avatar - supports both file upload and URL
+ */
+
+// Configure multer for memory storage (we'll convert to base64)
+const avatarUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 2 * 1024 * 1024, // 2MB max
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas imagens são permitidas'), false);
+        }
+    }
+}).single('avatar');
+
+app.post('/api/user/avatar', authMiddleware, (req, res) => {
+    avatarUpload(req, res, async (err) => {
+        try {
+            const userId = req.user.id;
+
+            if (err instanceof multer.MulterError) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({ error: 'Arquivo muito grande. Máximo 2MB.' });
+                }
+                return res.status(400).json({ error: 'Erro no upload: ' + err.message });
+            } else if (err) {
+                return res.status(400).json({ error: err.message });
+            }
+
+            let avatarUrl;
+
+            // Check if file was uploaded
+            if (req.file) {
+                // Convert file buffer to base64 data URL
+                const base64 = req.file.buffer.toString('base64');
+                avatarUrl = `data:${req.file.mimetype};base64,${base64}`;
+                console.log(`[Profile] Avatar file received: ${req.file.originalname} (${req.file.size} bytes)`);
+            } else if (req.body && req.body.avatarUrl) {
+                // Handle URL-based avatar update
+                avatarUrl = req.body.avatarUrl;
+            } else {
+                return res.status(400).json({ error: 'Nenhum arquivo ou URL fornecido' });
+            }
+
+            // Update in database
+            const { error: updateError } = await supabase
+                .from('users')
+                .update({ avatar_url: avatarUrl })
+                .eq('id', userId);
+
+            if (updateError) {
+                console.error('[Profile] Error updating avatar:', updateError);
+                return res.status(500).json({ error: 'Erro ao atualizar avatar' });
+            }
+
+            console.log(`[Profile] Avatar updated for user ${userId}`);
+            res.json({ success: true, avatarUrl });
+        } catch (error) {
+            console.error('[Profile] Avatar error:', error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
+    });
+});
+
+/**
+ * DELETE /api/user/account
+ * Delete user account
+ */
+app.delete('/api/user/account', authMiddleware, async (req, res) => {
+    try {
+        const { password } = req.body;
+        const userId = req.user.id;
+
+        if (!password) {
+            return res.status(400).json({ error: 'Senha é obrigatória' });
+        }
+
+        // Get current user with password hash
+        const { data: user, error: fetchError } = await supabase
+            .from('users')
+            .select('password_hash, email')
+            .eq('id', userId)
+            .single();
+
+        if (fetchError || !user) {
+            return res.status(404).json({ error: 'Usuário não encontrado' });
+        }
+
+        // Verify password
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        if (!isValidPassword) {
+            return res.status(401).json({ error: 'Senha incorreta' });
+        }
+
+        // Delete user's data in order (foreign key constraints)
+        // 1. Delete sessions
+        await supabase.from('sessions').delete().eq('user_id', userId);
+
+        // 2. Delete saved products
+        await supabase.from('saved_products').delete().eq('user_id', userId);
+
+        // 3. Delete saved sellers
+        await supabase.from('saved_sellers').delete().eq('user_id', userId);
+
+        // 4. Delete collections
+        await supabase.from('collections').delete().eq('user_id', userId);
+
+        // 5. Delete user settings
+        await supabase.from('user_settings').delete().eq('user_id', userId);
+
+        // 6. Finally delete the user
+        const { error: deleteError } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', userId);
+
+        if (deleteError) {
+            console.error('[Profile] Error deleting user:', deleteError);
+            return res.status(500).json({ error: 'Erro ao deletar conta' });
+        }
+
+        console.log(`[Profile] Account deleted for user ${user.email}`);
+        res.json({ success: true, message: 'Conta deletada com sucesso' });
+    } catch (err) {
+        console.error('[Profile] Error:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+/**
+ * GET /api/user/stats
+ * Get user statistics
+ */
+app.get('/api/user/stats', authMiddleware, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Get counts in parallel
+        const [productsResult, sellersResult, collectionsResult] = await Promise.all([
+            supabase.from('saved_products').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+            supabase.from('saved_sellers').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+            supabase.from('collections').select('id', { count: 'exact', head: true }).eq('user_id', userId)
+        ]);
+
+        res.json({
+            savedProducts: productsResult.count || 0,
+            savedSellers: sellersResult.count || 0,
+            collections: collectionsResult.count || 0
+        });
+    } catch (err) {
+        console.error('[Profile] Error getting stats:', err);
+        res.status(500).json({ error: 'Erro interno do servidor' });
+    }
+});
+
+// ============================================
+// END USER PROFILE ENDPOINTS
 // ============================================
 
 /**
@@ -321,6 +710,22 @@ app.get('/api/mine-stream', authMiddleware, miningLimitMiddleware, async (req, r
         return res.status(400).json({ error: 'userId não encontrado na URL' });
     }
 
+    // Validar limite de produtos do tier
+    const userTier = req.user.tier || 'guest';
+    const tierMaxProducts = TIER_MINING_MAX_PRODUCTS[userTier] || 30;
+    const requestedLimit = parseInt(limit);
+
+    if (requestedLimit > tierMaxProducts) {
+        console.log(`[Server] 🚫 Limite de produtos excedido para tier ${userTier}: ${requestedLimit}/${tierMaxProducts}`);
+        return res.status(403).json({
+            error: 'Limite de produtos excedido',
+            message: `Seu plano (${userTier}) permite minerar até ${tierMaxProducts} produtos por vez.`,
+            code: 'TIER_PRODUCT_LIMIT_EXCEEDED',
+            limit: tierMaxProducts,
+            requested: requestedLimit
+        });
+    }
+
     // User ID from auth middleware (always present now)
     const userId = req.user.id;
 
@@ -342,7 +747,18 @@ app.get('/api/mine-stream', authMiddleware, miningLimitMiddleware, async (req, r
         console.log(`[Server] Retornando dados do cache: ${sellerId}`);
         sendEvent('progress', { stage: 'cache', message: 'Carregando do cache...' });
         const cachedData = cache.get(cacheKey);
-        sendEvent('complete', { ...cachedData, fromCache: true });
+
+        // Determine best sellerInfo: cached data > sellerCache > minimal object
+        let sellerInfoFromCache;
+        if (cachedData.sellerInfo) {
+            sellerInfoFromCache = { ...cachedData.sellerInfo, sellerId: sellerId };
+        } else if (sellerCache.has(sellerId)) {
+            sellerInfoFromCache = { ...sellerCache.get(sellerId), sellerId: sellerId };
+        } else {
+            sellerInfoFromCache = { sellerId: sellerId };
+        }
+
+        sendEvent('complete', { ...cachedData, sellerInfo: sellerInfoFromCache, fromCache: true });
         return res.end();
     }
 
@@ -376,13 +792,41 @@ app.get('/api/mine-stream', authMiddleware, miningLimitMiddleware, async (req, r
         // Cache result
         cache.set(cacheKey, result);
 
-        // Increment mining count in Supabase
-        await incrementMiningCount(userId);
+        // Consume credit in Supabase
+        await consumeCredit(userId);
 
         sendEvent('progress', { stage: 'done', message: 'Mineração concluída!' });
-        sendEvent('complete', { ...result, miningInfo: req.miningInfo });
 
-        console.log(`[Server] Mineração SSE concluída: ${result.productCount} produtos`);
+        // Determine the best sellerInfo to use:
+        // 1. Prefer result.sellerInfo from fresh scraping
+        // 2. Fall back to existingSellerInfo from cache
+        // 3. Last resort: create minimal object with just sellerId for comparison
+        let finalSellerInfo;
+
+        if (result.sellerInfo) {
+            // Fresh data from scraper - cache it and use it
+            finalSellerInfo = { ...result.sellerInfo, sellerId: sellerId };
+            sellerCache.set(sellerId, result.sellerInfo);
+            console.log(`[Server] Using fresh sellerInfo from scraper, cached for future use`);
+        } else if (existingSellerInfo) {
+            // Use cached seller info
+            finalSellerInfo = { ...existingSellerInfo, sellerId: sellerId };
+            console.log(`[Server] Using existingSellerInfo from cache`);
+        } else {
+            // Last resort: minimal object for "Já salvo" check only
+            finalSellerInfo = { sellerId: sellerId };
+            console.log(`[Server] No sellerInfo available, using minimal object`);
+        }
+
+        console.log(`[Server] DEBUG: finalSellerInfo.sellerId = ${finalSellerInfo?.sellerId}, has nickname = ${!!finalSellerInfo?.nickname}`);
+
+        sendEvent('complete', {
+            ...result,
+            sellerInfo: finalSellerInfo,
+            miningInfo: req.miningInfo
+        });
+
+        console.log(`[Server] Mineração SSE concluída: ${result.productCount} produtos | sellerId: ${sellerId}`);
 
     } catch (error) {
         console.error('[Server] Erro na mineração SSE:', error.message);
@@ -622,20 +1066,39 @@ app.get('/api/tiers', (req, res) => {
 
 /**
  * GET /api/user/mining-status
- * Get current user's mining usage based on tier
+ * Get current user's credits and mining status
  */
 app.get('/api/user/mining-status', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
-        const data = await getUserMiningData(userId);
-        const limit = TIER_LIMITS[data.tier] || TIER_LIMITS.guest;
+
+        // Check and renew credits if needed
+        await checkAndRenewCredits(userId);
+
+        // Get updated credits data
+        const data = await getUserCreditsData(userId);
+
+        // IMPORTANT: Normalize tier name using getTierByName to handle
+        // Portuguese names (ouro, prata) and English names (gold, silver)
+        const tierInfo = getTierInfo(data.tier);
+        const normalizedTierName = tierInfo.name; // Get the canonical tier name
+
+        // Use the tier's credits from the TIERS config, not TIER_CREDITS lookup
+        const maxCredits = tierInfo.credits;
+        const maxProducts = TIER_MINING_MAX_PRODUCTS[normalizedTierName] || TIER_MINING_MAX_PRODUCTS.guest;
+
+        // Calculate next renewal date
+        const nextRenewal = tierInfo.isRenewable ? getNextRenewalDate(data.creditsLastReset) : null;
+
+        console.log(`[Server] mining-status: tier=${data.tier} -> normalized=${normalizedTierName}, credits=${data.credits}/${maxCredits}`);
 
         res.json({
-            tier: getTierInfo(data.tier),
-            used: data.miningCount,
-            limit: limit === Infinity ? 'unlimited' : limit,
-            remaining: limit === Infinity ? 'unlimited' : Math.max(0, limit - data.miningCount),
-            canMine: limit === Infinity || data.miningCount < limit
+            tier: tierInfo,
+            credits: data.credits,
+            maxCredits,
+            maxProducts,
+            nextRenewal: nextRenewal ? nextRenewal.toISOString() : null,
+            canMine: data.credits > 0
         });
     } catch (error) {
         console.error('[Server] Error in mining-status:', error);
@@ -667,16 +1130,22 @@ app.get('/api/saved-sellers', authMiddleware, async (req, res) => {
  */
 app.post('/api/saved-sellers', authMiddleware, async (req, res) => {
     try {
-        const { nickname, sellerUrl, sellerId, sellerName, sellerAvatar, iconType, iconValue } = req.body;
+        const { nickname, sellerUrl, sellerId: frontendSellerId, sellerName, sellerAvatar, iconType, iconValue } = req.body;
 
         if (!nickname || !sellerUrl) {
             return res.status(400).json({ error: 'Apelido e URL são obrigatórios' });
         }
 
-        const seller = await saveSeller(req.user.id, {
+        // Extract sellerId from URL if frontend didn't send it (or sent undefined/null)
+        const extractedSellerId = scraper.extractUserId(sellerUrl);
+        const finalSellerId = frontendSellerId || extractedSellerId;
+
+        console.log(`[Server] Saving seller: nickname=${nickname}, frontendSellerId=${frontendSellerId}, extractedSellerId=${extractedSellerId}, finalSellerId=${finalSellerId}`);
+
+        const seller = await saveSeller(req.user.id, req.user.tier, {
             nickname,
             sellerUrl,
-            sellerId,
+            sellerId: finalSellerId,
             sellerName,
             sellerAvatar,
             iconType,
@@ -686,6 +1155,17 @@ app.post('/api/saved-sellers', authMiddleware, async (req, res) => {
         res.status(201).json({ seller });
     } catch (error) {
         console.error('[Server] Error saving seller:', error);
+
+        if (error.message.startsWith('LIMIT_REACHED')) {
+            const [, used, limit] = error.message.split(':');
+            return res.status(403).json({
+                error: 'Limite de vendedores atingido',
+                code: 'LIMIT_REACHED',
+                used: parseInt(used),
+                limit: parseInt(limit)
+            });
+        }
+
         res.status(error.message.includes('apelido') ? 400 : 500).json({ error: error.message });
     }
 });
@@ -714,6 +1194,318 @@ app.delete('/api/saved-sellers/:id', authMiddleware, async (req, res) => {
         res.json({ success: true });
     } catch (error) {
         console.error('[Server] Error deleting seller:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/saved-sellers/migrate-ids
+ * Migration endpoint to fix NULL seller_ids by extracting from seller_url
+ */
+app.post('/api/saved-sellers/migrate-ids', authMiddleware, async (req, res) => {
+    try {
+        console.log('[Server] Running seller_id migration for user:', req.user.id);
+
+        // Get all saved sellers for user
+        const sellers = await getSavedSellers(req.user.id);
+        let updated = 0;
+
+        for (const seller of sellers) {
+            // Skip if already has seller_id
+            if (seller.seller_id) continue;
+
+            // Extract seller_id from seller_url
+            const extractedId = scraper.extractUserId(seller.seller_url);
+            if (!extractedId) continue;
+
+            // Update in database
+            const { error } = await supabase
+                .from('saved_sellers')
+                .update({ seller_id: extractedId })
+                .eq('id', seller.id);
+
+            if (!error) {
+                updated++;
+                console.log(`[Server] Updated seller_id for ${seller.nickname}: ${extractedId}`);
+            }
+        }
+
+        console.log(`[Server] Migration complete: ${updated} sellers updated`);
+        res.json({ success: true, updated, total: sellers.length });
+    } catch (error) {
+        console.error('[Server] Migration error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
+// SAVED PRODUCTS API
+// ============================================
+
+/**
+ * GET /api/saved-products
+ * Get all saved products for user with count and limit info
+ */
+app.get('/api/saved-products', authMiddleware, async (req, res) => {
+    try {
+        const products = await getSavedProducts(req.user.id);
+        const count = products.length;
+        const tier = req.user.tier || 'guest';
+        const limit = TIER_SAVE_LIMITS[tier] || TIER_SAVE_LIMITS.guest;
+
+        res.json({
+            products,
+            count,
+            limit,
+            tier
+        });
+    } catch (error) {
+        console.error('[Server] Error getting saved products:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/saved-products
+ * Save a new product
+ */
+app.post('/api/saved-products', authMiddleware, async (req, res) => {
+    try {
+        const { productUrl, productTitle, productPrice, productImage, productCurrency, sellerName } = req.body;
+
+        if (!productUrl) {
+            return res.status(400).json({ error: 'URL do produto é obrigatória' });
+        }
+
+        const tier = req.user.tier || 'guest';
+        const product = await saveProduct(req.user.id, tier, {
+            productUrl,
+            productTitle,
+            productPrice,
+            productImage,
+            productCurrency,
+            sellerName
+        });
+
+        const count = await getSaveCount(req.user.id);
+        const limit = TIER_SAVE_LIMITS[tier] || TIER_SAVE_LIMITS.guest;
+
+        res.status(201).json({
+            product,
+            count,
+            limit
+        });
+    } catch (error) {
+        console.error('[Server] Error saving product:', error);
+
+        if (error.message.startsWith('LIMIT_REACHED')) {
+            const [, used, limit] = error.message.split(':');
+            return res.status(403).json({
+                error: 'Limite de produtos salvos atingido',
+                code: 'LIMIT_REACHED',
+                used: parseInt(used),
+                limit: parseInt(limit)
+            });
+        }
+
+        if (error.message.includes('já está salvo')) {
+            return res.status(409).json({ error: 'Produto já está salvo' });
+        }
+
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * DELETE /api/saved-products/:id
+ * Remove a saved product by ID
+ */
+app.delete('/api/saved-products/:id', authMiddleware, async (req, res) => {
+    try {
+        await deleteProductById(req.user.id, req.params.id);
+
+        const count = await getSaveCount(req.user.id);
+        const tier = req.user.tier || 'guest';
+        const limit = TIER_SAVE_LIMITS[tier] || TIER_SAVE_LIMITS.guest;
+
+        res.json({ success: true, count, limit });
+    } catch (error) {
+        console.error('[Server] Error deleting product:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/saved-products/toggle
+ * Toggle save status (save or unsave based on current state)
+ */
+app.post('/api/saved-products/toggle', authMiddleware, async (req, res) => {
+    try {
+        const { productUrl, productTitle, productPrice, productImage, productCurrency, sellerName } = req.body;
+
+        if (!productUrl) {
+            return res.status(400).json({ error: 'URL do produto é obrigatória' });
+        }
+
+        const isSaved = await isProductSaved(req.user.id, productUrl);
+        const tier = req.user.tier || 'guest';
+        const limit = TIER_SAVE_LIMITS[tier] || TIER_SAVE_LIMITS.guest;
+
+        if (isSaved) {
+            // Unsave
+            await deleteProductByUrl(req.user.id, productUrl);
+            const count = await getSaveCount(req.user.id);
+            return res.json({ saved: false, count, limit });
+        } else {
+            // Save
+            const product = await saveProduct(req.user.id, tier, {
+                productUrl,
+                productTitle,
+                productPrice,
+                productImage,
+                productCurrency,
+                sellerName
+            });
+            const count = await getSaveCount(req.user.id);
+            return res.json({ saved: true, product, count, limit });
+        }
+    } catch (error) {
+        console.error('[Server] Error toggling product save:', error);
+
+        if (error.message.startsWith('LIMIT_REACHED')) {
+            const [, used, limit] = error.message.split(':');
+            return res.status(403).json({
+                error: 'Limite de produtos salvos atingido',
+                code: 'LIMIT_REACHED',
+                used: parseInt(used),
+                limit: parseInt(limit)
+            });
+        }
+
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * GET /api/saved-products/check
+ * Check if a product is saved (by URL)
+ */
+app.get('/api/saved-products/check', authMiddleware, async (req, res) => {
+    try {
+        const { url } = req.query;
+        if (!url) {
+            return res.status(400).json({ error: 'URL é obrigatória' });
+        }
+
+        const saved = await isProductSaved(req.user.id, url);
+        res.json({ saved });
+    } catch (error) {
+        console.error('[Server] Error checking product:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
+// PRODUCT COLLECTIONS API
+// ============================================
+
+/**
+ * GET /api/collections
+ * List all collections for user with product counts
+ */
+app.get('/api/collections', authMiddleware, async (req, res) => {
+    try {
+        const collections = await getCollections(req.user.id);
+        const tier = req.user.tier || 'guest';
+        const limit = TIER_COLLECTION_LIMITS[tier] || TIER_COLLECTION_LIMITS.guest;
+
+        res.json({
+            collections,
+            count: collections.length,
+            limit: limit === Infinity ? 'unlimited' : limit,
+            icons: COLLECTION_ICONS,
+            colors: COLLECTION_COLORS
+        });
+    } catch (error) {
+        console.error('[Server] Error getting collections:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * POST /api/collections
+ * Create a new collection
+ */
+app.post('/api/collections', authMiddleware, async (req, res) => {
+    try {
+        const { name, icon, color } = req.body;
+
+        if (!name) {
+            return res.status(400).json({ error: 'Nome da coleção é obrigatório' });
+        }
+
+        const tier = req.user.tier || 'guest';
+        const collection = await createCollection(req.user.id, tier, { name, icon, color });
+
+        res.status(201).json({ collection });
+    } catch (error) {
+        console.error('[Server] Error creating collection:', error);
+
+        if (error.message.startsWith('LIMIT_REACHED')) {
+            const [, used, limit] = error.message.split(':');
+            return res.status(403).json({
+                error: 'Limite de coleções atingido',
+                code: 'LIMIT_REACHED',
+                used: parseInt(used),
+                limit: parseInt(limit)
+            });
+        }
+
+        res.status(error.message.includes('obrigatório') || error.message.includes('máximo') ? 400 : 500)
+            .json({ error: error.message });
+    }
+});
+
+/**
+ * PUT /api/collections/:id
+ * Update a collection
+ */
+app.put('/api/collections/:id', authMiddleware, async (req, res) => {
+    try {
+        const collection = await updateCollection(req.user.id, req.params.id, req.body);
+        res.json({ collection });
+    } catch (error) {
+        console.error('[Server] Error updating collection:', error);
+        res.status(error.message.includes('obrigatório') || error.message.includes('máximo') ? 400 : 500)
+            .json({ error: error.message });
+    }
+});
+
+/**
+ * DELETE /api/collections/:id
+ * Delete a collection (products are unlinked, not deleted)
+ */
+app.delete('/api/collections/:id', authMiddleware, async (req, res) => {
+    try {
+        await deleteCollection(req.user.id, req.params.id);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[Server] Error deleting collection:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+/**
+ * PUT /api/saved-products/:id/collection
+ * Move a product to a collection (or remove from collection if collectionId is null)
+ */
+app.put('/api/saved-products/:id/collection', authMiddleware, async (req, res) => {
+    try {
+        const { collectionId } = req.body;
+        const product = await moveProductToCollection(req.user.id, req.params.id, collectionId);
+        res.json({ product });
+    } catch (error) {
+        console.error('[Server] Error moving product to collection:', error);
         res.status(500).json({ error: error.message });
     }
 });

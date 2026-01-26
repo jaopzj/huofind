@@ -18,6 +18,14 @@ export const SELLER_ICONS = [
     { id: 'shoe', emoji: '👟', name: 'Tênis' }
 ];
 
+// Limites de vendedores salvos por tier
+export const TIER_SELLER_LIMITS = {
+    guest: 1,
+    bronze: 10,
+    silver: 20,
+    gold: 40
+};
+
 /**
  * Busca todos os vendedores salvos do usuário
  */
@@ -40,12 +48,39 @@ export async function getSavedSellers(userId) {
 }
 
 /**
+ * Conta quantos vendedores o usuário salvou
+ */
+export async function getSavedSellersCount(userId) {
+    const { count, error } = await supabase
+        .from('saved_sellers')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId);
+
+    if (error) {
+        console.error(`[SavedSellers] ❌ Erro ao contar: ${error.message}`);
+        throw new Error('Erro ao contar vendedores salvos');
+    }
+
+    return count || 0;
+}
+
+/**
  * Salva um novo vendedor
  */
-export async function saveSeller(userId, sellerData) {
+export async function saveSeller(userId, userTier, sellerData) {
     const { nickname, sellerUrl, sellerId, sellerName, sellerAvatar, iconType, iconValue } = sellerData;
 
-    console.log(`[SavedSellers] 💾 Salvando vendedor: ${nickname}`);
+    console.log(`[SavedSellers] 💾 Salvando vendedor para user ${userId}: ${nickname}`);
+
+    // Verificar limite do tier
+    const tier = userTier || 'guest';
+    const limit = TIER_SELLER_LIMITS[tier] || TIER_SELLER_LIMITS.guest;
+    const currentCount = await getSavedSellersCount(userId);
+
+    if (currentCount >= limit) {
+        console.log(`[SavedSellers] ⚠️ Limite de vendedores atingido: ${currentCount}/${limit}`);
+        throw new Error(`LIMIT_REACHED:${currentCount}:${limit}`);
+    }
 
     // Verificar se apelido já existe
     const exists = await checkNicknameExists(userId, nickname);
@@ -162,5 +197,7 @@ export default {
     updateSeller,
     deleteSeller,
     checkNicknameExists,
+    getSavedSellersCount,
+    TIER_SELLER_LIMITS,
     SELLER_ICONS
 };

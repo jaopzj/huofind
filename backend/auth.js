@@ -1,6 +1,12 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import supabase from './supabase.js';
+import { createClient } from '@supabase/supabase-js';
+
+// Create a Supabase client for auth operations (with anon key for user signup)
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_me';
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
@@ -39,43 +45,53 @@ function verifyToken(token) {
 }
 
 /**
- * Register a new user
+ * Register a new user using Supabase Auth (with email confirmation)
  */
 export async function registerUser(email, password, name) {
     try {
-        // Check if user already exists
-        const { data: existingUser } = await supabase
-            .from('users')
-            .select('id')
-            .eq('email', email.toLowerCase())
-            .single();
+        const emailLower = email.toLowerCase();
 
-        if (existingUser) {
-            return { error: 'Email já cadastrado', code: 'EMAIL_EXISTS' };
+        // Use Supabase Auth to create user
+        const { data: authData, error: authError } = await supabaseAuth.auth.signUp({
+            email: emailLower,
+            password: password,
+            options: {
+                data: { name: name || null }
+            }
+        });
+
+        if (authError) {
+            console.error('[Auth] Supabase Auth error:', authError);
+            if (authError.message.includes('already registered')) {
+                return { error: 'Email já cadastrado', code: 'EMAIL_EXISTS' };
+            }
+            return { error: authError.message, code: 'AUTH_ERROR' };
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const passwordHash = await bcrypt.hash(password, salt);
+        const userId = authData.user.id;
 
-        // Insert new user
-        const { data: newUser, error } = await supabase
-            .from('users')
-            .insert({
-                email: email.toLowerCase(),
-                password_hash: passwordHash,
-                name: name || null
-            })
-            .select('id, email, name, created_at')
-            .single();
+        // Sync to public.users table immediately
+        await supabase.from('users').upsert({
+            id: userId,
+            email: emailLower,
+            name: name || null,
+            tier: 'guest',
+            credits: 3,
+            mining_count: 0
+        }, { onConflict: 'id' });
 
-        if (error) {
-            console.error('[Auth] Error creating user:', error);
-            return { error: 'Erro ao criar usuário', code: 'DB_ERROR' };
+        // Check if email confirmation is required
+        if (authData.user && !authData.user.email_confirmed_at) {
+            console.log(`[Auth] User registered, awaiting email confirmation: ${emailLower}`);
+            return {
+                requiresEmailConfirmation: true,
+                email: emailLower,
+                message: 'Verifique seu e-mail para confirmar a conta'
+            };
         }
 
-        // Generate tokens
-        const accessToken = generateToken(newUser.id, newUser.email);
+        // Create session tokens
+        const accessToken = generateToken(userId, emailLower);
         const refreshToken = generateRefreshToken();
 
         // Store refresh token
@@ -83,24 +99,13 @@ export async function registerUser(email, password, name) {
         expiresAt.setDate(expiresAt.getDate() + 30);
 
         await supabase.from('sessions').insert({
-            user_id: newUser.id,
+            user_id: userId,
             refresh_token: refreshToken,
             expires_at: expiresAt.toISOString()
         });
 
-        // Create default settings
-        await supabase.from('user_settings').insert({
-            user_id: newUser.id
-        });
-
-        console.log(`[Auth] User registered: ${newUser.email}`);
-
         return {
-            user: {
-                id: newUser.id,
-                email: newUser.email,
-                name: newUser.name
-            },
+            user: { id: userId, email: emailLower, name },
             accessToken,
             refreshToken
         };
@@ -111,32 +116,34 @@ export async function registerUser(email, password, name) {
 }
 
 /**
- * Login user with email and password
+ * Check if email has been confirmed and return tokens if so
  */
-export async function loginUser(email, password) {
+export async function checkEmailConfirmed(email) {
     try {
-        // Find user by email (include tier and mining_count for rate limiting)
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('id, email, name, password_hash, avatar_url, tier, mining_count')
-            .eq('email', email.toLowerCase())
-            .single();
+        const { data: { users }, error } = await supabase.auth.admin.listUsers();
+        if (error) throw error;
 
-        if (error || !user) {
-            return { error: 'Email ou senha incorretos', code: 'INVALID_CREDENTIALS' };
-        }
+        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if (!user) return { confirmed: false, error: 'User not found' };
 
-        // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.password_hash);
-        if (!isValidPassword) {
-            return { error: 'Email ou senha incorretos', code: 'INVALID_CREDENTIALS' };
-        }
+        if (!user.email_confirmed_at) return { confirmed: false };
 
-        // Generate tokens
-        const accessToken = generateToken(user.id, user.email);
+        const emailLower = user.email.toLowerCase();
+        const userName = user.user_metadata?.name || null;
+
+        // Ensure user is in public.users
+        await supabase.from('users').upsert({
+            id: user.id,
+            email: emailLower,
+            name: userName
+        }, { onConflict: 'id' });
+
+        // Ensure user_settings exists
+        await supabase.from('user_settings').upsert({ user_id: user.id }, { onConflict: 'user_id' });
+
+        const accessToken = generateToken(user.id, emailLower);
         const refreshToken = generateRefreshToken();
 
-        // Store refresh token
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 30);
 
@@ -146,16 +153,101 @@ export async function loginUser(email, password) {
             expires_at: expiresAt.toISOString()
         });
 
-        console.log(`[Auth] User logged in: ${user.email}`);
+        return {
+            confirmed: true,
+            user: { id: user.id, email: emailLower, name: userName },
+            accessToken,
+            refreshToken
+        };
+    } catch (err) {
+        console.error('[Auth] CheckEmailConfirmed error:', err);
+        return { confirmed: false, error: err.message };
+    }
+}
+
+/**
+ * Resend confirmation email
+ */
+export async function resendConfirmationEmail(email) {
+    try {
+        const { error } = await supabaseAuth.auth.resend({
+            type: 'signup',
+            email: email.toLowerCase()
+        });
+
+        if (error) {
+            console.error('[Auth] Resend confirmation error:', error);
+            return { error: error.message, code: 'RESEND_ERROR' };
+        }
+
+        console.log(`[Auth] Confirmation email resent to: ${email}`);
+        return { success: true };
+    } catch (err) {
+        console.error('[Auth] Resend error:', err);
+        return { error: 'Erro interno', code: 'INTERNAL_ERROR' };
+    }
+}
+
+/**
+ * Login user with email and password
+ */
+export async function loginUser(email, password) {
+    try {
+        const emailLower = email.toLowerCase();
+
+        // Use Supabase Auth for sign in
+        const { data: authData, error: authError } = await supabaseAuth.auth.signInWithPassword({
+            email: emailLower,
+            password: password
+        });
+
+        if (authError) {
+            console.error('[Auth] Supabase Login error:', authError);
+            return { error: 'Email ou senha incorretos', code: 'INVALID_CREDENTIALS' };
+        }
+
+        const user = authData.user;
+
+        // Sync to public.users to ensure data consistency
+        const { data: publicUser } = await supabase
+            .from('users')
+            .select('name, avatar_url, tier, mining_count')
+            .eq('id', user.id)
+            .single();
+
+        // If not in public.users, sync it now
+        if (!publicUser) {
+            await supabase.from('users').upsert({
+                id: user.id,
+                email: emailLower,
+                name: user.user_metadata?.name || null,
+                tier: 'guest',
+                credits: 3,
+                mining_count: 0
+            });
+        }
+
+        // Generate tokens for app session
+        const accessToken = generateToken(user.id, emailLower);
+        const refreshToken = generateRefreshToken();
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 30);
+
+        await supabase.from('sessions').insert({
+            user_id: user.id,
+            refresh_token: refreshToken,
+            expires_at: expiresAt.toISOString()
+        });
 
         return {
             user: {
                 id: user.id,
-                email: user.email,
-                name: user.name,
-                avatarUrl: user.avatar_url,
-                tier: user.tier || 'bronze',
-                miningCount: user.mining_count || 0
+                email: emailLower,
+                name: publicUser?.name || user.user_metadata?.name || null,
+                avatarUrl: publicUser?.avatar_url || null,
+                tier: publicUser?.tier || 'guest',
+                miningCount: publicUser?.mining_count || 0
             },
             accessToken,
             refreshToken
@@ -238,7 +330,7 @@ export async function getUserById(userId) {
     try {
         const { data: user, error } = await supabase
             .from('users')
-            .select('id, email, name, avatar_url, created_at')
+            .select('id, email, name, avatar_url, created_at, tier')
             .eq('id', userId)
             .single();
 
@@ -251,7 +343,8 @@ export async function getUserById(userId) {
             email: user.email,
             name: user.name,
             avatarUrl: user.avatar_url,
-            createdAt: user.created_at
+            createdAt: user.created_at,
+            tier: user.tier || 'guest'
         };
     } catch (err) {
         console.error('[Auth] Get user error:', err);

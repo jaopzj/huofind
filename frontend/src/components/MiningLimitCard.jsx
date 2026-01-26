@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
  * - onLimitReached: callback quando limite é atingido (para reset)
  * - showLimitError: indica se deve mostrar erro de limite
  */
-function MiningLimitCard({ used = 0, limit = 10, tier = 'guest', showLimitError = false, onDismissError }) {
+function MiningLimitCard({ credits = 0, maxCredits = 3, tier = 'guest', showLimitError = false, onDismissError }) {
     const [isError, setIsError] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -31,10 +31,9 @@ function MiningLimitCard({ used = 0, limit = 10, tier = 'guest', showLimitError 
         }
     }, [showLimitError, onDismissError]);
 
-    const isUnlimited = limit === 'unlimited' || limit === Infinity || tier === 'gold' || tier === 'ouro';
-    const remaining = isUnlimited ? '∞' : Math.max(0, limit - used);
-    const percentage = isUnlimited ? 100 : Math.min(100, (used / limit) * 100);
-    const isNearLimit = !isUnlimited && percentage >= 80;
+    const isOutOfCredits = credits <= 0;
+    const percentage = Math.min(100, (credits / maxCredits) * 100);
+    const isLowCredits = credits <= (maxCredits * 0.2); // 20% ou menos
 
     // Tier display info
     const tierInfo = {
@@ -77,10 +76,10 @@ function MiningLimitCard({ used = 0, limit = 10, tier = 'guest', showLimitError 
                         </span>
                         <div className="flex-1">
                             <p className="font-bold text-red-600 mb-1">
-                                Limite atingido!
+                                Créditos esgotados!
                             </p>
                             <p className="text-sm text-red-500">
-                                Você atingiu o limite de minerações. Faça upgrade na sua conta para aumentar seu limite e receber outros benefícios!
+                                Você não possui mais créditos de mineração para este período. Faça upgrade na sua conta para receber mais créditos mensalmente!
                             </p>
                         </div>
                     </div>
@@ -126,31 +125,31 @@ function MiningLimitCard({ used = 0, limit = 10, tier = 'guest', showLimitError 
                             <span
                                 className="text-2xl font-bold"
                                 style={{
-                                    color: isNearLimit ? '#EF4444' : 'var(--color-orange-500)'
+                                    color: isOutOfCredits ? '#EF4444' : 'var(--color-orange-500)'
                                 }}
                             >
-                                {used}
+                                {credits}
                             </span>
                             <span className="text-sm" style={{ color: '#9CA3AF' }}>
-                                / {isUnlimited ? '∞' : limit}
+                                / {maxCredits}
                             </span>
                         </div>
                         <p className="text-xs" style={{ color: '#9CA3AF' }}>
-                            minerações
+                            créditos
                         </p>
                     </div>
                 </div>
             )}
 
             {/* Progress Bar (only in normal state) */}
-            {!isError && !isUnlimited && (
+            {!isError && (
                 <div className="mt-3 h-1.5 rounded-full overflow-hidden" style={{ background: '#E5E7EB' }}>
                     <div
                         className="h-full rounded-full transition-all duration-500"
                         style={{
                             width: `${percentage}%`,
-                            background: isNearLimit
-                                ? 'linear-gradient(90deg, #F59E0B 0%, #EF4444 100%)'
+                            background: isLowCredits
+                                ? 'linear-gradient(90deg, #EF4444 0%, #F59E0B 100%)'
                                 : 'linear-gradient(90deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%)'
                         }}
                     />

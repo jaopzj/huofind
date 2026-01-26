@@ -1,39 +1,44 @@
 /**
- * Account Tier System
+ * Account Tier System - Credits Based
  * 
- * Defines mining limits based on user subscription tier
+ * Defines credits based on user subscription tier
  * 
  * Tiers:
- * - Bronze (free): 50 minings total
- * - Silver: 150 minings total
- * - Gold: Unlimited minings
+ * - Guest (logado sem assinatura): 3 créditos (não renova)
+ * - Bronze: 50 créditos/mês
+ * - Silver/Prata: 150 créditos/mês
+ * - Gold/Ouro: 300 créditos/mês
  */
 
-// Tier definitions
+// Tier definitions with credits
 export const TIERS = {
     GUEST: {
         name: 'guest',
         displayName: 'Visitante',
-        miningLimit: 10,
-        description: 'Plano gratuito com 10 minerações'
+        credits: 3,
+        isRenewable: false,
+        description: 'Conta gratuita com 3 créditos'
     },
     BRONZE: {
         name: 'bronze',
         displayName: 'Bronze',
-        miningLimit: 50,
-        description: 'Plano pago com 50 minerações'
+        credits: 50,
+        isRenewable: true,
+        description: 'Plano Bronze com 50 créditos mensais'
     },
     SILVER: {
         name: 'silver',
         displayName: 'Prata',
-        miningLimit: 150,
-        description: 'Plano Prata com 150 minerações'
+        credits: 150,
+        isRenewable: true,
+        description: 'Plano Prata com 150 créditos mensais'
     },
     GOLD: {
         name: 'gold',
         displayName: 'Ouro',
-        miningLimit: Infinity, // Unlimited
-        description: 'Plano Ouro com minerações ilimitadas'
+        credits: 300,
+        isRenewable: true,
+        description: 'Plano Ouro com 300 créditos mensais'
     }
 };
 
@@ -45,14 +50,18 @@ export const getTierByName = (tierName) => {
     const normalized = (tierName || 'guest').toLowerCase();
     switch (normalized) {
         case 'guest':
+        case 'convidado':
             return TIERS.GUEST;
         case 'bronze':
+        case 'explorador':
             return TIERS.BRONZE;
         case 'silver':
         case 'prata':
+        case 'escavador':
             return TIERS.SILVER;
         case 'gold':
         case 'ouro':
+        case 'minerador':
             return TIERS.GOLD;
         default:
             return TIERS.GUEST; // Unknown tiers default to guest
@@ -60,21 +69,31 @@ export const getTierByName = (tierName) => {
 };
 
 /**
- * Check if user can mine based on their tier and usage
+ * Get credits for a tier
  */
-export const canUserMine = (userTier, miningCount) => {
-    const tier = getTierByName(userTier);
+export const getTierCredits = (tierName) => {
+    const tier = getTierByName(tierName);
+    return tier.credits;
+};
 
-    if (tier.miningLimit === Infinity) {
-        return { allowed: true, remaining: Infinity };
-    }
+/**
+ * Check if tier has renewable credits
+ */
+export const isTierRenewable = (tierName) => {
+    const tier = getTierByName(tierName);
+    return tier.isRenewable;
+};
 
-    const remaining = tier.miningLimit - (miningCount || 0);
+/**
+ * Check if user can mine based on their credits
+ * @param {number} currentCredits - User's current credit balance
+ * @returns {object} - { allowed, credits }
+ */
+export const canUserMine = (currentCredits) => {
+    const hasCredits = currentCredits > 0;
     return {
-        allowed: remaining > 0,
-        remaining: Math.max(0, remaining),
-        limit: tier.miningLimit,
-        tier: tier.name
+        allowed: hasCredits,
+        credits: currentCredits
     };
 };
 
@@ -86,9 +105,10 @@ export const getTierInfo = (tierName) => {
     return {
         name: tier.name,
         displayName: tier.displayName,
-        limit: tier.miningLimit === Infinity ? 'Ilimitado' : tier.miningLimit,
+        credits: tier.credits,
+        isRenewable: tier.isRenewable,
         description: tier.description
     };
 };
 
-export default { TIERS, getTierByName, canUserMine, getTierInfo };
+export default { TIERS, getTierByName, getTierCredits, isTierRenewable, canUserMine, getTierInfo };

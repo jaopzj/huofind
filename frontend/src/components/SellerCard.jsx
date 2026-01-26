@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 /**
  * SellerCard - Componente visual premium para exibir pontuação de confiança do vendedor
@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
  * - variant="full": Layout expandido para lista de resultados (3 colunas, glassmorphism)
  * - variant="compact": Layout condesado para Hero section (2 colunas, mais limpo)
  */
-function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller }) {
+function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isSaved = false }) {
     const [view, setView] = useState('report'); // 'report' ou 'save'
     const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -14,9 +14,38 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller }) {
     const [saveNickname, setSaveNickname] = useState('');
     const [selectedIcon, setSelectedIcon] = useState('🏪');
     const [saving, setSaving] = useState(false);
-    const [saved, setSaved] = useState(false);
+    const [saved, setSaved] = useState(isSaved);
+
+    // Sync isSaved prop with local state
+    useEffect(() => {
+        console.log('[SellerCard] isSaved prop changed:', isSaved, '| sellerInfo.sellerId:', sellerInfo?.sellerId);
+        setSaved(isSaved);
+    }, [isSaved, sellerInfo?.sellerId]);
 
     const ICONS = ['🏪', '⭐', '🔥', '💎', '📱', '⌚', '👜', '👟'];
+
+    // Height animation ref
+    const contentRef = useRef(null);
+    const [contentHeight, setContentHeight] = useState(0);
+
+    // Initial measurement on mount
+    useEffect(() => {
+        if (contentRef.current) {
+            setContentHeight(contentRef.current.scrollHeight);
+        }
+    }, []);
+
+    // Measure content height when view changes
+    useEffect(() => {
+        // Double RAF to ensure DOM is fully updated
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                if (contentRef.current) {
+                    setContentHeight(contentRef.current.scrollHeight);
+                }
+            });
+        });
+    }, [view]);
 
     // Trigger transition animation
     const handleToggleView = (newView) => {
@@ -100,171 +129,172 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller }) {
             {/* Orange Shutter Animation Block */}
             <div className="seller-card-transition-block"></div>
 
-            {/* View 1: Seller Report */}
-            {view === 'report' && (
-                <div className={`p-6 animate-scale-in relative z-10`}>
-                    <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-                        {/* Profile */}
-                        <div className="flex items-center gap-5 flex-1 min-w-0">
-                            <div className="relative">
-                                {avatar ? (
-                                    <img src={avatar} alt={sellerNickname} className="w-20 h-20 rounded-2xl object-cover shadow-sm" style={{ border: '3px solid white' }} />
-                                ) : (
-                                    <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #FF9A76 0%, #FF6B35 100%)', border: '3px solid white' }}>
-                                        <span className="text-3xl">👤</span>
+            {/* Content Wrapper with animated height - matches AuthCard pattern */}
+            <div
+                className="overflow-hidden"
+                style={{
+                    height: contentHeight ? `${contentHeight}px` : 'auto',
+                    transition: 'height 0.4s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+            >
+                <div ref={contentRef}>
+                    {/* View 1: Seller Report */}
+                    {view === 'report' && (
+                        <div className="p-6 relative z-10">
+                            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+                                {/* Profile */}
+                                <div className="flex items-center gap-5 flex-1 min-w-0">
+                                    <div className="relative">
+                                        {avatar ? (
+                                            <img src={avatar} alt={sellerNickname} className="w-20 h-20 rounded-2xl object-cover shadow-sm" style={{ border: '3px solid white' }} />
+                                        ) : (
+                                            <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #FF9A76 0%, #FF6B35 100%)', border: '3px solid white' }}>
+                                                <span className="text-3xl">👤</span>
+                                            </div>
+                                        )}
+                                        {level > 0 && (
+                                            <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full shadow-sm border-2 border-white">
+                                                L{level}
+                                            </div>
+                                        )}
                                     </div>
-                                )}
-                                {level > 0 && (
-                                    <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full shadow-sm border-2 border-white">
-                                        L{level}
-                                    </div>
-                                )}
-                            </div>
 
-                            <div className="min-w-0 flex-1">
-                                <h2 className="text-xl font-bold truncate mb-1" style={{ color: '#1F2937' }}>
-                                    {sellerNickname || 'Vendedor do Xianyu'}
-                                </h2>
-                                <div className="flex items-center gap-2 flex-wrap">
-                                    <span className="px-2.5 py-0.5 rounded-md text-xs font-medium flex items-center gap-1.5" style={{ background: colors.bg, color: colors.text }}>
-                                        {classificationIcon} {classification}
-                                    </span>
-                                    {monthsActiveFormatted && (
-                                        <span className="text-xs text-gray-500 flex items-center gap-1">
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            {monthsActiveFormatted}
-                                        </span>
+                                    <div className="min-w-0 flex-1">
+                                        <h2 className="text-xl font-bold truncate mb-1" style={{ color: '#1F2937' }}>
+                                            {sellerNickname || 'Vendedor do Xianyu'}
+                                        </h2>
+                                        <div className="flex items-center gap-2 flex-wrap">
+                                            <span className="px-2.5 py-0.5 rounded-md text-xs font-medium flex items-center gap-1.5" style={{ background: colors.bg, color: colors.text }}>
+                                                {classificationIcon} {classification}
+                                            </span>
+                                            {monthsActiveFormatted && (
+                                                <span className="text-xs text-gray-500 flex items-center gap-1">
+                                                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                                    {monthsActiveFormatted}
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Metrics */}
+                                <div className="flex items-center gap-8 px-6 md:border-l md:border-r border-gray-100 flex-shrink-0">
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{formatMetric(salesCount, salesCountFormatted)}</p>
+                                        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Produtos</p>
+                                    </div>
+                                    <div className="text-center">
+                                        <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{formatMetric(followers, followersFormatted)}</p>
+                                        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Seguidores</p>
+                                    </div>
+                                </div>
+
+                                {/* Score & Save Button */}
+                                <div className="flex items-center gap-6 flex-shrink-0 min-w-[200px] justify-center md:justify-end">
+                                    {onSaveSeller && sellerUrl && (
+                                        <button
+                                            onClick={() => handleToggleView('save')}
+                                            disabled={saved}
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${saved ? 'bg-green-100 text-green-600 cursor-default' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                                                }`}
+                                        >
+                                            {saved ? '✓ Já salvo!' : '📌 Salvar Vendedor'}
+                                        </button>
                                     )}
+
+                                    <div className="relative w-16 h-16 flex items-center justify-center">
+                                        <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
+                                            <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                            <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={colors.gradient} strokeWidth="3" strokeDasharray={`${score}, 100`} strokeLinecap="round" />
+                                        </svg>
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <span className="text-xl font-bold" style={{ color: '#1F2937' }}>{score}</span>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
+                    )}
 
-                        {/* Metrics */}
-                        <div className="flex items-center gap-8 px-6 md:border-l md:border-r border-gray-100 flex-shrink-0">
-                            <div className="text-center">
-                                <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{formatMetric(salesCount, salesCountFormatted)}</p>
-                                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Produtos</p>
-                            </div>
-                            <div className="text-center">
-                                <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{formatMetric(followers, followersFormatted)}</p>
-                                <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Seguidores</p>
-                            </div>
-                        </div>
+                    {/* View 2: Save Menu */}
+                    {view === 'save' && (
+                        <div className="p-6 animate-scale-in relative z-10 flex flex-col md:flex-row items-center gap-6 bg-orange-50/30">
+                            <div className="flex-1">
+                                <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+                                    <span>📌</span> Salvar Vendedor
+                                </h3>
+                                <p className="text-sm text-gray-500 mb-4">Escolha um apelido único para facilitar o acesso.</p>
 
-                        {/* Score & Save Button */}
-                        <div className="flex items-center gap-6 flex-shrink-0 min-w-[200px] justify-center md:justify-end">
-                            {onSaveSeller && sellerUrl && (
+                                <div className="flex flex-col md:flex-row gap-4 items-end">
+                                    <div className="flex-1 w-full">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Apelido do Vendedor</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Ex: iPhone Master"
+                                            value={saveNickname}
+                                            onChange={(e) => setSaveNickname(e.target.value)}
+                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
+                                            maxLength={50}
+                                            autoFocus
+                                        />
+                                    </div>
+
+                                    <div className="w-full md:w-auto">
+                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block text-center md:text-left">Ícone</label>
+                                        <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-200">
+                                            {ICONS.slice(0, 4).map(icon => (
+                                                <button
+                                                    key={icon}
+                                                    onClick={() => setSelectedIcon(icon)}
+                                                    className={`w-10 h-10 rounded-lg text-xl transition-all ${selectedIcon === icon ? 'bg-orange-100 shadow-inner' : 'hover:bg-gray-50'}`}
+                                                >
+                                                    {icon}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col gap-3 min-w-[150px] w-full md:w-auto">
                                 <button
-                                    onClick={() => handleToggleView('save')}
-                                    disabled={saved}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${saved ? 'bg-green-100 text-green-600 cursor-default' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
-                                        }`}
+                                    onClick={async () => {
+                                        if (!saveNickname.trim()) return;
+                                        setSaving(true);
+                                        try {
+                                            await onSaveSeller({
+                                                nickname: saveNickname.trim(),
+                                                sellerUrl,
+                                                sellerId: sellerInfo.sellerId,
+                                                sellerName: saveNickname || sellerInfo.nickname,
+                                                sellerAvatar: sellerInfo.avatar,
+                                                iconValue: selectedIcon
+                                            });
+                                            setSaved(true);
+                                            handleToggleView('report');
+                                        } catch (err) {
+                                            alert(err.message);
+                                        } finally {
+                                            setSaving(false);
+                                        }
+                                    }}
+                                    disabled={saving || !saveNickname.trim()}
+                                    className="w-full py-3.5 rounded-xl text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                    style={{ background: 'var(--color-orange-500)' }}
                                 >
-                                    {saved ? '✓ Salvo' : '📌 Salvar Vendedor'}
+                                    {saving ? 'Salvando...' : 'Confirmar'}
                                 </button>
-                            )}
-
-                            <div className="relative w-16 h-16 flex items-center justify-center">
-                                <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
-                                    <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
-                                    <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={colors.gradient} strokeWidth="3" strokeDasharray={`${score}, 100`} strokeLinecap="round" />
-                                </svg>
-                                <div className="absolute inset-0 flex items-center justify-center">
-                                    <span className="text-xl font-bold" style={{ color: '#1F2937' }}>{score}</span>
-                                </div>
+                                <button
+                                    onClick={() => handleToggleView('report')}
+                                    className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase tracking-widest"
+                                >
+                                    Cancelar
+                                </button>
                             </div>
                         </div>
-                    </div>
+                    )}
                 </div>
-            )}
-
-            {/* View 2: Save Menu */}
-            {view === 'save' && (
-                <div className="p-6 animate-scale-in relative z-10 flex flex-col md:flex-row items-center gap-6 bg-orange-50/30">
-                    <div className="flex-1">
-                        <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
-                            <span>📌</span> Salvar Vendedor
-                        </h3>
-                        <p className="text-sm text-gray-500 mb-4">Escolha um apelido único para facilitar o acesso.</p>
-
-                        <div className="flex flex-col md:flex-row gap-4 items-end">
-                            <div className="flex-1 w-full">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Apelido do Vendedor</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ex: iPhone Master"
-                                    value={saveNickname}
-                                    onChange={(e) => setSaveNickname(e.target.value)}
-                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
-                                    maxLength={50}
-                                    autoFocus
-                                />
-                            </div>
-
-                            <div className="w-full md:w-auto">
-                                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block text-center md:text-left">Ícone</label>
-                                <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-200">
-                                    {avatar && (
-                                        <button
-                                            key="photo"
-                                            onClick={() => setSelectedIcon('PHOTO')}
-                                            className={`w-10 h-10 rounded-lg overflow-hidden transition-all ${selectedIcon === 'PHOTO' ? 'ring-2 ring-orange-500 shadow-sm' : 'hover:bg-gray-50 opacity-60'}`}
-                                            title="Usar foto do vendedor"
-                                        >
-                                            <img src={avatar} alt="Seller" className="w-full h-full object-cover" />
-                                        </button>
-                                    )}
-                                    {ICONS.slice(0, avatar ? 3 : 4).map(icon => (
-                                        <button
-                                            key={icon}
-                                            onClick={() => setSelectedIcon(icon)}
-                                            className={`w-10 h-10 rounded-lg text-xl transition-all ${selectedIcon === icon ? 'bg-orange-100 shadow-inner' : 'hover:bg-gray-50'}`}
-                                        >
-                                            {icon}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex flex-col gap-3 min-w-[150px] w-full md:w-auto">
-                        <button
-                            onClick={async () => {
-                                if (!saveNickname.trim()) return;
-                                setSaving(true);
-                                try {
-                                    await onSaveSeller({
-                                        nickname: saveNickname.trim(),
-                                        sellerUrl,
-                                        sellerId: sellerInfo.sellerId,
-                                        sellerName: saveNickname || sellerInfo.nickname,
-                                        sellerAvatar: sellerInfo.avatar,
-                                        iconValue: selectedIcon
-                                    });
-                                    setSaved(true);
-                                    handleToggleView('report');
-                                } catch (err) {
-                                    alert(err.message);
-                                } finally {
-                                    setSaving(false);
-                                }
-                            }}
-                            disabled={saving || !saveNickname.trim()}
-                            className="w-full py-3.5 rounded-xl text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
-                            style={{ background: 'var(--color-orange-500)' }}
-                        >
-                            {saving ? 'Salvando...' : 'Confirmar'}
-                        </button>
-                        <button
-                            onClick={() => handleToggleView('report')}
-                            className="w-full py-2 text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase tracking-widest"
-                        >
-                            Cancelar
-                        </button>
-                    </div>
-                </div>
-            )}
+            </div>
         </div>
     );
 }
