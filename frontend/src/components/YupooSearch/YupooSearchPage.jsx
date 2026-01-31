@@ -351,12 +351,12 @@ export default function YupooSearchPage({
                 />
             )}
 
-            <div className={`flex h-full flex-col md:flex-row overflow-hidden bg-white ${isGuest ? 'guest-blur-container' : ''}`}>
+            <div className={`flex h-full flex-col md:flex-row overflow-hidden bg-white/5 backdrop-blur-3xl rounded-3xl border border-white/10 shadow-2xl ${isGuest ? 'guest-blur-container' : ''}`}>
                 {/* Sidebar Filters */}
-                <aside className="w-full md:w-64 border-r border-gray-100 bg-white overflow-y-auto p-4 flex-shrink-0">
+                <aside className="w-full md:w-64 border-r border-white/10 overflow-y-auto p-4 flex-shrink-0">
                     <div className="mb-6">
-                        <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                            <LuFilter className="text-orange-500" />
+                        <h3 className="font-bold text-white mb-3 flex items-center gap-2">
+                            <LuFilter className="text-blue-500" />
                             Filtros
                         </h3>
                     </div>
@@ -371,7 +371,7 @@ export default function YupooSearchPage({
                                         setSelectedCategories([]);
                                         setSelectedModels([]);
                                     }}
-                                    className="text-[10px] text-orange-600 font-bold hover:underline"
+                                    className="text-[10px] text-blue-400 font-bold hover:underline"
                                 >
                                     Limpar
                                 </button>
@@ -412,7 +412,7 @@ export default function YupooSearchPage({
                             <div className="flex items-center justify-between mb-3">
                                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Batches</h4>
                                 {selectedBatches.length > 0 && (
-                                    <button onClick={() => setSelectedBatches([])} className="text-[10px] text-orange-600 font-bold hover:underline">Limpar</button>
+                                    <button onClick={() => setSelectedBatches([])} className="text-[10px] text-blue-400 font-bold hover:underline">Limpar</button>
                                 )}
                             </div>
 
@@ -435,7 +435,7 @@ export default function YupooSearchPage({
                         <div className="flex items-center justify-between mb-3">
                             <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Marcas</h4>
                             {selectedBrands.length > 0 && (
-                                <button onClick={() => setSelectedBrands([])} className="text-[10px] text-orange-600 font-bold hover:underline">Limpar</button>
+                                <button onClick={() => setSelectedBrands([])} className="text-[10px] text-blue-400 font-bold hover:underline">Limpar</button>
                             )}
                         </div>
                         <div className="space-y-2 max-h-96 overflow-y-auto custom-scrollbar pr-2">
@@ -453,9 +453,9 @@ export default function YupooSearchPage({
                 </aside>
 
                 {/* Main Content */}
-                <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+                <main className="flex-1 flex flex-col h-full overflow-hidden relative font-sans">
                     {/* Search Bar & Header Controls */}
-                    <header className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-100 p-4">
+                    <header className="sticky top-0 z-20 border-b border-white/10 p-4 backdrop-blur-sm">
                         <div className="flex flex-col gap-4">
 
                             <div className="flex flex-col md:flex-row items-center gap-4">
@@ -467,14 +467,14 @@ export default function YupooSearchPage({
                                     <input
                                         type="text"
                                         placeholder="Buscar produto, marca ou modelo..."
-                                        className="block w-full pl-10 pr-3 py-2.5 border border-gray-200 rounded-xl leading-5 bg-gray-50 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
+                                        className="block w-full pl-10 pr-3 py-2.5 border border-white/10 rounded-xl leading-5 bg-white/5 text-white placeholder-gray-500 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                         value={keyword}
                                         onChange={(e) => setKeyword(e.target.value)}
                                     />
                                     {keyword && (
                                         <button
                                             onClick={() => setKeyword('')}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white"
                                         >
                                             <LuX size={16} />
                                         </button>
@@ -482,19 +482,19 @@ export default function YupooSearchPage({
                                 </div>
 
                                 {/* Disclaimer */}
-                                <span className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-orange-50 text-orange-600 border border-orange-100 text-xs font-medium whitespace-nowrap">
+                                <span className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 text-xs font-medium whitespace-nowrap">
                                     ⚠️ Feature em desenvolvimento.
                                 </span>
                             </div>
 
                             {/* Filters Row: Sort & Price */}
-                            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 border-t border-gray-100 pt-3 md:pt-0 md:border-t-0">
+                            <div className="flex flex-col md:flex-row items-start md:items-center gap-4 md:gap-8 border-t border-white/5 pt-3 md:pt-0 md:border-t-0">
 
                                 {/* Sort Dropdown */}
                                 <div className="relative w-full md:w-auto z-10" ref={sortRef}>
                                     <button
                                         onClick={() => setIsSortOpen(!isSortOpen)}
-                                        className="flex items-center justify-between gap-2 w-full md:w-48 px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 hover:border-orange-300 transition-colors"
+                                        className="flex items-center justify-between gap-2 w-full md:w-48 px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white hover:border-blue-500/30 transition-colors"
                                     >
                                         <div className="flex items-center gap-2">
                                             <LuArrowDownUp size={16} className="text-gray-400" />
@@ -512,7 +512,7 @@ export default function YupooSearchPage({
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: 5 }}
                                                 transition={{ duration: 0.15 }}
-                                                className="absolute top-full left-0 w-full mt-1 bg-white border border-gray-100 rounded-lg shadow-xl overflow-hidden py-1"
+                                                className="absolute top-full left-0 w-full mt-1 bg-[#1f2937]/90 backdrop-blur-xl border border-white/10 rounded-lg shadow-2xl overflow-hidden py-1"
                                             >
                                                 {SORT_OPTIONS.map(option => (
                                                     <button
@@ -521,10 +521,10 @@ export default function YupooSearchPage({
                                                             setSortBy(option.id);
                                                             setIsSortOpen(false);
                                                         }}
-                                                        className="flex items-center justify-between w-full px-4 py-2 text-sm text-left hover:bg-orange-50 text-gray-700"
+                                                        className="flex items-center justify-between w-full px-4 py-2 text-sm text-left hover:bg-white/5 text-gray-300 hover:text-white"
                                                     >
                                                         {option.label}
-                                                        {sortBy === option.id && <LuCheck size={14} className="text-orange-500" />}
+                                                        {sortBy === option.id && <LuCheck size={14} className="text-blue-500" />}
                                                     </button>
                                                 ))}
                                             </motion.div>
@@ -533,9 +533,9 @@ export default function YupooSearchPage({
                                 </div>
 
                                 <div className="flex flex-col w-full md:w-64 gap-2">
-                                    <div className="flex items-center justify-between text-xs text-gray-500 font-medium">
+                                    <div className="flex items-center justify-between text-xs text-gray-400 font-medium">
                                         <span>Preço</span>
-                                        <span>¥{priceRange[0]} - ¥{priceRange[1]}</span>
+                                        <span className="text-blue-400 font-bold">¥{priceRange[0]} - ¥{priceRange[1]}</span>
                                     </div>
                                     <Slider
                                         defaultValue={[0, 2000]}
@@ -551,14 +551,14 @@ export default function YupooSearchPage({
 
                                 {/* Currency Toggle */}
                                 <div className="flex items-center gap-3">
-                                    <span className="text-sm" style={{ color: showBRL ? '#9CA3AF' : '#374151', fontWeight: showBRL ? '400' : '600' }}>
+                                    <span className="text-sm" style={{ color: showBRL ? '#6B7280' : 'white', fontWeight: showBRL ? '400' : '600' }}>
                                         ¥
                                     </span>
                                     <button
                                         onClick={onToggleCurrency}
                                         className="relative w-12 h-6 rounded-full transition-all duration-300"
                                         style={{
-                                            background: showBRL ? '#fc8c03ff' : '#fc8c03ff'
+                                            background: showBRL ? '#3B82F6' : 'rgba(255,255,255,0.05)'
                                         }}
                                     >
                                         <span
@@ -568,7 +568,7 @@ export default function YupooSearchPage({
                                             }}
                                         />
                                     </button>
-                                    <span className="text-sm" style={{ color: showBRL ? '#374151' : '#9CA3AF', fontWeight: showBRL ? '600' : '400' }}>
+                                    <span className="text-sm" style={{ color: showBRL ? 'white' : '#6B7280', fontWeight: showBRL ? '600' : '400' }}>
                                         R$
                                     </span>
                                 </div>
@@ -578,13 +578,13 @@ export default function YupooSearchPage({
                     </header>
 
                     {/* Product Data Content */}
-                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50/50">
+                    <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-transparent">
                         {visibleProducts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center">
-                                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4 text-gray-400">
+                                <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 text-gray-600">
                                     <LuSearch size={32} />
                                 </div>
-                                <h3 className="text-lg font-medium text-gray-900">Nenhum produto encontrado</h3>
+                                <h3 className="text-lg font-medium text-white">Nenhum produto encontrado</h3>
                                 <button
                                     onClick={() => {
                                         setKeyword('');
@@ -593,7 +593,7 @@ export default function YupooSearchPage({
                                         setSelectedBatches([]);
                                         setSelectedModels([]);
                                     }}
-                                    className="mt-4 text-orange-600 font-medium hover:underline"
+                                    className="mt-4 text-blue-500 font-medium hover:underline"
                                 >
                                     Limpar filtros
                                 </button>
@@ -660,8 +660,8 @@ const Pagination = memo(({ currentPage, totalPages, onPageChange }) => {
                     key={i}
                     onClick={() => onPageChange(i)}
                     className={`w-8 h-8 rounded-lg text-sm font-bold transition-all ${currentPage === i
-                        ? 'bg-orange-500 text-white shadow-md'
-                        : 'bg-white text-gray-600 hover:bg-orange-50 border border-gray-200'
+                        ? 'bg-blue-600 text-white shadow-md'
+                        : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
                         }`}
                 >
                     {i}
@@ -672,9 +672,9 @@ const Pagination = memo(({ currentPage, totalPages, onPageChange }) => {
     };
 
     return (
-        <div className="flex items-center justify-between bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+        <div className="flex items-center justify-between bg-white/5 p-3 rounded-xl border border-white/10 shadow-sm">
             <div className="text-xs text-gray-400 font-medium hidden sm:block">
-                Página <span className="text-gray-900 font-bold">{currentPage}</span> de <span className="text-gray-900 font-bold">{totalPages}</span>
+                Página <span className="text-white font-bold">{currentPage}</span> de <span className="text-white font-bold">{totalPages}</span>
             </div>
 
             <div className="flex items-center gap-2 mx-auto sm:mx-0">
@@ -708,8 +708,8 @@ Pagination.displayName = 'Pagination';
 const FilterItem = memo(({ name, count, isSelected, onToggle }) => (
     <label className="flex items-center gap-2 cursor-pointer group">
         <div className={`w-4 h-4 rounded border flex items-center justify-center transition-colors ${isSelected
-            ? 'bg-orange-500 border-orange-500'
-            : 'border-gray-300 group-hover:border-orange-300'
+            ? 'bg-blue-600 border-blue-600'
+            : 'border-white/20 group-hover:border-blue-400'
             }`}>
             {isSelected && (
                 <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -723,10 +723,10 @@ const FilterItem = memo(({ name, count, isSelected, onToggle }) => (
                 onChange={onToggle}
             />
         </div>
-        <span className={`text-sm flex-1 truncate ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-600'}`}>
+        <span className={`text-sm flex-1 truncate ${isSelected ? 'text-white font-medium' : 'text-gray-400'}`}>
             {name}
         </span>
-        <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full">{count}</span>
+        <span className="text-[10px] text-gray-400 bg-[#1f2937] px-1.5 py-0.5 rounded-full border border-white/5">{count}</span>
     </label>
 ));
 FilterItem.displayName = 'FilterItem';
@@ -741,8 +741,8 @@ const CollapsibleCategory = memo(({ name, count, isSelected, onToggle, models, s
                     <div
                         onClick={onToggle}
                         className={`w-4 h-4 rounded border flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer ${isSelected
-                            ? 'bg-orange-500 border-orange-500'
-                            : 'border-gray-300 hover:border-orange-300'
+                            ? 'bg-blue-600 border-blue-600'
+                            : 'border-white/20 hover:border-blue-400'
                             }`}>
                         {isSelected && (
                             <svg className="w-3 h-3 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -757,11 +757,11 @@ const CollapsibleCategory = memo(({ name, count, isSelected, onToggle, models, s
                     */}
                     <span
                         onClick={onToggle}
-                        className={`text-sm flex-1 truncate cursor-pointer ${isSelected ? 'text-gray-900 font-medium' : 'text-gray-600'}`}
+                        className={`text-sm flex-1 truncate cursor-pointer ${isSelected ? 'text-white font-medium' : 'text-gray-400'}`}
                     >
                         {name}
                     </span>
-                    <span className="text-xs text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded-full">{count}</span>
+                    <span className="text-[10px] text-gray-400 bg-[#1f2937] px-1.5 py-0.5 rounded-full border border-white/5">{count}</span>
                 </div>
 
                 <button
@@ -769,7 +769,7 @@ const CollapsibleCategory = memo(({ name, count, isSelected, onToggle, models, s
                         e.stopPropagation();
                         onExpandToggle();
                     }}
-                    className="p-1 hover:bg-gray-100 rounded text-gray-400 transition-colors"
+                    className="p-1 hover:bg-white/5 rounded text-gray-500 transition-colors"
                 >
                     <LuChevronRight
                         size={16}
@@ -784,12 +784,12 @@ const CollapsibleCategory = memo(({ name, count, isSelected, onToggle, models, s
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
             >
-                <div className="pl-2 pt-1 pb-1 space-y-0.5 border-l-2 border-gray-100 ml-2 mt-1">
+                <div className="pl-2 pt-1 pb-1 space-y-0.5 border-l-2 border-white/10 ml-2 mt-1">
                     {models.map(model => (
-                        <label key={model.name} className="flex items-center gap-2 cursor-pointer group hover:bg-gray-50 p-1.5 rounded-md transition-colors">
+                        <label key={model.name} className="flex items-center gap-2 cursor-pointer group hover:bg-white/5 p-1.5 rounded-md transition-colors">
                             <div className={`w-3 h-3 rounded border flex items-center justify-center transition-colors ${selectedModels.includes(model.name)
-                                ? 'bg-orange-500 border-orange-500'
-                                : 'border-gray-300 group-hover:border-orange-300'
+                                ? 'bg-blue-600 border-blue-600'
+                                : 'border-white/20 group-hover:border-blue-400'
                                 }`}>
                                 {selectedModels.includes(model.name) && (
                                     <svg className="w-2 h-2 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
@@ -803,14 +803,14 @@ const CollapsibleCategory = memo(({ name, count, isSelected, onToggle, models, s
                                     onChange={() => onToggleModel(model.name)}
                                 />
                             </div>
-                            <span className={`text-xs flex-1 truncate ${selectedModels.includes(model.name) ? 'text-gray-900 font-medium' : 'text-gray-500'}`}>
+                            <span className={`text-xs flex-1 truncate ${selectedModels.includes(model.name) ? 'text-white font-medium' : 'text-gray-400'}`}>
                                 {model.name}
                             </span>
-                            <span className="text-[10px] text-gray-300">{model.count}</span>
+                            <span className="text-[10px] text-gray-400 bg-[#1f2937] px-1.5 py-0.5 rounded-full border border-white/5">{model.count}</span>
                         </label>
                     ))}
                     {models.length === 0 && (
-                        <div className="text-[10px] text-gray-400 italic pl-2 py-1">Sem modelos definidos</div>
+                        <div className="text-[10px] text-gray-500 italic pl-2 py-1">Sem modelos definidos</div>
                     )}
                 </div>
             </motion.div>
@@ -828,10 +828,10 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
             href={product.product_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="group block bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1"
+            className="group block bg-[#1f2937] rounded-xl border border-white/5 overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
         >
             {/* Image Aspect Ratio Container */}
-            <div className="relative aspect-square overflow-hidden bg-gray-100">
+            <div className="relative aspect-square overflow-hidden bg-gray-900">
                 <img
                     src={product.image}
                     alt={product.titulo}
@@ -862,23 +862,23 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
 
             <div className="p-3">
                 {product.marca && (
-                    <p className="text-xs font-bold text-orange-600 uppercase tracking-wide mb-1">
+                    <p className="text-xs font-bold text-blue-400 uppercase tracking-wide mb-2 truncate" title={product.marca}>
                         {product.marca}
                     </p>
                 )}
-                <h3 className="text-xs sm:text-sm font-medium text-gray-900 line-clamp-2 mb-2 h-10 leading-relaxed" title={product.titulo}>
+                <h3 className="text-xs sm:text-sm font-medium text-white line-clamp-2 mb-4 h-10 overflow-hidden leading-relaxed" title={product.titulo}>
                     {product.titulo}
                 </h3>
 
-                <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm sm:text-base font-bold text-orange-600">
+                <div className="flex items-center justify-between gap-2 mt-2">
+                    <span className="text-base sm:text-xl font-bold text-blue-400 whitespace-nowrap">
                         {product.preco > 0
                             ? (showBRL && exchangeRate
-                                ? `R$ ${(product.preco * exchangeRate).toFixed(2)}`
+                                ? `R$ ${(product.preco * exchangeRate).toFixed(2).replace('.', ',')}`
                                 : `¥ ${product.preco}`)
                             : 'Consulte'}
                     </span>
-                    <span className="text-[10px] text-gray-400 px-1.5 py-0.5 bg-gray-50 rounded border border-gray-100 uppercase">
+                    <span className="text-[10px] text-gray-400 px-1.5 py-0.5 bg-white/5 rounded border border-white/10 uppercase truncate max-w-[80px]" title={product.vendedor || 'Yupoo'}>
                         {product.vendedor || 'Yupoo'}
                     </span>
                 </div>

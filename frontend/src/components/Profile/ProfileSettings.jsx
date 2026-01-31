@@ -4,37 +4,34 @@ import { motion, AnimatePresence } from 'framer-motion';
 /**
  * AccordionSection - Seção colapsável do accordion
  */
-function AccordionSection({ 
-    title, 
-    icon, 
-    children, 
-    isOpen, 
-    onToggle, 
-    danger = false 
+function AccordionSection({
+    title,
+    icon,
+    children,
+    isOpen,
+    onToggle,
+    danger = false
 }) {
     return (
-        <div className={`border rounded-2xl overflow-hidden transition-colors ${
-            danger 
-                ? 'border-red-200 bg-red-50/50' 
-                : 'border-gray-100 bg-white'
-        }`}>
+        <div className={`border rounded-2xl overflow-hidden transition-colors ${danger
+                ? 'border-red-500/20 bg-red-500/5'
+                : 'border-white/5 bg-white/5'
+            }`}>
             <button
                 onClick={onToggle}
-                className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${
-                    danger 
-                        ? 'hover:bg-red-100/50' 
-                        : 'hover:bg-gray-50'
-                }`}
+                className={`w-full px-5 py-4 flex items-center justify-between transition-colors ${danger
+                        ? 'hover:bg-red-500/10'
+                        : 'hover:bg-white/5'
+                    }`}
             >
                 <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                        danger
-                            ? 'bg-red-100 text-red-600'
-                            : 'bg-orange-100 text-orange-600'
-                    }`}>
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${danger
+                            ? 'bg-red-500/10 text-red-500'
+                            : 'bg-blue-500/10 text-blue-400'
+                        }`}>
                         {icon}
                     </div>
-                    <span className={`font-bold ${danger ? 'text-red-700' : 'text-gray-900'}`}>
+                    <span className={`font-bold ${danger ? 'text-red-400' : 'text-white'}`}>
                         {title}
                     </span>
                 </div>
@@ -42,7 +39,7 @@ function AccordionSection({
                     animate={{ rotate: isOpen ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <svg className={`w-5 h-5 ${danger ? 'text-red-400' : 'text-gray-400'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <svg className={`w-5 h-5 ${danger ? 'text-red-500' : 'text-gray-500'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                 </motion.div>
@@ -70,14 +67,14 @@ function AccordionSection({
 /**
  * InputField - Campo de input estilizado
  */
-function InputField({ 
-    label, 
-    type = 'text', 
-    value, 
-    onChange, 
-    placeholder, 
+function InputField({
+    label,
+    type = 'text',
+    value,
+    onChange,
+    placeholder,
     error,
-    disabled = false 
+    disabled = false
 }) {
     return (
         <div className="mb-4">
@@ -90,14 +87,13 @@ function InputField({
                 onChange={onChange}
                 placeholder={placeholder}
                 disabled={disabled}
-                className={`w-full px-4 py-3 rounded-xl border transition-all ${
-                    error 
-                        ? 'border-red-300 focus:ring-2 focus:ring-red-200 focus:border-red-400' 
-                        : 'border-gray-200 focus:ring-2 focus:ring-orange-200 focus:border-orange-400'
-                } focus:outline-none disabled:bg-gray-50 disabled:text-gray-400`}
+                className={`w-full px-4 py-3 rounded-xl border transition-all ${error
+                        ? 'bg-red-500/5 border-red-500/20 focus:ring-2 focus:ring-red-500/10 focus:border-red-500'
+                        : 'bg-white/5 border-white/10 text-white focus:ring-2 focus:ring-blue-500/10 focus:border-blue-500'
+                    } focus:outline-none disabled:bg-white/5 disabled:text-gray-600`}
             />
             {error && (
-                <p className="mt-1 text-xs text-red-600 font-medium">{error}</p>
+                <p className="mt-1 text-xs text-red-500 font-medium">{error}</p>
             )}
         </div>
     );
@@ -106,7 +102,7 @@ function InputField({
 /**
  * ProfileSettings - Painel de configurações do perfil
  */
-function ProfileSettings({ 
+function ProfileSettings({
     user,
     onUpdateEmail,
     onUpdatePassword,
@@ -264,11 +260,10 @@ function ProfileSettings({
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
-                        className={`p-4 rounded-xl flex items-center gap-3 ${
-                            message.type === 'success' 
-                                ? 'bg-green-50 border border-green-200 text-green-700' 
-                                : 'bg-red-50 border border-red-200 text-red-700'
-                        }`}
+                        className={`p-4 rounded-xl flex items-center gap-3 ${message.type === 'success'
+                                ? 'bg-green-500/10 border border-green-500/20 text-green-400'
+                                : 'bg-red-500/10 border border-red-500/20 text-red-400'
+                            }`}
                     >
                         {message.type === 'success' ? (
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -297,7 +292,7 @@ function ProfileSettings({
             >
                 <div className="space-y-4">
                     <div>
-                        <h4 className="font-bold text-gray-800 mb-3">Alterar Email</h4>
+                        <h4 className="font-bold text-white mb-3">Alterar Email</h4>
                         <InputField
                             label="Novo Email"
                             type="email"
@@ -317,7 +312,7 @@ function ProfileSettings({
                             whileTap={{ scale: 0.98 }}
                             onClick={handleEmailUpdate}
                             disabled={isLoading}
-                            className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-shadow disabled:opacity-50"
+                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all disabled:opacity-50"
                         >
                             {isLoading ? 'Atualizando...' : 'Atualizar Email'}
                         </motion.button>
@@ -338,7 +333,7 @@ function ProfileSettings({
             >
                 <div className="space-y-4">
                     <div>
-                        <h4 className="font-bold text-gray-800 mb-3">Alterar Senha</h4>
+                        <h4 className="font-bold text-white mb-3">Alterar Senha</h4>
                         <InputField
                             label="Senha Atual"
                             type="password"
@@ -365,18 +360,18 @@ function ProfileSettings({
                             whileTap={{ scale: 0.98 }}
                             onClick={handlePasswordUpdate}
                             disabled={isLoading}
-                            className="w-full py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-shadow disabled:opacity-50"
+                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all disabled:opacity-50"
                         >
                             {isLoading ? 'Atualizando...' : 'Atualizar Senha'}
                         </motion.button>
                     </div>
 
-                    <div className="pt-4 border-t border-gray-100">
+                    <div className="pt-4 border-t border-white/5">
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={onLogout}
-                            className="w-full py-3 bg-gray-100 text-gray-700 font-bold rounded-xl hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-white/5 text-gray-400 font-bold rounded-xl hover:bg-white/10 hover:text-white transition-colors flex items-center justify-center gap-2"
                         >
                             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -400,18 +395,18 @@ function ProfileSettings({
             >
                 <div className="space-y-4">
                     {/* Current Plan Card */}
-                    <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-5 border border-orange-200">
+                    <div className="bg-blue-600/10 rounded-2xl p-5 border border-blue-500/20">
                         <div className="flex items-center justify-between mb-4">
-                            <h4 className="text-lg font-black text-orange-700">{tierInfo.name}</h4>
-                            <span className="px-3 py-1 bg-orange-500 text-white text-xs font-bold rounded-full">
+                            <h4 className="text-lg font-black text-blue-400">{tierInfo.name}</h4>
+                            <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest rounded-full">
                                 Ativo
                             </span>
                         </div>
-                        
+
                         <ul className="space-y-2 mb-4">
                             {tierInfo.benefits.map((benefit, index) => (
-                                <li key={index} className="flex items-center gap-2 text-sm text-orange-800">
-                                    <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 20 20">
+                                <li key={index} className="flex items-center gap-2 text-sm text-blue-200/70">
+                                    <svg className="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                     </svg>
                                     {benefit}
@@ -426,7 +421,7 @@ function ProfileSettings({
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={onShowUpgrade}
-                            className="w-full py-3 bg-gradient-to-r from-yellow-400 to-orange-500 text-white font-bold rounded-xl shadow-md hover:shadow-lg transition-shadow flex items-center justify-center gap-2"
+                            className="w-full py-3 bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all flex items-center justify-center gap-2"
                         >
                             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                 <path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd" />
@@ -450,8 +445,8 @@ function ProfileSettings({
                 danger
             >
                 <div className="space-y-4">
-                    <div className="p-4 bg-red-100 rounded-xl border border-red-200">
-                        <p className="text-sm text-red-800 font-medium">
+                    <div className="p-4 bg-red-500/10 rounded-xl border border-red-500/20">
+                        <p className="text-sm text-red-400 font-medium">
                             ⚠️ <strong>Atenção:</strong> Esta ação é irreversível. Todos os seus dados serão permanentemente deletados, incluindo produtos salvos, vendedores e coleções.
                         </p>
                     </div>
@@ -470,7 +465,7 @@ function ProfileSettings({
                         onChange={(e) => setDeletePassword(e.target.value)}
                         placeholder="••••••••"
                     />
-                    
+
                     <motion.button
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}

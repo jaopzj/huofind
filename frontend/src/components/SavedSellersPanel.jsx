@@ -93,18 +93,18 @@ function SavedSellersPanel({ onSelectSeller, tier = 'guest' }) {
     const SkeletonLoader = () => (
         <div className="space-y-12">
             <div className="flex flex-col items-center gap-6 animate-pulse">
-                <div className="w-20 h-20 bg-gray-100 rounded-[1.5rem]" />
+                <div className="w-20 h-20 bg-white/5 rounded-[1.5rem]" />
                 <div className="space-y-2 flex flex-col items-center">
-                    <div className="h-8 w-48 bg-gray-100 rounded-lg" />
-                    <div className="h-6 w-24 bg-gray-50 rounded-full" />
+                    <div className="h-8 w-48 bg-white/5 rounded-lg" />
+                    <div className="h-6 w-24 bg-white/5 rounded-full" />
                 </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {[1, 2, 3, 4].map(i => (
-                    <div key={i} className="h-64 rounded-[2rem] bg-gray-50 border border-gray-100 animate-pulse flex flex-col items-center justify-center p-6 space-y-4">
-                        <div className="w-20 h-20 rounded-full bg-gray-100" />
-                        <div className="h-4 w-24 bg-gray-100 rounded" />
-                        <div className="h-10 w-full bg-gray-100 rounded-xl" />
+                    <div key={i} className="h-64 rounded-[2rem] bg-white/5 border border-white/10 animate-pulse flex flex-col items-center justify-center p-6 space-y-4">
+                        <div className="w-20 h-20 rounded-full bg-white/10" />
+                        <div className="h-4 w-24 bg-white/10 rounded" />
+                        <div className="h-10 w-full bg-white/10 rounded-xl" />
                     </div>
                 ))}
             </div>
@@ -149,16 +149,16 @@ function SavedSellersPanel({ onSelectSeller, tier = 'guest' }) {
                                 <div className="flex flex-col items-center text-center gap-4">
                                     <motion.div
                                         layoutId="panel-icon"
-                                        className="p-4 bg-orange-100 rounded-[1.5rem] text-orange-600 shadow-sm"
+                                        className="p-4 bg-blue-500/10 rounded-[1.5rem] text-blue-500 shadow-sm border border-blue-500/20"
                                     >
                                         <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                                         </svg>
                                     </motion.div>
                                     <motion.div layoutId="panel-title">
-                                        <h3 className="text-3xl font-black text-gray-900 tracking-tight">Seus Vendedores</h3>
+                                        <h3 className="text-3xl font-black text-white tracking-tight">Seus Vendedores</h3>
                                         <div className="mt-2 flex items-center justify-center gap-2">
-                                            <span className="text-sm px-3 py-1 rounded-full bg-orange-50 text-orange-700 font-bold border border-orange-100">
+                                            <span className="text-sm px-3 py-1 rounded-full bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
                                                 {sellers.length} / {currentLimit} Salvos
                                             </span>
                                         </div>
@@ -180,7 +180,7 @@ function SavedSellersPanel({ onSelectSeller, tier = 'guest' }) {
                                         placeholder="Buscar por apelido..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
-                                        className="w-full pl-16 pr-6 py-4 rounded-[2rem] bg-gray-50/50 border border-gray-100 focus:border-orange-300 focus:bg-white focus:ring-8 focus:ring-orange-500/5 transition-all outline-none text-base font-medium shadow-sm"
+                                        className="w-full pl-16 pr-6 py-4 rounded-[2rem] bg-white/5 border border-white/10 focus:border-blue-500/50 focus:bg-white/10 focus:ring-8 focus:ring-blue-500/5 transition-all outline-none text-base font-medium shadow-sm text-white placeholder-gray-500"
                                     />
                                 </motion.div>
                             </div>
@@ -204,7 +204,7 @@ function SavedSellersPanel({ onSelectSeller, tier = 'guest' }) {
                                     layout
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
-                                    className="flex flex-col items-center justify-center py-20 bg-gray-50/30 rounded-[3rem] border-2 border-dashed border-gray-100"
+                                    className="flex flex-col items-center justify-center py-20 bg-white/5 rounded-[3rem] border-2 border-dashed border-white/10"
                                 >
                                     <div className="text-7xl mb-6 grayscale opacity-20">🕵️‍♂️</div>
                                     <h4 className="text-xl font-black text-gray-400">

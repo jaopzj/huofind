@@ -64,9 +64,9 @@ function SubscriptionPlanCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay }}
             whileHover={{ y: -6, transition: { duration: 0.2 } }}
-            className={`relative bg-white rounded-3xl overflow-hidden border-2 transition-all duration-300 ${isCurrentPlan
-                    ? 'border-orange-400 shadow-lg shadow-orange-100'
-                    : 'border-gray-100 hover:border-orange-200 shadow-sm hover:shadow-xl'
+            className={`relative bg-[#1f2937] rounded-3xl overflow-hidden border-2 transition-all duration-300 ${isCurrentPlan
+                ? 'border-blue-500 shadow-lg shadow-blue-500/10'
+                : 'border-white/5 hover:border-blue-500/30 shadow-sm hover:shadow-xl'
                 }`}
         >
             {/* Top Badge */}
@@ -77,8 +77,8 @@ function SubscriptionPlanCard({
                         background: isCurrentPlan
                             ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
                             : isBest
-                                ? 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)'
-                                : 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)'
+                                ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                : 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
                     }}
                 >
                     {isCurrentPlan ? '✓ Seu plano atual' : isBest ? '🔥 Melhor valor' : '⭐ Popular'}
@@ -90,34 +90,34 @@ function SubscriptionPlanCard({
                 <div className="flex items-center gap-3 mb-4">
                     <div
                         className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                        style={{ background: plan.bgGradient }}
+                        style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
                     >
-                        <Icon className="w-6 h-6" style={{ color: plan.color }} />
+                        <Icon className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                        <p className="text-lg font-black text-gray-900">{plan.name}</p>
-                        <p className="text-xs font-medium uppercase tracking-wider" style={{ color: plan.color }}>
+                        <p className="text-lg font-black text-white">{plan.name}</p>
+                        <p className="text-xs font-bold uppercase tracking-wider text-blue-400">
                             {planId.toUpperCase()}
                         </p>
                     </div>
                 </div>
 
                 {/* Credits per month */}
-                <div className="mb-4 p-3 rounded-2xl bg-gray-50">
+                <div className="mb-4 p-3 rounded-2xl bg-white/5">
                     <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-3xl font-black text-gray-900">{credits}</span>
-                        <span className="text-sm font-medium text-gray-500">créditos/mês</span>
+                        <span className="text-3xl font-black text-white">{credits}</span>
+                        <span className="text-sm font-medium text-gray-401">créditos/mês</span>
                     </div>
                 </div>
 
                 {/* Price */}
                 <div className="text-center mb-5">
                     <div className="flex items-baseline justify-center gap-1">
-                        <span className="text-sm font-medium text-gray-500">R$</span>
-                        <span className="text-4xl font-black text-gray-900">
+                        <span className="text-sm font-medium text-gray-400">R$</span>
+                        <span className="text-4xl font-black text-white">
                             {price.toFixed(2).replace('.', ',')}
                         </span>
-                        <span className="text-sm font-medium text-gray-500">/mês</span>
+                        <span className="text-sm font-medium text-gray-400">/mês</span>
                     </div>
                 </div>
 
@@ -131,10 +131,10 @@ function SubscriptionPlanCard({
                             transition={{ delay: delay + 0.1 * i }}
                             className="flex items-start gap-2"
                         >
-                            <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                <LuCheck className="w-3 h-3 text-green-600" />
+                            <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <LuCheck className="w-3 h-3 text-blue-500" />
                             </div>
-                            <span className="text-sm text-gray-600">{benefit}</span>
+                            <span className="text-sm text-gray-400">{benefit}</span>
                         </motion.li>
                     ))}
                 </ul>
@@ -146,12 +146,12 @@ function SubscriptionPlanCard({
                     onClick={onSubscribe}
                     disabled={isLoading || isCurrentPlan}
                     className={`w-full py-3.5 px-4 rounded-2xl font-bold transition-all disabled:cursor-not-allowed ${isCurrentPlan
-                            ? 'bg-gray-100 text-gray-400'
-                            : 'text-white'
+                        ? 'bg-gray-100 text-gray-400'
+                        : 'text-white'
                         }`}
                     style={!isCurrentPlan ? {
-                        background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-                        boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)'
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                        boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
                     } : {}}
                 >
                     {isLoading ? (

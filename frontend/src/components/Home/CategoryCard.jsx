@@ -21,7 +21,7 @@ function CategoryCard({ category, onClick }) {
             <span className="text-4xl">{category.icon}</span>
 
             {/* Name */}
-            <span className="font-semibold text-gray-700 text-sm">
+            <span className="font-semibold text-white text-sm">
                 {category.name}
             </span>
         </motion.button>

@@ -15,10 +15,10 @@ function AnimatedNumber({ value, duration = 1000 }) {
         const animate = () => {
             const elapsed = Date.now() - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            
+
             // Easing function (ease-out)
             const easeOut = 1 - Math.pow(1 - progress, 3);
-            
+
             const current = Math.round(startValue + (endValue - startValue) * easeOut);
             setDisplayValue(current);
 
@@ -38,17 +38,17 @@ function AnimatedNumber({ value, duration = 1000 }) {
  */
 function StatCard({ icon, label, value, color, delay = 0 }) {
     const colorClasses = {
-        orange: 'from-orange-400 to-orange-600',
         blue: 'from-blue-400 to-blue-600',
         green: 'from-emerald-400 to-emerald-600',
-        purple: 'from-purple-400 to-purple-600'
+        purple: 'from-purple-400 to-purple-600',
+        orange: 'from-orange-400 to-orange-600'
     };
 
     const bgColorClasses = {
-        orange: 'bg-orange-50',
-        blue: 'bg-blue-50',
-        green: 'bg-emerald-50',
-        purple: 'bg-purple-50'
+        blue: 'bg-[#1f2937]/80',
+        green: 'bg-[#1f2937]/80',
+        purple: 'bg-[#1f2937]/80',
+        orange: 'bg-[#1f2937]/80'
     };
 
     return (
@@ -56,8 +56,8 @@ function StatCard({ icon, label, value, color, delay = 0 }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay }}
-            whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className={`${bgColorClasses[color]} rounded-2xl p-5 border border-gray-100/50 shadow-sm hover:shadow-md transition-shadow`}
+            whileHover={{ y: -4, transition: { duration: 0.2 }, backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
+            className={`${bgColorClasses[color]} backdrop-blur-md rounded-2xl p-5 border border-white/10 shadow-sm hover:shadow-md transition-all`}
         >
             <div className="flex items-center gap-4">
                 {/* Icon */}
@@ -67,7 +67,7 @@ function StatCard({ icon, label, value, color, delay = 0 }) {
 
                 {/* Content */}
                 <div>
-                    <p className="text-2xl font-black text-gray-900">
+                    <p className="text-2xl font-black text-white">
                         <AnimatedNumber value={value} />
                     </p>
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -82,17 +82,17 @@ function StatCard({ icon, label, value, color, delay = 0 }) {
 /**
  * ProfileStats - Grid de cards com estatísticas do usuário
  */
-function ProfileStats({ 
-    miningInfo = { credits: 0, tier: 'guest' }, 
-    savedProductsCount = 0, 
-    savedSellersCount = 0, 
-    collectionsCount = 0 
+function ProfileStats({
+    miningInfo = { credits: 0, tier: 'guest' },
+    savedProductsCount = 0,
+    savedSellersCount = 0,
+    collectionsCount = 0
 }) {
     const miningCurrent = miningInfo.credits || 0;
     const isLowBalance = miningCurrent <= 10;
-    
+
     // Calculate days until renewal
-    const daysUntilRenewal = miningInfo.nextRenewal 
+    const daysUntilRenewal = miningInfo.nextRenewal
         ? Math.max(0, Math.ceil((new Date(miningInfo.nextRenewal) - new Date()) / (1000 * 60 * 60 * 24)))
         : null;
 
@@ -108,55 +108,55 @@ function ProfileStats({
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4, delay: 0.1 }}
-                className="bg-white rounded-[2rem] p-8 shadow-xl border border-gray-100/50 mb-6 group transition-all hover:bg-orange-50/10"
+                className="bg-[#1f2937] rounded-[2rem] p-8 shadow-xl border border-white/10 mb-6 group transition-all"
             >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                     <div className="flex items-center gap-6">
                         {/* Coin Icon Container */}
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${isLowBalance ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-500'}`}>
+                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 duration-500 ${isLowBalance ? 'bg-red-500/10 text-red-400' : 'bg-blue-500/10 text-blue-400'}`}>
                             <svg className="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="12" cy="12" r="10" />
                                 <path d="M12 6v12M8 10h8M8 14h6" />
                             </svg>
                         </div>
-                        
+
                         <div>
-                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">Saldo Disponível</p>
+                            <p className="text-xs font-black text-gray-500 uppercase tracking-widest mb-1">Saldo Disponível</p>
                             <div className="flex items-baseline gap-2">
-                                <span className={`text-5xl font-black tracking-tighter ${isLowBalance ? 'text-red-600' : 'text-gray-900'}`}>
+                                <span className={`text-5xl font-black tracking-tighter ${isLowBalance ? 'text-red-500' : 'text-white'}`}>
                                     <AnimatedNumber value={miningCurrent} />
                                 </span>
-                                <span className="text-sm font-bold text-gray-400 uppercase tracking-wide">créditos</span>
+                                <span className="text-sm font-bold text-gray-500 uppercase tracking-wide">créditos</span>
                             </div>
                         </div>
                     </div>
 
                     {/* Stats/Info Section */}
-                    <div className="flex items-center gap-8 border-t md:border-t-0 md:border-l border-gray-100 pt-6 md:pt-0 md:pl-8">
+                    <div className="flex items-center gap-8 border-t md:border-t-0 md:border-l border-white/5 pt-6 md:pt-0 md:pl-8">
                         {daysUntilRenewal !== null ? (
                             <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Renovação</p>
-                                <p className="text-lg font-bold text-gray-700">Em {daysUntilRenewal} dias</p>
-                                <p className="text-[10px] text-gray-400">Próximo reset mensal</p>
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Renovação</p>
+                                <p className="text-lg font-bold text-gray-300">Em {daysUntilRenewal} dias</p>
+                                <p className="text-[10px] text-gray-500">Próximo reset mensal</p>
                             </div>
                         ) : (
                             <div>
-                                <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Status</p>
-                                <p className="text-lg font-bold text-gray-500">Saldo Promocional</p>
-                                <p className="text-[10px] text-gray-400">Créditos de bônus</p>
+                                <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest mb-1">Status</p>
+                                <p className="text-lg font-bold text-gray-400">Saldo Promocional</p>
+                                <p className="text-[10px] text-gray-500">Créditos de bônus</p>
                             </div>
                         )}
                     </div>
                 </div>
 
                 {isLowBalance && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
-                        className="mt-6 p-3 bg-red-50 rounded-xl border border-red-100 flex items-center gap-2 text-red-600"
+                        className="mt-6 p-3 bg-red-500/10 rounded-xl border border-red-500/20 flex items-center gap-2 text-red-400"
                     >
                         <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                         </svg>
                         <span className="text-xs font-bold">Saldo crítico! Verifique os planos de upgrade para continuar minerando.</span>
                     </motion.div>

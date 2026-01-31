@@ -166,11 +166,12 @@ class GoofishScraper {
 
             // Collect products incrementally during scroll
             const allProducts = new Map(); // Use Map to deduplicate by ID
-            const MAX_EXTRACTION_SCROLLS = 150; // Increased for larger limits with virtualization
+            const MAX_EXTRACTION_SCROLLS = 200; // Increased for larger limits with virtualization
             let extractionScrolls = 0;
             let lastProductCount = 0;
             let stagnantScrolls = 0;
             let lastScrollPosition = 0;
+            const expectedProducts = lastCardCount; // Remember how many we saw during loading phase
 
             while (allProducts.size < limit && extractionScrolls < MAX_EXTRACTION_SCROLLS) {
                 // Extract products currently visible in the viewport
@@ -329,15 +330,27 @@ class GoofishScraper {
                 if (allProducts.size === lastProductCount) {
                     stagnantScrolls++;
 
-                    // If we're at page end AND no new products, we've truly exhausted the list
-                    if (atPageEnd && stagnantScrolls >= 5) {
-                        console.log(`[Scraper] Reached end of page with ${allProducts.size} products.`);
+                    // Only stop if we've truly exhausted AND collected a reasonable amount
+                    // OR if we've been stagnant for a very long time
+                    const collectedEnough = allProducts.size >= Math.min(limit, expectedProducts * 0.9);
+
+                    // If we're at page end AND no new products AND we've collected most of what we saw
+                    if (atPageEnd && stagnantScrolls >= 8 && collectedEnough) {
+                        console.log(`[Scraper] Reached end of page with ${allProducts.size} products (expected ~${expectedProducts}).`);
                         break;
                     }
 
-                    // Increased threshold to 15 AND require scroll position to not advance
-                    if (stagnantScrolls >= 15 && scrollInfo.scrollY === lastScrollPosition) {
-                        console.log(`[Scraper] No new products after ${stagnantScrolls} scrolls at same position, stopping.`);
+                    // If stagnant but we haven't collected enough, try harder
+                    if (stagnantScrolls >= 10 && !collectedEnough) {
+                        // Scroll back up and try again from different position
+                        await page.evaluate(() => window.scrollTo(0, Math.random() * document.documentElement.scrollHeight * 0.5));
+                        await this.randomDelay(800, 1200);
+                        stagnantScrolls = 5; // Reset partially to give more chances
+                    }
+
+                    // Increased threshold to 20 AND require scroll position to not advance
+                    if (stagnantScrolls >= 20 && scrollInfo.scrollY === lastScrollPosition) {
+                        console.log(`[Scraper] No new products after ${stagnantScrolls} scrolls at same position, collected ${allProducts.size}/${limit}.`);
                         break;
                     }
 
@@ -531,11 +544,12 @@ class GoofishScraper {
             await this.randomDelay(500, 800);
 
             const allProducts = new Map();
-            const MAX_EXTRACTION_SCROLLS = 150;
+            const MAX_EXTRACTION_SCROLLS = 200;
             let extractionScrolls = 0;
             let lastProductCount = 0;
             let stagnantScrolls = 0;
             let lastScrollPosition = 0;
+            const expectedProducts = lastCardCount; // Remember how many we saw during loading phase
 
             while (allProducts.size < limit && extractionScrolls < MAX_EXTRACTION_SCROLLS) {
                 const visibleProducts = await page.evaluate(() => {
@@ -647,8 +661,19 @@ class GoofishScraper {
 
                 if (allProducts.size === lastProductCount) {
                     stagnantScrolls++;
-                    if (atPageEnd && stagnantScrolls >= 5) break;
-                    if (stagnantScrolls >= 15 && scrollInfo.scrollY === lastScrollPosition) break;
+
+                    const collectedEnough = allProducts.size >= Math.min(limit, expectedProducts * 0.9);
+
+                    if (atPageEnd && stagnantScrolls >= 8 && collectedEnough) break;
+
+                    if (stagnantScrolls >= 10 && !collectedEnough) {
+                        await page.evaluate(() => window.scrollTo(0, Math.random() * document.documentElement.scrollHeight * 0.5));
+                        await this.randomDelay(800, 1200);
+                        stagnantScrolls = 5;
+                    }
+
+                    if (stagnantScrolls >= 20 && scrollInfo.scrollY === lastScrollPosition) break;
+
                     if (stagnantScrolls >= 5 && stagnantScrolls % 5 === 0) {
                         await page.evaluate(() => window.scrollBy(0, window.innerHeight * 3));
                         await this.randomDelay(800, 1200);

@@ -203,10 +203,12 @@ function HeroHome({ onSearch, initialQuery = '', isGuest = false }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                <img
-                    src="/logo.svg"
-                    alt="Huofind"
-                    className="h-24 md:h-32 w-auto object-contain"
+                <video
+                    src="/evo-logo.webm"
+                    autoPlay
+                    loop
+                    muted
+                    className="h-24 md:h-54 w-auto object-contain"
                 />
             </motion.div>
 
@@ -324,7 +326,7 @@ function HeroHome({ onSearch, initialQuery = '', isGuest = false }) {
 
                                                         <LuExternalLink
                                                             size={16}
-                                                            className="text-gray-300 group-hover:text-orange-500 transition-colors flex-shrink-0"
+                                                            className="text-gray-300 group-hover:text-blue-500 transition-colors flex-shrink-0"
                                                         />
                                                     </button>
                                                 );

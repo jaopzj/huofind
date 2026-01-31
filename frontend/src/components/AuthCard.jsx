@@ -193,7 +193,7 @@ function AuthCard() {
     };
 
     return (
-        <div className="min-h-screen w-full flex items-center justify-center p-6 md:p-12 relative overflow-hidden" style={{ background: 'var(--color-cream-50)' }}>
+        <div className="min-h-screen w-full flex items-center justify-center p-6 md:p-12 relative overflow-hidden" style={{ background: '#0f172a' }}>
             {/* Animated diagonal pattern background */}
             <div
                 className="absolute pointer-events-none"
@@ -202,7 +202,7 @@ function AuthCard() {
                     left: '-100px',
                     right: '-100px',
                     bottom: '-100px',
-                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='199' viewBox='0 0 100 199'%3E%3Cg fill='%23ff6b35' fill-opacity='0.1'%3E%3Cpath d='M0 199V0h1v1.99L100 199h-1.12L1 4.22V199H0zM100 2h-.12l-1-2H100v2z'%3E%3C/path%3E%3C/g%3E%3C/svg%3E")`,
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='199' viewBox='0 0 100 199'%3E%3Cg fill='white' fill-opacity='0.15'%3E%3Cpath d='M0 199V0h1v1.99L100 199h-1.12L1 4.22V199H0zM100 2h-.12l-1-2H100v2z'%3E%3C/path%3E%3C/g%3E%3C/svg%3E")`,
                     backgroundSize: '100px 199px',
                     backgroundRepeat: 'repeat',
                     animation: 'diagonalMove 40s linear infinite',
@@ -214,10 +214,10 @@ function AuthCard() {
             <div
                 className="w-full max-w-[1200px] flex flex-col md:flex-row overflow-hidden relative z-10"
                 style={{
-                    background: 'white',
+                    background: '#1f2937',
                     borderRadius: '24px',
-                    boxShadow: '0 25px 60px rgba(0, 0, 0, 0.08)',
-                    border: '1px solid rgba(0,0,0,0.05)',
+                    boxShadow: '0 25px 60px rgba(0, 0, 0, 0.2)',
+                    border: '1px solid rgba(255,255,255,0.05)',
                     minHeight: '650px',
                     transition: 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
@@ -247,7 +247,7 @@ function AuthCard() {
                                     onError={(e) => {
                                         // Fallback gradient if image doesn't exist
                                         e.target.style.display = 'none';
-                                        e.target.parentElement.style.background = 'linear-gradient(135deg, #ff8a5b 0%, #ffd2c2 100%)';
+                                        e.target.parentElement.style.background = 'linear-gradient(135deg, #1e293b 0%, #334155 100%)';
                                     }}
                                 />
                             </div>
@@ -279,7 +279,7 @@ function AuthCard() {
                 </div>
 
                 {/* Right Panel - Form with animated content */}
-                <div className="w-full md:w-[50%] flex flex-col items-center justify-center p-8 lg:p-10 bg-white relative">
+                <div className="w-full md:w-[50%] flex flex-col items-center justify-center p-8 lg:p-10 bg-[#1f2937] relative">
                     <div
                         className="w-full max-w-[480px] overflow-hidden"
                         style={{
@@ -290,18 +290,18 @@ function AuthCard() {
                         <div ref={contentRef}>
                             {/* Logo */}
                             <div className="mb-12 flex justify-center">
-                                <img src="/logo.svg" alt="Huofind" className="h-28" />
+                                <video src="/evo-logo.webm" autoPlay loop muted alt="EvoLogo" className="h-28" />
                             </div>
 
                             {/* Header Group - Left aligned */}
                             <div className="mb-8">
                                 <h2
                                     className="text-4xl font-bold mb-1 tracking-tight"
-                                    style={{ color: '#111827' }}
+                                    style={{ color: '#ffffff' }}
                                 >
                                     {mode === 'login' ? 'Entrar' : 'Criar conta'}
                                 </h2>
-                                <p className="text-base text-[#6B7280]">
+                                <p className="text-base text-gray-400">
                                     {mode === 'login'
                                         ? 'Faça login para continuar'
                                         : registerStep === 1
@@ -318,15 +318,15 @@ function AuthCard() {
                                 <div className="flex gap-2 mb-8">
                                     <div
                                         className="h-1 flex-1 rounded-full transition-all duration-300"
-                                        style={{ background: '#ff6b35' }}
+                                        style={{ background: '#3b82f6' }}
                                     />
                                     <div
                                         className="h-1 flex-1 rounded-full transition-all duration-300"
-                                        style={{ background: registerStep >= 2 ? '#ff6b35' : '#E5E7EB' }}
+                                        style={{ background: registerStep >= 2 ? '#3b82f6' : 'rgba(255,255,255,0.05)' }}
                                     />
                                     <div
                                         className="h-1 flex-1 rounded-full transition-all duration-300"
-                                        style={{ background: registerStep >= 3 ? '#ff6b35' : '#E5E7EB' }}
+                                        style={{ background: registerStep >= 3 ? '#3b82f6' : 'rgba(255,255,255,0.05)' }}
                                     />
                                 </div>
                             )}
@@ -335,7 +335,7 @@ function AuthCard() {
                             {displayError && (
                                 <div
                                     className="mb-6 p-4 rounded-xl flex items-center gap-3"
-                                    style={{ background: '#FEF2F2', border: '1px solid #FECACA', color: '#DC2626' }}
+                                    style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)', color: '#f87171' }}
                                 >
                                     <span className="text-sm font-medium">{displayError}</span>
                                 </div>
@@ -345,7 +345,7 @@ function AuthCard() {
                             {mode === 'login' && (
                                 <form onSubmit={handleLoginSubmit} className="space-y-6">
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
+                                        <label className="block text-sm font-semibold mb-2.5 text-gray-400">
                                             E-mail
                                         </label>
                                         <input
@@ -354,19 +354,19 @@ function AuthCard() {
                                             onChange={(e) => setLoginEmail(e.target.value)}
                                             className="w-full px-5 py-4 rounded-xl text-base transition-all duration-200"
                                             style={{
-                                                background: '#F9FAFB',
-                                                border: '1px solid #E5E7EB',
+                                                background: 'rgba(255, 255, 255, 0.03)',
+                                                border: '1px solid rgba(255, 255, 255, 0.1)',
                                                 outline: 'none',
-                                                color: '#111827'
+                                                color: '#ffffff'
                                             }}
                                             onFocus={(e) => {
-                                                e.target.style.borderColor = '#ff6b35';
-                                                e.target.style.background = 'white';
-                                                e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
+                                                e.target.style.borderColor = '#3b82f6';
+                                                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                                             }}
                                             onBlur={(e) => {
-                                                e.target.style.borderColor = '#E5E7EB';
-                                                e.target.style.background = '#F9FAFB';
+                                                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                                e.target.style.background = 'rgba(255, 255, 255, 0.03)';
                                                 e.target.style.boxShadow = 'none';
                                             }}
                                             placeholder="seu@email.com"
@@ -375,7 +375,7 @@ function AuthCard() {
                                     </div>
 
                                     <div className="relative">
-                                        <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
+                                        <label className="block text-sm font-semibold mb-2.5 text-gray-400">
                                             Senha
                                         </label>
                                         <div className="relative">
@@ -385,19 +385,19 @@ function AuthCard() {
                                                 onChange={(e) => setLoginPassword(e.target.value)}
                                                 className="w-full px-5 py-4 pr-14 rounded-xl text-base transition-all duration-200"
                                                 style={{
-                                                    background: '#F9FAFB',
-                                                    border: '1px solid #E5E7EB',
+                                                    background: 'rgba(255, 255, 255, 0.03)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
                                                     outline: 'none',
-                                                    color: '#111827'
+                                                    color: '#ffffff'
                                                 }}
                                                 onFocus={(e) => {
-                                                    e.target.style.borderColor = '#ff6b35';
-                                                    e.target.style.background = 'white';
-                                                    e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
+                                                    e.target.style.borderColor = '#3b82f6';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                                                 }}
                                                 onBlur={(e) => {
-                                                    e.target.style.borderColor = '#E5E7EB';
-                                                    e.target.style.background = '#F9FAFB';
+                                                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.03)';
                                                     e.target.style.boxShadow = 'none';
                                                 }}
                                                 placeholder="Digite sua senha"
@@ -427,8 +427,8 @@ function AuthCard() {
                                         disabled={loading}
                                         className="w-full py-4 rounded-xl font-bold text-white text-base transition-all duration-200 mt-4 block hover:scale-[1.01] active:scale-[0.99]"
                                         style={{
-                                            background: loading ? '#9CA3AF' : '#ff6b35',
-                                            boxShadow: loading ? 'none' : '0 8px 25px rgba(255, 107, 53, 0.25)'
+                                            background: loading ? '#374151' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                            boxShadow: loading ? 'none' : '0 8px 25px rgba(59, 130, 246, 0.25)'
                                         }}
                                     >
                                         {loading ? 'Entrando...' : 'Entrar'}
@@ -440,7 +440,7 @@ function AuthCard() {
                             {mode === 'register' && registerStep === 1 && (
                                 <div className="space-y-6">
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
+                                        <label className="block text-sm font-semibold mb-2.5 text-gray-400">
                                             Nome*
                                         </label>
                                         <input
@@ -449,19 +449,19 @@ function AuthCard() {
                                             onChange={(e) => setRegisterName(e.target.value)}
                                             className="w-full px-5 py-4 rounded-xl text-base transition-all duration-200"
                                             style={{
-                                                background: '#F9FAFB',
-                                                border: '1px solid #E5E7EB',
+                                                background: 'rgba(255, 255, 255, 0.03)',
+                                                border: '1px solid rgba(255, 255, 255, 0.1)',
                                                 outline: 'none',
-                                                color: '#111827'
+                                                color: '#ffffff'
                                             }}
                                             onFocus={(e) => {
-                                                e.target.style.borderColor = '#ff6b35';
-                                                e.target.style.background = 'white';
-                                                e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
+                                                e.target.style.borderColor = '#3b82f6';
+                                                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                                             }}
                                             onBlur={(e) => {
-                                                e.target.style.borderColor = '#E5E7EB';
-                                                e.target.style.background = '#F9FAFB';
+                                                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                                e.target.style.background = 'rgba(255, 255, 255, 0.03)';
                                                 e.target.style.boxShadow = 'none';
                                             }}
                                             placeholder="Seu nome completo"
@@ -469,7 +469,7 @@ function AuthCard() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
+                                        <label className="block text-sm font-semibold mb-2.5 text-gray-400">
                                             E-mail*
                                         </label>
                                         <input
@@ -478,19 +478,19 @@ function AuthCard() {
                                             onChange={(e) => setRegisterEmail(e.target.value)}
                                             className="w-full px-5 py-4 rounded-xl text-base transition-all duration-200"
                                             style={{
-                                                background: '#F9FAFB',
-                                                border: '1px solid #E5E7EB',
+                                                background: 'rgba(255, 255, 255, 0.03)',
+                                                border: '1px solid rgba(255, 255, 255, 0.1)',
                                                 outline: 'none',
-                                                color: '#111827'
+                                                color: '#ffffff'
                                             }}
                                             onFocus={(e) => {
-                                                e.target.style.borderColor = '#ff6b35';
-                                                e.target.style.background = 'white';
-                                                e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
+                                                e.target.style.borderColor = '#3b82f6';
+                                                e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                                             }}
                                             onBlur={(e) => {
-                                                e.target.style.borderColor = '#E5E7EB';
-                                                e.target.style.background = '#F9FAFB';
+                                                e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                                e.target.style.background = 'rgba(255, 255, 255, 0.03)';
                                                 e.target.style.boxShadow = 'none';
                                             }}
                                             placeholder="seu@email.com"
@@ -502,8 +502,8 @@ function AuthCard() {
                                         onClick={handleRegisterNext}
                                         className="w-full py-4 rounded-xl font-bold text-white text-base transition-all duration-300 mt-4 block hover:scale-[1.01] active:scale-[0.99]"
                                         style={{
-                                            background: isStep1Valid ? '#ff6b35' : '#9CA3AF',
-                                            boxShadow: isStep1Valid ? '0 8px 25px rgba(255, 107, 53, 0.25)' : 'none',
+                                            background: isStep1Valid ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#374151',
+                                            boxShadow: isStep1Valid ? '0 8px 25px rgba(59, 130, 246, 0.25)' : 'none',
                                             cursor: isStep1Valid ? 'pointer' : 'default'
                                         }}
                                     >
@@ -516,7 +516,7 @@ function AuthCard() {
                             {mode === 'register' && registerStep === 2 && (
                                 <form onSubmit={handleRegisterSubmit} className="space-y-6">
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
+                                        <label className="block text-sm font-semibold mb-2.5 text-gray-400">
                                             Senha*
                                         </label>
                                         <div className="relative">
@@ -526,19 +526,19 @@ function AuthCard() {
                                                 onChange={(e) => setRegisterPassword(e.target.value)}
                                                 className="w-full px-5 py-4 pr-14 rounded-xl text-base transition-all duration-200"
                                                 style={{
-                                                    background: '#F9FAFB',
-                                                    border: '1px solid #E5E7EB',
+                                                    background: 'rgba(255, 255, 255, 0.03)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
                                                     outline: 'none',
-                                                    color: '#111827'
+                                                    color: '#ffffff'
                                                 }}
                                                 onFocus={(e) => {
-                                                    e.target.style.borderColor = '#ff6b35';
-                                                    e.target.style.background = 'white';
-                                                    e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
+                                                    e.target.style.borderColor = '#3b82f6';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                                                 }}
                                                 onBlur={(e) => {
-                                                    e.target.style.borderColor = '#E5E7EB';
-                                                    e.target.style.background = '#F9FAFB';
+                                                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.03)';
                                                     e.target.style.boxShadow = 'none';
                                                 }}
                                                 placeholder="Mínimo 8 caracteres"
@@ -571,7 +571,7 @@ function AuthCard() {
                                     </div>
 
                                     <div>
-                                        <label className="block text-sm font-semibold mb-2.5" style={{ color: '#374151' }}>
+                                        <label className="block text-sm font-semibold mb-2.5 text-gray-400">
                                             Confirmar Senha*
                                         </label>
                                         <div className="relative">
@@ -581,19 +581,19 @@ function AuthCard() {
                                                 onChange={(e) => setRegisterConfirmPassword(e.target.value)}
                                                 className="w-full px-5 py-4 rounded-xl text-base transition-all duration-200"
                                                 style={{
-                                                    background: '#F9FAFB',
-                                                    border: registerConfirmPassword && registerPassword !== registerConfirmPassword ? '1px solid #FECACA' : '1px solid #E5E7EB',
+                                                    background: 'rgba(255, 255, 255, 0.03)',
+                                                    border: registerConfirmPassword && registerPassword !== registerConfirmPassword ? '1px solid #f87171' : '1px solid rgba(255, 255, 255, 0.1)',
                                                     outline: 'none',
-                                                    color: '#111827'
+                                                    color: '#ffffff'
                                                 }}
                                                 onFocus={(e) => {
-                                                    e.target.style.borderColor = '#ff6b35';
-                                                    e.target.style.background = 'white';
-                                                    e.target.style.boxShadow = '0 0 0 3px rgba(255, 107, 53, 0.08)';
+                                                    e.target.style.borderColor = '#3b82f6';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
                                                 }}
                                                 onBlur={(e) => {
-                                                    e.target.style.borderColor = registerConfirmPassword && registerPassword !== registerConfirmPassword ? '#FECACA' : '#E5E7EB';
-                                                    e.target.style.background = '#F9FAFB';
+                                                    e.target.style.borderColor = registerConfirmPassword && registerPassword !== registerConfirmPassword ? '#f87171' : 'rgba(255, 255, 255, 0.1)';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.03)';
                                                     e.target.style.boxShadow = 'none';
                                                 }}
                                                 placeholder="Digite novamente"
@@ -616,9 +616,9 @@ function AuthCard() {
                                                 type="checkbox"
                                                 checked={agreedToTerms}
                                                 onChange={(e) => setAgreedToTerms(e.target.checked)}
-                                                className="w-5 h-5 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer transition-all appearance-none border-2 checked:bg-orange-500 checked:border-orange-500 relative"
+                                                className="w-5 h-5 rounded border-white/10 text-blue-600 focus:ring-blue-500 cursor-pointer transition-all appearance-none border-2 checked:bg-blue-600 checked:border-blue-600 relative"
                                                 style={{
-                                                    accentColor: '#ff6b35',
+                                                    accentColor: '#3b82f6',
                                                     backgroundImage: agreedToTerms ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E")` : 'none',
                                                     backgroundSize: '80% 80%',
                                                     backgroundPosition: 'center',
@@ -631,7 +631,7 @@ function AuthCard() {
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.preventDefault(); window.location.pathname = '/terms'; }}
-                                                className="font-bold text-gray-700 hover:text-orange-500 transition-colors underline decoration-gray-200 underline-offset-4"
+                                                className="font-bold text-gray-300 hover:text-blue-500 transition-colors underline decoration-white/10 underline-offset-4"
                                             >
                                                 Termos de Uso
                                             </button>
@@ -639,7 +639,7 @@ function AuthCard() {
                                             <button
                                                 type="button"
                                                 onClick={(e) => { e.preventDefault(); window.location.pathname = '/privacy'; }}
-                                                className="font-bold text-gray-700 hover:text-orange-500 transition-colors underline decoration-gray-200 underline-offset-4"
+                                                className="font-bold text-gray-300 hover:text-blue-500 transition-colors underline decoration-white/10 underline-offset-4"
                                             >
                                                 Política de Privacidade
                                             </button>
@@ -651,10 +651,10 @@ function AuthCard() {
                                         <button
                                             type="button"
                                             onClick={handleRegisterBack}
-                                            className="px-6 py-4 rounded-xl font-bold text-base transition-all duration-200 hover:bg-gray-100"
+                                            className="px-6 py-4 rounded-xl font-bold text-base transition-all duration-200 hover:bg-white/10"
                                             style={{
-                                                background: '#F3F4F6',
-                                                color: '#374151'
+                                                background: 'rgba(255, 255, 255, 0.05)',
+                                                color: '#ffffff'
                                             }}
                                         >
                                             Voltar
@@ -664,8 +664,8 @@ function AuthCard() {
                                             disabled={loading}
                                             className="flex-1 py-4 rounded-xl font-bold text-white text-base transition-all duration-300 block hover:scale-[1.01] active:scale-[0.99]"
                                             style={{
-                                                background: loading ? '#9CA3AF' : (isStep2Valid ? '#ff6b35' : '#9CA3AF'),
-                                                boxShadow: isStep2Valid && !loading ? '0 8px 25px rgba(255, 107, 53, 0.25)' : 'none',
+                                                background: loading ? '#374151' : (isStep2Valid ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)' : '#374151'),
+                                                boxShadow: isStep2Valid && !loading ? '0 8px 25px rgba(59, 130, 246, 0.25)' : 'none',
                                                 cursor: isStep2Valid ? 'pointer' : 'default'
                                             }}
                                         >
@@ -685,13 +685,13 @@ function AuthCard() {
                                                 <div
                                                     className="w-24 h-24 rounded-full flex items-center justify-center"
                                                     style={{
-                                                        background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
+                                                        background: 'rgba(59, 130, 246, 0.05)',
                                                         animation: 'pulse 2s ease-in-out infinite'
                                                     }}
                                                 >
                                                     <svg
                                                         className="w-12 h-12"
-                                                        style={{ color: '#FF6B35' }}
+                                                        style={{ color: '#3b82f6' }}
                                                         fill="none"
                                                         stroke="currentColor"
                                                         viewBox="0 0 24 24"
@@ -707,13 +707,13 @@ function AuthCard() {
                                             </div>
 
                                             <div>
-                                                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                                <h3 className="text-xl font-bold text-white mb-2">
                                                     Verifique seu e-mail
                                                 </h3>
-                                                <p className="text-gray-500 text-sm">
+                                                <p className="text-gray-400 text-sm">
                                                     Enviamos um link de confirmação para:
                                                 </p>
-                                                <p className="text-gray-900 font-semibold mt-1">
+                                                <p className="text-white font-semibold mt-1">
                                                     {registerEmail}
                                                 </p>
                                             </div>
@@ -721,10 +721,10 @@ function AuthCard() {
                                             {/* Loading spinner */}
                                             <div className="flex items-center justify-center gap-3 py-4">
                                                 <div
-                                                    className="w-5 h-5 border-2 border-orange-200 border-t-orange-500 rounded-full"
+                                                    className="w-5 h-5 border-2 border-white/5 border-t-blue-500 rounded-full"
                                                     style={{ animation: 'spin 1s linear infinite' }}
                                                 />
-                                                <span className="text-sm text-gray-500">Aguardando confirmação...</span>
+                                                <span className="text-sm text-gray-400">Aguardando confirmação...</span>
                                             </div>
 
                                             {/* Resend button */}
@@ -734,7 +734,7 @@ function AuthCard() {
                                                     onClick={handleResendEmail}
                                                     disabled={resending}
                                                     className="text-sm font-medium transition-all duration-200 hover:underline"
-                                                    style={{ color: resending ? '#9CA3AF' : '#FF6B35' }}
+                                                    style={{ color: resending ? '#6B7280' : '#3b82f6' }}
                                                 >
                                                     {resending ? 'Reenviando...' : 'Reenviar e-mail'}
                                                 </button>
@@ -777,15 +777,15 @@ function AuthCard() {
                                                 </div>
                                             </div>
 
-                                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+                                            <h3 className="text-xl font-bold text-white mb-2">
                                                 E-mail confirmado! 🎉
                                             </h3>
-                                            <p className="text-gray-500 text-sm">
+                                            <p className="text-gray-400 text-sm">
                                                 Redirecionando para a plataforma...
                                             </p>
 
                                             {/* Loading bar */}
-                                            <div className="mt-6 h-1 bg-gray-100 rounded-full overflow-hidden">
+                                            <div className="mt-6 h-1 bg-white/5 rounded-full overflow-hidden">
                                                 <div
                                                     className="h-full rounded-full"
                                                     style={{
@@ -801,7 +801,7 @@ function AuthCard() {
 
                             {/* Footer Section */}
                             <div className="mt-12 space-y-8">
-                                <p className="text-center text-base" style={{ color: '#6B7280' }}>
+                                <p className="text-center text-base text-gray-400">
                                     {mode === 'login' ? (
                                         <>
                                             Não tem uma conta?{' '}
@@ -809,7 +809,7 @@ function AuthCard() {
                                                 type="button"
                                                 onClick={switchToRegister}
                                                 className="font-bold hover:underline"
-                                                style={{ color: '#ff6b35' }}
+                                                style={{ color: '#3b82f6' }}
                                             >
                                                 Criar conta
                                             </button>
@@ -821,7 +821,7 @@ function AuthCard() {
                                                 type="button"
                                                 onClick={switchToLogin}
                                                 className="font-bold hover:underline"
-                                                style={{ color: '#ff6b35' }}
+                                                style={{ color: '#3b82f6' }}
                                             >
                                                 Fazer login
                                             </button>
@@ -829,22 +829,22 @@ function AuthCard() {
                                     )}
                                 </p>
 
-                                <div className="flex justify-center gap-8 pt-6 border-t border-gray-100">
+                                <div className="flex justify-center gap-8 pt-6 border-t border-white/5">
                                     <button
                                         onClick={() => window.location.pathname = '/terms'}
-                                        className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors"
+                                        className="text-sm text-gray-400 hover:text-[#3b82f6] transition-colors"
                                     >
                                         Termos de Uso
                                     </button>
                                     <button
                                         onClick={() => window.location.pathname = '/privacy'}
-                                        className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors"
+                                        className="text-sm text-gray-400 hover:text-[#3b82f6] transition-colors"
                                     >
                                         Política de Privacidade
                                     </button>
                                     <button
                                         onClick={() => window.open('https://t.me/huofind_suporte', '_blank')}
-                                        className="text-sm text-gray-400 hover:text-[#ff6b35] transition-colors"
+                                        className="text-sm text-gray-400 hover:text-[#3b82f6] transition-colors"
                                     >
                                         Suporte
                                     </button>

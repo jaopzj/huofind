@@ -16,26 +16,25 @@ function SavedSellerCard({ seller, onSelect, onDelete }) {
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
             whileHover={{ y: -5, transition: { duration: 0.2 } }}
-            className="group relative bg-white border border-gray-100 p-5 rounded-[2rem] shadow-md hover:shadow-2xl hover:border-orange-200 transition-all duration-300"
+            className="group relative bg-[#1f2937] border border-white/5 p-5 rounded-[2rem] shadow-md hover:shadow-2xl hover:border-blue-500/30 transition-all duration-300"
         >
             <div className="flex flex-col items-center text-center">
                 {/* Icon Circle */}
                 <div className="relative mb-4">
-                    <div className="w-20 h-20 rounded-full bg-orange-50 flex items-center justify-center text-4xl shadow-inner group-hover:scale-110 transition-transform duration-500">
+                    <div className="w-20 h-20 rounded-full bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-4xl shadow-inner group-hover:scale-110 transition-transform duration-500">
                         {seller.icon_value || '🏪'}
                     </div>
                     {/* Platform Badge */}
-                    <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-white border border-gray-100 flex items-center justify-center shadow-sm">
+                    <div className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-[#111827] border border-white/10 flex items-center justify-center shadow-sm">
                         <img src="/xianyu-logo.svg" alt="Xianyu" className="w-5 h-5 object-contain" />
                     </div>
                 </div>
 
                 {/* Info */}
-                <h3 className="font-bold text-gray-800 text-lg mb-1 group-hover:text-orange-600 transition-colors">
+                <h3 className="font-bold text-white text-lg mb-1 group-hover:text-blue-400 transition-colors">
                     {seller.nickname}
                 </h3>
-                <p className="text-xs text-gray-400 font-medium mb-6 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <p className="text-xs text-gray-400 font-medium mb-6">
                     Pronto para minerar
                 </p>
 
@@ -43,14 +42,14 @@ function SavedSellerCard({ seller, onSelect, onDelete }) {
                 <div className="flex items-center gap-2 w-full">
                     <button
                         onClick={() => onSelect(seller.seller_url)}
-                        className="flex-1 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-bold active:scale-95 transition-all hover:bg-orange-600 hover:shadow-[0_4px_12px_rgba(234,88,12,0.3)]"
+                        className="flex-1 py-2.5 rounded-xl bg-blue-600 text-white text-sm font-bold active:scale-95 transition-all hover:bg-blue-500 hover:shadow-[0_4px_12px_rgba(59,130,246,0.3)]"
                     >
                         ⚡ Minerar
                     </button>
 
                     <button
                         onClick={(e) => onDelete(seller.id, seller.seller_id, e)}
-                        className="p-2.5 rounded-xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 active:scale-90 transition-all"
+                        className="p-2.5 rounded-xl bg-white/5 text-gray-400 hover:bg-red-500/10 hover:text-red-500 active:scale-90 transition-all border border-white/5"
                         title="Remover vendedor"
                     >
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,7 +61,7 @@ function SavedSellerCard({ seller, onSelect, onDelete }) {
 
             {/* Hover Shine Effect */}
             <div className="absolute inset-0 rounded-[2rem] overflow-hidden pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-tr from-orange-400/0 via-orange-400/0 to-orange-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+                <div className="absolute inset-0 bg-gradient-to-tr from-blue-400/0 via-blue-400/0 to-blue-400/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
             </div>
         </motion.div>
     );

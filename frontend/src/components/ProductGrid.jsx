@@ -51,7 +51,7 @@ function ProductCard({
                 className="relative overflow-hidden"
                 style={{
                     aspectRatio: '1/1',
-                    background: 'var(--color-cream-100)'
+                    background: '#2d3748'
                 }}
             >
                 {product.images?.[0] ? (
@@ -70,22 +70,6 @@ function ProductCard({
                     <div className="w-full h-full flex items-center justify-center">
                         <span className="text-4xl opacity-30">📦</span>
                     </div>
-                )}
-
-                {/* Model Badge - top left */}
-                {model && (
-                    <span
-                        className="absolute top-3 left-3 liquid-glass-badge"
-                    >
-                        {modelIcon} {model}
-                    </span>
-                )}
-
-                {/* Storage Badge - top right - ALWAYS visible */}
-                {storage && (
-                    <span className="absolute top-3 right-3 liquid-glass-badge liquid-glass-orange">
-                        {storage}
-                    </span>
                 )}
 
                 {/* Version/Status Badges - bottom - Liquid Glass variants */}
@@ -121,29 +105,34 @@ function ProductCard({
 
             {/* Content */}
             <div className="p-4">
+                {/* Product Meta (Model & Storage) */}
+                <div className="flex items-center gap-2 mb-2 h-4 overflow-hidden">
+                    {model && (
+                        <p className="text-[11px] font-semibold text-blue-400 uppercase tracking-wider truncate flex-1">
+                            {modelIcon} {model}
+                        </p>
+                    )}
+                    {storage && (
+                        <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider whitespace-nowrap">
+                            💾 {storage}
+                        </p>
+                    )}
+                </div>
+
                 {/* Name */}
                 <h3
-                    className="text-sm font-medium line-clamp-2 mb-2"
-                    style={{ color: '#1F2937', minHeight: '2.5rem' }}
+                    className="text-sm font-medium line-clamp-2 mb-4 leading-relaxed"
+                    style={{ color: 'white', height: '2.5rem', overflow: 'hidden' }}
+                    title={product.nameTranslated || product.name}
                 >
                     {product.nameTranslated || product.name}
                 </h3>
 
-                {/* Original Name (smaller) */}
-                {product.nameOriginal && product.nameOriginal !== product.nameTranslated && (
-                    <p
-                        className="text-xs line-clamp-1 mb-3"
-                        style={{ color: '#9CA3AF' }}
-                    >
-                        {product.nameOriginal}
-                    </p>
-                )}
-
                 {/* Price Row */}
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between gap-2 mb-3">
                     <p
-                        className="text-2xl font-bold"
-                        style={{ color: 'var(--color-orange-500)' }}
+                        className="text-lg sm:text-xl font-bold whitespace-nowrap"
+                        style={{ color: '#3B82F6' }}
                     >
                         {formatPrice()}
                     </p>
@@ -166,7 +155,7 @@ function ProductCard({
                     }}
                     className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all hover:scale-[1.02] active:scale-[0.98]"
                     style={{
-                        background: 'var(--color-orange-500)',
+                        background: '#3B82F6',
                         color: 'white'
                     }}
                 >
@@ -195,7 +184,7 @@ function ProductGrid({
         return (
             <div className="flex flex-col items-center justify-center py-16">
                 <span className="text-5xl mb-4 opacity-40">📭</span>
-                <p style={{ color: '#6B7280' }}>Nenhum produto encontrado</p>
+                <p style={{ color: '#9CA3AF' }}>Nenhum produto encontrado</p>
             </div>
         );
     }

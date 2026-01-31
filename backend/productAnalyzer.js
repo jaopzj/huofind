@@ -187,6 +187,10 @@ const PATTERNS = {
             '16plus', '16 plus', 'iPhone16Plus', '苹果16plus',
             'iPhone 16 Plus', '十六plus', '16+', 'iphone16plus'
         ],
+        'iPhone 16e': [
+            'iphone16e', 'iPhone 16e', '苹果16e', 'iPhone16e',
+            '苹果 16e', '十六e', 'ip16e'
+        ],
         'iPhone 16': [
             'iphone16', 'iPhone 16', '苹果16', 'iPhone16',
             '苹果 16', '十六', 'ip16'

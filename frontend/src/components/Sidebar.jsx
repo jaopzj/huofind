@@ -19,7 +19,7 @@ const AnimatedMenuToggle = ({ toggle, isOpen }) => (
                 initial="closed"
                 animate={isOpen ? "open" : "closed"}
                 transition={{ duration: 0.3 }}
-                className="text-gray-700"
+                className="text-white"
             >
                 <motion.path
                     fill="transparent"
@@ -126,7 +126,7 @@ const NavItem = ({ icon, label, isActive, onClick, ...props }) => (
         {isActive && (
             <motion.div
                 layoutId="navActiveBackground"
-                className="absolute inset-0 rounded-xl bg-gradient-to-r from-orange-50 to-orange-100/80"
+                className="absolute inset-0 rounded-xl bg-white/15"
                 initial={false}
                 transition={{
                     type: "spring",
@@ -143,7 +143,7 @@ const NavItem = ({ icon, label, isActive, onClick, ...props }) => (
         {isActive && (
             <motion.span
                 layoutId="navActiveDot"
-                className="absolute right-3 w-1.5 h-1.5 rounded-full bg-orange-500"
+                className="absolute right-3 w-1.5 h-1.5 rounded-full bg-blue-500"
                 initial={false}
                 transition={{
                     type: "spring",
@@ -778,7 +778,7 @@ const SettingsIcon = () => (
 const TIER_CONFIG = {
     guest: {
         name: 'Convidado',
-        color: '#6B7280',
+        color: '#4f6074ff',
         bg: 'rgba(107, 114, 128, 0.1)',
         icon: (props) => (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -789,7 +789,7 @@ const TIER_CONFIG = {
     },
     bronze: {
         name: 'Explorador',
-        color: '#B45309',
+        color: '#09b489ff',
         bg: 'rgba(180, 83, 9, 0.1)',
         icon: (props) => (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -800,7 +800,7 @@ const TIER_CONFIG = {
     },
     prata: {
         name: 'Escavador',
-        color: '#4B5563',
+        color: '#504b63ff',
         bg: 'rgba(75, 85, 99, 0.1)',
         icon: (props) => (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
@@ -810,8 +810,8 @@ const TIER_CONFIG = {
     },
     ouro: {
         name: 'Minerador',
-        color: '#D97706',
-        bg: 'rgba(217, 119, 6, 0.1)',
+        color: '#0696d9ff',
+        bg: 'rgba(6, 69, 217, 0.1)',
         icon: (props) => (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
                 <path d="M6 3h12l4 6-10 12L2 9z" />
@@ -941,9 +941,9 @@ const SidebarContent = ({
     return (
         <div className="flex flex-col h-full">
             {/* Logo / Brand Section */}
-            <div className="p-4 border-b border-gray-100">
+            <div className="p-4 border-b border-white/10">
                 <div className="flex items-center justify-center">
-                    <img src="/logo.svg" alt="Huofind Logo" className="h-20 w-auto object-contain" />
+                    <img src="/evo-logo-horizontal.png" alt="Huofind Logo" className="h-20 w-auto object-contain" />
                     {isMobile && (
                         <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
                     )}
@@ -951,9 +951,9 @@ const SidebarContent = ({
             </div>
 
             {/* Profile Section */}
-            <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-b from-white to-gray-50/30">
+            <div className="px-4 py-3 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                    <div className="sidebar-profile-avatar overflow-hidden ring-2 ring-orange-100 ring-offset-2">
+                    <div className="sidebar-profile-avatar overflow-hidden ring-2 ring-white/30 ring-offset-2 ring-offset-[#1f2937]">
                         {user?.avatarUrl ? (
                             <img
                                 src={user.avatarUrl}
@@ -966,7 +966,7 @@ const SidebarContent = ({
                     </div>
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
-                            <p className="font-bold text-gray-900 text-sm truncate">
+                            <p className="font-bold text-white text-sm truncate">
                                 {user?.name || 'Usuário'}
                             </p>
                             {/* Tier Badge integrated next to name */}
@@ -991,7 +991,7 @@ const SidebarContent = ({
                                 );
                             })()}
                         </div>
-                        <p className="text-[11px] text-gray-400 truncate">
+                        <p className="text-[11px] text-white/60 truncate">
                             {user?.email || ''}
                         </p>
                     </div>
@@ -1005,21 +1005,21 @@ const SidebarContent = ({
                         : null;
 
                     return (
-                        <div className="mt-4 p-3 bg-gray-50/50 rounded-xl border border-gray-100 flex items-center justify-between group">
+                        <div className="mt-4 p-3 bg-white/10 rounded-xl border border-white/10 flex items-center justify-between group">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2 rounded-lg ${isLowBalance ? 'bg-red-50 text-red-500' : 'bg-orange-50 text-orange-500'}`}>
+                                <div className={`p-2 rounded-lg ${isLowBalance ? 'bg-red-500/20 text-red-300' : 'bg-white/20 text-white'}`}>
                                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                         <circle cx="12" cy="12" r="10" />
                                         <path d="M12 6v12M8 10h8M8 14h6" />
                                     </svg>
                                 </div>
                                 <div>
-                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Saldo</p>
+                                    <p className="text-[10px] font-bold text-white/60 uppercase tracking-tighter">Saldo</p>
                                     <div className="flex items-baseline gap-1">
-                                        <span className={`text-lg font-black ${isLowBalance ? 'text-red-600' : 'text-gray-900'}`}>
+                                        <span className={`text-lg font-black ${isLowBalance ? 'text-red-300' : 'text-white'}`}>
                                             {miningInfo.credits}
                                         </span>
-                                        <span className="text-[10px] font-medium text-gray-400">créditos</span>
+                                        <span className="text-[10px] font-medium text-white/60">créditos</span>
                                     </div>
                                 </div>
                             </div>
@@ -1027,8 +1027,8 @@ const SidebarContent = ({
                             {/* Renewal detail - only if exists */}
                             {daysUntilRenewal !== null && (
                                 <div className="text-right">
-                                    <p className="text-[9px] text-gray-400 font-medium">Renovação</p>
-                                    <p className="text-[10px] font-bold text-gray-600">{daysUntilRenewal}d</p>
+                                    <p className="text-[9px] text-white/60 font-medium">Renovação</p>
+                                    <p className="text-[10px] font-bold text-white/80">{daysUntilRenewal}d</p>
                                 </div>
                             )}
                         </div>
@@ -1047,7 +1047,7 @@ const SidebarContent = ({
                     }
                 `}</style>
                 <div className="mb-2">
-                    <p className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <p className="px-4 mb-2 text-xs font-bold text-white/50 uppercase tracking-wider">
                         Menu
                     </p>
                     <ul className="space-y-1">
@@ -1068,8 +1068,8 @@ const SidebarContent = ({
                                 <li>
                                     <button
                                         className={`w-full text-left py-2 px-3 text-sm rounded-lg transition-colors flex items-center gap-2 ${activePage === 'xianyu-mining'
-                                            ? 'text-orange-600 bg-orange-50'
-                                            : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+                                            ? 'text-blue-400 bg-blue-900/30'
+                                            : 'text-white/70 hover:text-white hover:bg-white/10'
                                             }`}
                                         onClick={() => onNavClick('xianyu-mining')}
                                     >
@@ -1086,8 +1086,8 @@ const SidebarContent = ({
                                 <li>
                                     <button
                                         className={`w-full text-left py-2 px-3 text-sm rounded-lg transition-colors flex items-center gap-2 ${activePage === 'yupoo-search'
-                                            ? 'text-orange-600 bg-orange-50'
-                                            : 'text-gray-600 hover:text-orange-600 hover:bg-orange-50'
+                                            ? 'text-blue-400 bg-blue-900/30'
+                                            : 'text-white/70 hover:text-white hover:bg-white/10'
                                             }`}
                                         onClick={() => onNavClick('yupoo-search')}
                                     >
@@ -1142,18 +1142,18 @@ const SidebarContent = ({
                 </div>
 
                 <div className="mt-4 space-y-2">
-                    <p className="px-4 mb-2 text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    <p className="px-4 mb-2 text-xs font-bold text-white/50 uppercase tracking-wider">
                         Configurações
                     </p>
                     <CollapsibleSection title="Preferências" icon={<SettingsIcon />}>
                         <ul className="space-y-1">
                             <li>
-                                <button className="w-full text-left py-2 px-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+                                <button className="w-full text-left py-2 px-3 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                                     Aparência
                                 </button>
                             </li>
                             <li>
-                                <button className="w-full text-left py-2 px-3 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors">
+                                <button className="w-full text-left py-2 px-3 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
                                     Notificações
                                 </button>
                             </li>
@@ -1179,7 +1179,7 @@ const SidebarContent = ({
 };
 
 // Main Sidebar component
-const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout }) => {
+const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL, onToggleCurrency, hasResults }) => {
     const [isOpen, setIsOpen] = useState(false);
     const productsIconRef = useRef(null);
     const profileIconRef = useRef(null);
@@ -1208,10 +1208,38 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout }) => {
     return (
         <>
             {/* Mobile Top Bar */}
-            <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white/80 backdrop-blur-lg border-b border-gray-100">
+            <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#1f2937]/30 backdrop-blur-xl border-b border-white/10">
                 <div className="flex items-center justify-between px-4 py-3">
-                    <img src="/logo.svg" alt="Huofind Logo" className="h-7 w-auto object-contain" />
-                    <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
+                    <img src="/evo-logo-horizontal.png" alt="Huofind Logo" className="h-7 w-auto object-contain" />
+
+                    <div className="flex items-center gap-4">
+                        {/* Mobile Currency Toggle - only on mining page with results */}
+                        {activePage === 'xianyu-mining' && hasResults && (
+                            <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/5 border border-white/10">
+                                <span className="text-[10px] font-bold" style={{ color: showBRL ? '#6B7280' : 'white' }}>
+                                    ¥
+                                </span>
+                                <button
+                                    onClick={onToggleCurrency}
+                                    className="relative w-8 h-4 rounded-full transition-all duration-300"
+                                    style={{
+                                        background: showBRL ? '#3B82F6' : 'rgba(255, 255, 255, 0.2)'
+                                    }}
+                                >
+                                    <div
+                                        className="absolute top-0.5 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300"
+                                        style={{
+                                            left: showBRL ? '18px' : '2px'
+                                        }}
+                                    />
+                                </button>
+                                <span className="text-[10px] font-bold" style={{ color: showBRL ? 'white' : '#6B7280' }}>
+                                    R$
+                                </span>
+                            </div>
+                        )}
+                        <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
+                    </div>
                 </div>
             </div>
 
@@ -1243,7 +1271,7 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout }) => {
                             hidden: { x: "-100%" }, visible: { x: 0 }
                         }}
                         transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-                        className="md:hidden fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl"
+                        className="md:hidden fixed inset-y-0 left-0 z-50 w-72 bg-[#1f2937] shadow-2xl"
                     >
                         <SidebarContent {...sidebarProps} isMobile={true} />
                     </motion.div>
@@ -1251,7 +1279,7 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout }) => {
             </AnimatePresence>
 
             {/* Desktop Sidebar */}
-            <div className="hidden md:flex flex-col fixed top-0 left-0 h-full w-64 bg-white border-r border-gray-100 shadow-sm z-40">
+            <div className="hidden md:flex flex-col fixed top-0 left-0 h-full w-64 bg-[#1f2937] border-r border-white/10 shadow-sm z-40">
                 <SidebarContent {...sidebarProps} />
             </div>
         </>

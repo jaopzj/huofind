@@ -107,20 +107,20 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
     };
 
     const colorMap = {
-        green: { gradient: '#10B981', text: '#047857', bg: 'rgba(16, 185, 129, 0.1)', border: '#A7F3D0' },
-        blue: { gradient: '#3B82F6', text: '#1D4ED8', bg: 'rgba(59, 130, 246, 0.1)', border: '#BFDBFE' },
-        yellow: { gradient: '#F59E0B', text: '#D97706', bg: 'rgba(245, 158, 11, 0.1)', border: '#FDE68A' },
-        orange: { gradient: '#FF6B35', text: '#E55A2B', bg: 'rgba(255, 107, 53, 0.1)', border: '#FED7AA' },
-        red: { gradient: '#EF4444', text: '#DC2626', bg: 'rgba(239, 68, 68, 0.1)', border: '#FECACA' }
+        green: { gradient: '#10B981', text: '#10B981', bg: 'rgba(16, 185, 129, 0.1)', border: 'rgba(16, 185, 129, 0.2)' },
+        blue: { gradient: '#3B82F6', text: '#60A5FA', bg: 'rgba(59, 130, 246, 0.1)', border: 'rgba(59, 130, 246, 0.2)' },
+        yellow: { gradient: '#F59E0B', text: '#FBBF24', bg: 'rgba(245, 158, 11, 0.1)', border: 'rgba(245, 158, 11, 0.2)' },
+        orange: { gradient: '#3B82F6', text: '#60A5FA', bg: 'rgba(59, 130, 246, 0.1)', border: 'rgba(59, 130, 246, 0.2)' },
+        red: { gradient: '#EF4444', text: '#F87171', bg: 'rgba(239, 68, 68, 0.1)', border: 'rgba(239, 68, 68, 0.2)' }
     };
 
     const colors = colorMap[classificationColor] || colorMap.orange;
 
     return (
         <div
-            className={`w-full mb-8 relative overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg ${isCompact ? '' : 'border border-white/50'} ${isTransitioning ? 'seller-card-transition-active' : ''}`}
+            className={`w-full mb-8 relative overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg ${isCompact ? '' : 'border border-white/10'} ${isTransitioning ? 'seller-card-transition-active' : ''}`}
             style={{
-                background: isCompact ? 'white' : 'rgba(255, 255, 255, 0.95)',
+                background: '#1f2937',
                 backdropFilter: isCompact ? 'none' : 'blur(10px)',
                 boxShadow: 'var(--shadow-soft)',
                 minHeight: isCompact ? 'auto' : '140px'
@@ -146,21 +146,21 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
                                 <div className="flex items-center gap-5 flex-1 min-w-0">
                                     <div className="relative">
                                         {avatar ? (
-                                            <img src={avatar} alt={sellerNickname} className="w-20 h-20 rounded-2xl object-cover shadow-sm" style={{ border: '3px solid white' }} />
+                                            <img src={avatar} alt={sellerNickname} className="w-20 h-20 rounded-2xl object-cover shadow-sm" style={{ border: '3px solid #374151' }} />
                                         ) : (
-                                            <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #FF9A76 0%, #FF6B35 100%)', border: '3px solid white' }}>
+                                            <div className="w-20 h-20 rounded-2xl flex items-center justify-center shadow-sm" style={{ background: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 100%)', border: '3px solid #374151' }}>
                                                 <span className="text-3xl">👤</span>
                                             </div>
                                         )}
                                         {level > 0 && (
-                                            <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full shadow-sm border-2 border-white">
+                                            <div className="absolute -bottom-2 -right-2 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full shadow-sm border-2 border-[#1f2937]">
                                                 L{level}
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="min-w-0 flex-1">
-                                        <h2 className="text-xl font-bold truncate mb-1" style={{ color: '#1F2937' }}>
+                                        <h2 className="text-xl font-bold truncate mb-1" style={{ color: 'white' }}>
                                             {sellerNickname || 'Vendedor do Xianyu'}
                                         </h2>
                                         <div className="flex items-center gap-2 flex-wrap">
@@ -168,7 +168,7 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
                                                 {classificationIcon} {classification}
                                             </span>
                                             {monthsActiveFormatted && (
-                                                <span className="text-xs text-gray-500 flex items-center gap-1">
+                                                <span className="text-xs text-gray-400 flex items-center gap-1">
                                                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                                                     {monthsActiveFormatted}
                                                 </span>
@@ -178,14 +178,14 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
                                 </div>
 
                                 {/* Metrics */}
-                                <div className="flex items-center gap-8 px-6 md:border-l md:border-r border-gray-100 flex-shrink-0">
+                                <div className="flex items-center gap-8 px-6 md:border-l md:border-r border-white/10 flex-shrink-0">
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{formatMetric(salesCount, salesCountFormatted)}</p>
-                                        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Produtos</p>
+                                        <p className="text-2xl font-bold" style={{ color: 'white' }}>{formatMetric(salesCount, salesCountFormatted)}</p>
+                                        <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Produtos</p>
                                     </div>
                                     <div className="text-center">
-                                        <p className="text-2xl font-bold" style={{ color: '#1F2937' }}>{formatMetric(followers, followersFormatted)}</p>
-                                        <p className="text-xs font-medium uppercase tracking-wider text-gray-400">Seguidores</p>
+                                        <p className="text-2xl font-bold" style={{ color: 'white' }}>{formatMetric(followers, followersFormatted)}</p>
+                                        <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Seguidores</p>
                                     </div>
                                 </div>
 
@@ -195,7 +195,7 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
                                         <button
                                             onClick={() => handleToggleView('save')}
                                             disabled={saved}
-                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${saved ? 'bg-green-100 text-green-600 cursor-default' : 'bg-orange-50 text-orange-600 hover:bg-orange-100'
+                                            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${saved ? 'bg-green-500/10 text-green-400 cursor-default' : 'bg-blue-500/10 text-blue-400 hover:bg-blue-500/20'
                                                 }`}
                                         >
                                             {saved ? '✓ Já salvo!' : '📌 Salvar Vendedor'}
@@ -204,11 +204,11 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
 
                                     <div className="relative w-16 h-16 flex items-center justify-center">
                                         <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
-                                            <path className="text-gray-100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                            <path className="text-white/10" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
                                             <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke={colors.gradient} strokeWidth="3" strokeDasharray={`${score}, 100`} strokeLinecap="round" />
                                         </svg>
                                         <div className="absolute inset-0 flex items-center justify-center">
-                                            <span className="text-xl font-bold" style={{ color: '#1F2937' }}>{score}</span>
+                                            <span className="text-xl font-bold" style={{ color: 'white' }}>{score}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -218,35 +218,35 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
 
                     {/* View 2: Save Menu */}
                     {view === 'save' && (
-                        <div className="p-6 animate-scale-in relative z-10 flex flex-col md:flex-row items-center gap-6 bg-orange-50/30">
+                        <div className="p-6 animate-scale-in relative z-10 flex flex-col md:flex-row items-center gap-6 bg-blue-500/5">
                             <div className="flex-1">
-                                <h3 className="text-lg font-bold text-gray-800 mb-1 flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
                                     <span>📌</span> Salvar Vendedor
                                 </h3>
-                                <p className="text-sm text-gray-500 mb-4">Escolha um apelido único para facilitar o acesso.</p>
+                                <p className="text-sm text-gray-400 mb-4">Escolha um apelido único para facilitar o acesso.</p>
 
                                 <div className="flex flex-col md:flex-row gap-4 items-end">
                                     <div className="flex-1 w-full">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block">Apelido do Vendedor</label>
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block">Apelido do Vendedor</label>
                                         <input
                                             type="text"
                                             placeholder="Ex: iPhone Master"
                                             value={saveNickname}
                                             onChange={(e) => setSaveNickname(e.target.value)}
-                                            className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-700 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all font-medium"
+                                            className="w-full px-4 py-3 rounded-xl border border-white/10 bg-white/5 text-white focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all font-medium"
                                             maxLength={50}
                                             autoFocus
                                         />
                                     </div>
 
                                     <div className="w-full md:w-auto">
-                                        <label className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1 block text-center md:text-left">Ícone</label>
-                                        <div className="flex gap-2 p-1 bg-white rounded-xl border border-gray-200">
+                                        <label className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1 block text-center md:text-left">Ícone</label>
+                                        <div className="flex gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
                                             {ICONS.slice(0, 4).map(icon => (
                                                 <button
                                                     key={icon}
                                                     onClick={() => setSelectedIcon(icon)}
-                                                    className={`w-10 h-10 rounded-lg text-xl transition-all ${selectedIcon === icon ? 'bg-orange-100 shadow-inner' : 'hover:bg-gray-50'}`}
+                                                    className={`w-10 h-10 rounded-lg text-xl transition-all ${selectedIcon === icon ? 'bg-blue-500/20 shadow-inner' : 'hover:bg-white/5'}`}
                                                 >
                                                     {icon}
                                                 </button>
@@ -279,8 +279,8 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
                                         }
                                     }}
                                     disabled={saving || !saveNickname.trim()}
-                                    className="w-full py-3.5 rounded-xl text-sm font-bold text-white shadow-lg shadow-orange-500/20 transition-all active:scale-95 disabled:opacity-50"
-                                    style={{ background: 'var(--color-orange-500)' }}
+                                    className="w-full py-3.5 rounded-xl text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50"
+                                    style={{ background: '#3B82F6' }}
                                 >
                                     {saving ? 'Salvando...' : 'Confirmar'}
                                 </button>

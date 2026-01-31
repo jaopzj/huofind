@@ -110,8 +110,8 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                         key={plan.id}
                         onClick={() => setActiveIndex(index)}
                         className={`transition-all duration-300 rounded-full ${index === activeIndex
-                            ? 'w-8 h-2 bg-orange-500'
-                            : 'w-2 h-2 bg-gray-300 hover:bg-gray-400'
+                            ? 'w-8 h-2 bg-blue-500'
+                            : 'w-2 h-2 bg-white/10 hover:bg-white/20'
                             }`}
                         aria-label={`Ver plano ${plan.name}`}
                     />
@@ -123,7 +123,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                 {/* Navigation Arrows - Positioned inside the card edges */}
                 <button
                     onClick={goToPrevious}
-                    className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-orange-500 hover:border-orange-200 transition-all hover:scale-110"
+                    className="absolute -left-4 md:-left-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#1f2937] shadow-lg border border-white/10 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-500/30 transition-all hover:scale-110"
                     aria-label="Plano anterior"
                 >
                     <LuChevronLeft className="w-5 h-5 md:w-6 md:h-6" />
@@ -131,7 +131,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
 
                 <button
                     onClick={goToNext}
-                    className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white shadow-lg border border-gray-100 flex items-center justify-center text-gray-600 hover:text-orange-500 hover:border-orange-200 transition-all hover:scale-110"
+                    className="absolute -right-4 md:-right-6 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full bg-[#1f2937] shadow-lg border border-white/10 flex items-center justify-center text-gray-400 hover:text-blue-500 hover:border-blue-500/30 transition-all hover:scale-110"
                     aria-label="Próximo plano"
                 >
                     <LuChevronRight className="w-5 h-5 md:w-6 md:h-6" />
@@ -145,7 +145,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                         animate={{ opacity: 1, x: 0, scale: 1 }}
                         exit={{ opacity: 0, x: -50, scale: 0.98 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className="relative mx-auto w-full overflow-hidden rounded-3xl bg-white border border-gray-100 shadow-xl"
+                        className="relative mx-auto w-full overflow-hidden rounded-3xl bg-[#1f2937] border border-white/10 shadow-xl"
                     >
                         {/* Badge */}
                         {currentPlan.badge && (
@@ -156,8 +156,8 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                 className="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-white shadow-md z-10"
                                 style={{
                                     background: currentPlan.badge === 'Melhor Valor'
-                                        ? 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)'
-                                        : 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)'
+                                        ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+                                        : 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)'
                                 }}
                             >
                                 ⭐ {currentPlan.badge}
@@ -190,19 +190,19 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                     <div className="flex items-center gap-3 mb-4">
                                         <div
                                             className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                                            style={{ background: currentPlan.bgGradient }}
+                                            style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
                                         >
-                                            <Icon size={28} color={currentPlan.color} />
+                                            <Icon size={28} color="#fff" />
                                         </div>
                                         <div>
-                                            <h3 className="text-2xl font-black text-gray-900">{currentPlan.name}</h3>
-                                            <p className="text-xs font-bold uppercase tracking-widest" style={{ color: currentPlan.color }}>
+                                            <h3 className="text-2xl font-black text-white">{currentPlan.name}</h3>
+                                            <p className="text-xs font-bold uppercase tracking-widest text-blue-400">
                                                 {currentPlan.tier}
                                             </p>
                                         </div>
                                     </div>
 
-                                    <p className="text-gray-500 text-sm mb-6">{currentPlan.description}</p>
+                                    <p className="text-gray-400 text-sm mb-6">{currentPlan.description}</p>
 
                                     {/* Price */}
                                     <motion.div
@@ -212,11 +212,11 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                         className="mb-6"
                                     >
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-sm font-medium text-gray-500">R$</span>
-                                            <span className="text-5xl font-black text-gray-900">
+                                            <span className="text-sm font-medium text-gray-400">R$</span>
+                                            <span className="text-5xl font-black text-white">
                                                 {currentPlan.price.toFixed(2).replace('.', ',')}
                                             </span>
-                                            <span className="text-sm font-medium text-gray-500">/mês</span>
+                                            <span className="text-sm font-medium text-gray-400">/mês</span>
                                         </div>
                                         <p className="text-xs text-gray-400 mt-1">
                                             {currentPlan.credits} créditos renovados mensalmente
@@ -236,12 +236,12 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                         onClick={() => onSubscribe?.(currentPlan.id)}
                                         disabled={isLoading || isCurrentUserPlan || isLowerThanUserPlan}
                                         className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 ${(isCurrentUserPlan || isLowerThanUserPlan)
-                                            ? 'bg-gray-100 text-gray-400'
+                                            ? 'bg-white/5 text-gray-600'
                                             : 'text-white'
                                             }`}
                                         style={!(isCurrentUserPlan || isLowerThanUserPlan) ? {
-                                            background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-                                            boxShadow: '0 4px 20px rgba(249, 115, 22, 0.35)'
+                                            background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                            boxShadow: '0 4px 20px rgba(59, 130, 246, 0.35)'
                                         } : {}}
                                     >
                                         {isLoading ? (
@@ -264,7 +264,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                             </motion.div>
 
                             {/* Separator */}
-                            <div className="h-px bg-gray-100 lg:hidden" />
+                            <div className="h-px bg-white/5 lg:hidden" />
 
                             {/* Right Side - Features */}
                             <motion.div
@@ -272,7 +272,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ delay: 0.15, duration: 0.4 }}
                                 className="p-6 lg:w-3/5 lg:p-10 rounded-b-3xl lg:rounded-r-3xl lg:rounded-bl-none"
-                                style={{ background: 'linear-gradient(135deg, #FAFAFA 0%, #F5F5F5 100%)' }}
+                                style={{ background: 'linear-gradient(135deg, #1a222e 0%, #1f2937 100%)' }}
                             >
                                 <div className="space-y-6">
                                     {currentPlan.features.map((feature, featureIndex) => (
@@ -294,15 +294,15 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                                         transition={{ delay: 0.25 + index * 0.05, duration: 0.2 }}
                                                         className="flex items-center gap-2"
                                                     >
-                                                        <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
-                                                            <LuCheck className="w-3 h-3 text-green-600" />
+                                                        <div className="w-5 h-5 rounded-full bg-blue-500/10 flex items-center justify-center flex-shrink-0">
+                                                            <LuCheck className="w-3 h-3 text-blue-500" />
                                                         </div>
-                                                        <span className="text-sm text-gray-700">{item}</span>
+                                                        <span className="text-sm text-gray-400">{item}</span>
                                                     </motion.li>
                                                 ))}
                                             </ul>
                                             {featureIndex < currentPlan.features.length - 1 && (
-                                                <div className="my-6 h-px bg-gray-200" />
+                                                <div className="my-6 h-px bg-white/5" />
                                             )}
                                         </motion.div>
                                     ))}

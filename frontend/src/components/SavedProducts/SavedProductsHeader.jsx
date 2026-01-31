@@ -11,10 +11,10 @@ function SavedProductsHeader({ searchQuery, onSearchChange, productCount }) {
             {/* Title Row */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
                 <div>
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tight text-gray-900">
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tight text-white">
                         Produtos Salvos
                     </h2>
-                    <p className="text-gray-500 text-sm mt-1">
+                    <p className="text-gray-400 text-sm mt-1">
                         {productCount === 0
                             ? 'Sua vitrine de produtos está vazia'
                             : `${productCount} produto${productCount !== 1 ? 's' : ''} na sua vitrine`
@@ -50,16 +50,16 @@ function SavedProductsHeader({ searchQuery, onSearchChange, productCount }) {
                         onChange={(e) => onSearchChange(e.target.value)}
                         onFocus={() => setIsFocused(true)}
                         onBlur={() => setIsFocused(false)}
-                        className={`w-full pl-11 pr-4 py-3 bg-white border rounded-xl text-sm font-medium transition-all duration-200 ${isFocused
-                                ? 'border-orange-300 ring-2 ring-orange-100 shadow-md'
-                                : 'border-gray-200 hover:border-gray-300'
+                        className={`w-full pl-11 pr-4 py-3 bg-[#1f2937]/80 backdrop-blur-sm border rounded-xl text-sm font-medium transition-all duration-200 text-white placeholder-gray-500 ${isFocused
+                            ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-lg'
+                            : 'border-white/10 hover:border-white/20'
                             }`}
                         style={{ outline: 'none' }}
                     />
                     {searchQuery && (
                         <button
                             onClick={() => onSearchChange('')}
-                            className="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                            className="absolute inset-y-0 right-3 flex items-center text-gray-500 hover:text-white transition-colors"
                         >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

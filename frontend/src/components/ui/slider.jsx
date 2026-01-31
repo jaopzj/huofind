@@ -52,7 +52,7 @@ const Slider = React.forwardRef(({ className, showTooltip = false, tooltipConten
     const renderThumb = (value) => {
         const thumb = (
             <SliderPrimitive.Thumb
-                className="block h-5 w-5 rounded-full border-2 border-orange-500 bg-white transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-orange-500/40 data-[disabled]:cursor-not-allowed"
+                className="block h-5 w-5 rounded-full border-2 border-blue-500 bg-white transition-colors focus-visible:outline focus-visible:outline-[3px] focus-visible:outline-blue-500/40 data-[disabled]:cursor-not-allowed"
                 onPointerDown={handlePointerDown}
             />
         );
@@ -86,7 +86,7 @@ const Slider = React.forwardRef(({ className, showTooltip = false, tooltipConten
             {...props}
         >
             <SliderPrimitive.Track className="relative grow overflow-hidden rounded-full bg-gray-200 data-[orientation=horizontal]:h-2 data-[orientation=vertical]:h-full data-[orientation=horizontal]:w-full data-[orientation=vertical]:w-2">
-                <SliderPrimitive.Range className="absolute bg-orange-500 data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full" />
+                <SliderPrimitive.Range className="absolute bg-blue-500 data-[orientation=horizontal]:h-full data-[orientation=vertical]:w-full" />
             </SliderPrimitive.Track>
             {internalValue?.map((value, index) => (
                 <React.Fragment key={index}>{renderThumb(value)}</React.Fragment>

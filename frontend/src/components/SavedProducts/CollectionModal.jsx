@@ -16,8 +16,8 @@ const DEFAULT_ICONS = [
 ];
 
 const DEFAULT_COLORS = [
-    { id: 'orange', hex: '#f97316', label: 'Laranja' },
     { id: 'blue', hex: '#3b82f6', label: 'Azul' },
+    { id: 'orange', hex: '#f97316', label: 'Laranja' },
     { id: 'green', hex: '#22c55e', label: 'Verde' },
     { id: 'purple', hex: '#8b5cf6', label: 'Roxo' },
     { id: 'pink', hex: '#ec4899', label: 'Rosa' },
@@ -39,7 +39,7 @@ function CollectionModal({
 }) {
     const [name, setName] = useState('');
     const [selectedIcon, setSelectedIcon] = useState('folder');
-    const [selectedColor, setSelectedColor] = useState('orange');
+    const [selectedColor, setSelectedColor] = useState('blue');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
 
@@ -58,11 +58,11 @@ function CollectionModal({
             if (collection) {
                 setName(collection.name || '');
                 setSelectedIcon(collection.icon || 'folder');
-                setSelectedColor(collection.color || 'orange');
+                setSelectedColor(collection.color || 'blue');
             } else {
                 setName('');
                 setSelectedIcon('folder');
-                setSelectedColor('orange');
+                setSelectedColor('blue');
             }
             setError('');
         }
@@ -112,16 +112,16 @@ function CollectionModal({
                         animate={{ scale: 1, opacity: 1 }}
                         exit={{ scale: 0.95, opacity: 0 }}
                         onClick={e => e.stopPropagation()}
-                        className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl"
+                        className="bg-[#1f2937] border border-white/10 rounded-2xl p-6 w-full max-w-md shadow-2xl"
                     >
-                        <h3 className="text-xl font-bold text-gray-900 mb-6">
+                        <h3 className="text-xl font-bold text-white mb-6">
                             {collection ? 'Editar coleção' : 'Nova coleção'}
                         </h3>
 
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Name Input */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-white/90 mb-2">
                                     Nome da coleção
                                 </label>
                                 <input
@@ -129,18 +129,18 @@ function CollectionModal({
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     placeholder="Ex: Favoritos, Para comprar..."
-                                    className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-400 transition-all"
+                                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                     maxLength={50}
                                     autoFocus
                                 />
-                                <p className="mt-1 text-xs text-gray-400 text-right">
+                                <p className="mt-1 text-xs text-gray-500 text-right">
                                     {name.length}/50
                                 </p>
                             </div>
 
                             {/* Icon Selector */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-white/90 mb-2">
                                     Ícone
                                 </label>
                                 <div className="flex flex-wrap gap-2">
@@ -150,8 +150,8 @@ function CollectionModal({
                                             type="button"
                                             onClick={() => setSelectedIcon(icon.id)}
                                             className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg transition-all ${selectedIcon === icon.id
-                                                    ? 'bg-orange-100 ring-2 ring-orange-400'
-                                                    : 'bg-gray-100 hover:bg-gray-200'
+                                                ? 'bg-blue-500/20 ring-2 ring-blue-500 shadow-lg shadow-blue-500/10'
+                                                : 'bg-white/5 text-white/70 hover:bg-white/10'
                                                 }`}
                                             title={icon.label}
                                         >
@@ -163,7 +163,7 @@ function CollectionModal({
 
                             {/* Color Selector */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                <label className="block text-sm font-semibold text-white/90 mb-2">
                                     Cor
                                 </label>
                                 <div className="flex flex-wrap gap-2">
@@ -173,8 +173,8 @@ function CollectionModal({
                                             type="button"
                                             onClick={() => setSelectedColor(color.id)}
                                             className={`w-8 h-8 rounded-full transition-all ${selectedColor === color.id
-                                                    ? 'ring-2 ring-offset-2 ring-gray-400 scale-110'
-                                                    : 'hover:scale-105'
+                                                ? 'ring-2 ring-offset-2 ring-offset-[#1f2937] ring-white scale-110'
+                                                : 'hover:scale-105 opacity-70 hover:opacity-100'
                                                 }`}
                                             style={{ backgroundColor: color.hex }}
                                             title={color.label}
@@ -185,7 +185,7 @@ function CollectionModal({
 
                             {/* Error Message */}
                             {error && (
-                                <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+                                <p className="text-sm text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-2 rounded-lg">
                                     {error}
                                 </p>
                             )}
@@ -195,7 +195,7 @@ function CollectionModal({
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className="flex-1 px-4 py-3 text-sm font-semibold text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
+                                    className="flex-1 px-4 py-3 text-sm font-semibold text-gray-400 bg-white/5 rounded-xl hover:bg-white/10 hover:text-white transition-colors"
                                     disabled={isSubmitting}
                                 >
                                     Cancelar
@@ -203,7 +203,7 @@ function CollectionModal({
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="flex-1 px-4 py-3 text-sm font-semibold text-white bg-orange-500 rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    className="flex-1 px-4 py-3 text-sm font-semibold text-white bg-blue-600 rounded-xl hover:bg-blue-500 transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                 >
                                     {isSubmitting ? (
                                         <>

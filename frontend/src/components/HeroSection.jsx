@@ -116,15 +116,17 @@ function HeroSection({
         <div className="h-[calc(100vh-7rem)] md:h-full flex flex-col items-center justify-center px-4 md:px-6 py-2 md:py-8 overflow-y-auto">
             {/* Logo Customizada */}
             <div className="mb-2 mt-0 md:mt-[5px]">
-                <img
-                    src="/logo.svg"
-                    alt="Logo Huofind"
+                <video
+                    src="/evo-logo.webm"
+                    autoPlay
+                    loop
+                    muted
                     className="h-20 md:h-48 w-auto object-contain drop-shadow-2xl"
                 />
             </div>
 
             {/* Headline */}
-            <h1 className="text-2xl md:text-5xl font-bold text-center mb-6 md:mb-12" style={{ color: '#1F2937' }}>
+            <h1 className="text-2xl md:text-5xl font-bold text-center mb-6 md:mb-12" style={{ color: '#ffffffff' }}>
                 Encontre os melhores produtos
                 <br />
                 <span className="font-extrabold shiny-text">do Xianyu</span> em segundos
@@ -140,7 +142,7 @@ function HeroSection({
                         <div
                             className="absolute left-5 top-1/2 -translate-y-1/2 transition-colors duration-200"
                             style={{
-                                color: isInputFocused || url ? '#FF6B35' : '#9CA3AF'
+                                color: isInputFocused || url ? '#3B82F6' : '#9CA3AF'
                             }}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -153,7 +155,7 @@ function HeroSection({
                             style={{
                                 paddingLeft: '56px',
                                 paddingRight: isEvaluating ? '180px' : (isSellerVerified && url.trim()) ? '190px' : '16px',
-                                borderColor: !isValidUrl ? '#FCA5A5' : (isSellerVerified && url.trim()) ? '#10B981' : isInputFocused ? '#FF6B35' : undefined,
+                                borderColor: !isValidUrl ? '#FCA5A5' : (isSellerVerified && url.trim()) ? '#10B981' : isInputFocused ? '#3B82F6' : undefined,
                                 transition: 'padding 0.3s ease'
                             }}
                             placeholder="Cole a URL do perfil do vendedor..."
@@ -169,14 +171,14 @@ function HeroSection({
                             <div
                                 className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2 text-sm px-3 py-1.5 rounded-lg pointer-events-none"
                                 style={{
-                                    color: '#FF6B35',
-                                    background: 'rgba(255, 107, 53, 0.08)'
+                                    color: '#3B82F6',
+                                    background: 'rgba(59, 130, 246, 0.1)'
                                 }}
                             >
                                 <div
                                     className="w-3.5 h-3.5 rounded-full animate-spin"
                                     style={{
-                                        border: '2px solid #FF6B35',
+                                        border: '2px solid #3B82F6',
                                         borderTopColor: 'transparent'
                                     }}
                                 ></div>
@@ -208,15 +210,15 @@ function HeroSection({
                             onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
                             className="h-full px-4 rounded-2xl flex items-center gap-2 transition-all duration-200 hover:shadow-md"
                             style={{
-                                background: 'white',
-                                border: isCategoryDropdownOpen ? '2px solid var(--color-orange-400)' : '1px solid var(--color-cream-200)',
+                                background: '#1f2937',
+                                border: isCategoryDropdownOpen ? '2px solid #3B82F6' : '1px solid rgba(255, 255, 255, 0.1)',
                                 boxShadow: 'var(--shadow-soft)',
                                 minWidth: '140px'
                             }}
                             disabled={isLoading}
                         >
                             <span className="text-xl">{currentCategory.icon}</span>
-                            <span className="font-medium text-sm" style={{ color: '#374151' }}>{currentCategory.name}</span>
+                            <span className="font-medium text-sm" style={{ color: 'white' }}>{currentCategory.name}</span>
                             <svg
                                 className={`w-4 h-4 ml-auto transition-transform duration-200 ${isCategoryDropdownOpen ? 'rotate-180' : ''}`}
                                 fill="none"
@@ -232,9 +234,9 @@ function HeroSection({
                             <div
                                 className="absolute right-0 top-full mt-2 w-56 rounded-xl overflow-hidden z-50 animate-fade-in"
                                 style={{
-                                    background: 'white',
-                                    boxShadow: '0 10px 40px rgba(0,0,0,0.15)',
-                                    border: '1px solid var(--color-cream-200)'
+                                    background: '#1f2937',
+                                    boxShadow: '0 10px 40px rgba(0,0,0,0.3)',
+                                    border: '1px solid rgba(255, 255, 255, 0.1)'
                                 }}
                             >
                                 {CATEGORIES.map((category) => (
@@ -245,23 +247,23 @@ function HeroSection({
                                             if (onCategoryChange) onCategoryChange(category.id);
                                             setIsCategoryDropdownOpen(false);
                                         }}
-                                        className="w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 hover:bg-cream-50 group"
+                                        className="w-full px-4 py-3 flex items-center gap-3 transition-all duration-150 hover:bg-white/10 group"
                                         style={{
-                                            background: selectedCategory === category.id ? 'var(--color-orange-50)' : 'transparent',
-                                            borderLeft: selectedCategory === category.id ? '3px solid var(--color-orange-500)' : '3px solid transparent'
+                                            background: selectedCategory === category.id ? 'rgba(59, 130, 246, 0.15)' : 'transparent',
+                                            borderLeft: selectedCategory === category.id ? '3px solid #3B82F6' : '3px solid transparent'
                                         }}
                                     >
                                         <span className="text-2xl transition-transform duration-200 group-hover:scale-120 group-hover:rotate-6">
                                             {category.icon}
                                         </span>
                                         <div className="text-left transition-transform duration-200 group-hover:translate-x-1">
-                                            <p className="font-semibold text-sm" style={{ color: selectedCategory === category.id ? 'var(--color-orange-600)' : '#374151' }}>
+                                            <p className="font-semibold text-sm" style={{ color: selectedCategory === category.id ? '#60A5FA' : 'white' }}>
                                                 {category.name}
                                             </p>
                                             <p className="text-xs" style={{ color: '#9CA3AF' }}>{category.description}</p>
                                         </div>
                                         {selectedCategory === category.id && (
-                                            <svg className="w-4 h-4 ml-auto animate-in fade-in zoom-in duration-300" fill="var(--color-orange-500)" viewBox="0 0 20 20">
+                                            <svg className="w-4 h-4 ml-auto animate-in fade-in zoom-in duration-300" fill="#3B82F6" viewBox="0 0 20 20">
                                                 <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                                             </svg>
                                         )}
@@ -274,19 +276,19 @@ function HeroSection({
                 <div
                     className="mb-6 p-4 rounded-2xl"
                     style={{
-                        background: 'white',
-                        border: '1px solid var(--color-cream-200)',
+                        background: '#1f2937',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
                         boxShadow: 'var(--shadow-soft)'
                     }}
                 >
                     <div className="flex items-center justify-between mb-3">
-                        <label className="font-medium text-sm" style={{ color: '#374151' }}>
+                        <label className="font-medium text-sm" style={{ color: 'white' }}>
                             📦 Limite de Produtos
                         </label>
                         <span
                             className="text-lg font-bold px-3 py-1 rounded-lg"
                             style={{
-                                background: 'var(--color-orange-500)',
+                                background: '#3B82F6',
                                 color: 'white'
                             }}
                         >

@@ -1,6 +1,6 @@
 /**
  * WifiLoader CSS - Animated WiFi-style loader
- * Adapted for orange color palette (#FF6B35)
+ * Adapted for blue color palette (#3B82F6)
  */
 
 .wifi-loader-wrapper {
@@ -13,10 +13,10 @@
 }
 
 #wifi-loader {
-    --background: #FFF5F0;
-    --front-color: #FF6B35;
-    --back-color: #FFE4D9;
-    --text-color: #4B5563;
+    --background: #111827;
+    --front-color: #3B82F6;
+    --back-color: #1E3A5F;
+    --text-color: #9CA3AF;
     width: 86px;
     height: 86px;
     border-radius: 50px;
@@ -52,7 +52,7 @@
 }
 
 #wifi-loader svg circle.new {
-    stroke: #FF8C5A;
+    stroke: #327af7;
 }
 
 /* Outer circle */

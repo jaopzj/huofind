@@ -62,17 +62,17 @@ function StorePage({ user, miningInfo = {} }) {
                 <div
                     className="w-12 h-12 rounded-2xl flex items-center justify-center"
                     style={{
-                        background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-                        boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)'
+                        background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
                     }}
                 >
                     <LuShoppingBag className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900">
+                    <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">
                         Loja
                     </h1>
-                    <p className="text-sm text-gray-500">Compre créditos e gerencie seu plano</p>
+                    <p className="text-sm text-gray-400">Compre créditos e gerencie seu plano</p>
                 </div>
             </motion.div>
 
@@ -92,10 +92,10 @@ function StorePage({ user, miningInfo = {} }) {
                 className="mb-10"
             >
                 <div className="flex items-center gap-2 mb-2">
-                    <LuSparkles className="w-5 h-5 text-orange-500" />
-                    <h2 className="text-xl font-bold text-gray-900">Planos de Assinatura</h2>
+                    <LuSparkles className="w-5 h-5 text-blue-500" />
+                    <h2 className="text-xl font-bold text-white">Planos de Assinatura</h2>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">
+                <p className="text-sm text-gray-400 mb-6">
                     Assine um plano e receba créditos mensais automaticamente, além de benefícios exclusivos.
                 </p>
 
@@ -114,10 +114,10 @@ function StorePage({ user, miningInfo = {} }) {
                 className="mb-10"
             >
                 <div className="flex items-center gap-2 mb-2">
-                    <LuZap className="w-5 h-5 text-orange-500" />
-                    <h2 className="text-xl font-bold text-gray-900">Pacotes de Créditos</h2>
+                    <LuZap className="w-5 h-5 text-blue-500" />
+                    <h2 className="text-xl font-bold text-white">Pacotes de Créditos</h2>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">
+                <p className="text-sm text-gray-400 mb-6">
                     Compre créditos avulsos para usar imediatamente. Sem assinatura.
                 </p>
 

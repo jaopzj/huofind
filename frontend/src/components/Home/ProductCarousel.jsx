@@ -82,17 +82,17 @@ function ProductCarousel({
             <div className="product-carousel-card">
                 <div className="product-carousel-header">
                     <div>
-                        <div className="h-6 w-40 bg-gray-200 rounded animate-pulse" />
-                        <div className="h-4 w-64 bg-gray-200 rounded animate-pulse mt-2" />
+                        <div className="h-6 w-40 bg-gray-700 rounded animate-pulse" />
+                        <div className="h-4 w-64 bg-gray-700 rounded animate-pulse mt-2" />
                     </div>
                 </div>
                 <div className="product-carousel-content">
                     <div className="flex gap-4">
                         {[...Array(3)].map((_, i) => (
                             <div key={i} className="product-carousel-item animate-pulse">
-                                <div className="aspect-square bg-gray-200 rounded-lg" />
-                                <div className="h-4 bg-gray-200 rounded mt-3 w-3/4" />
-                                <div className="h-5 bg-gray-200 rounded mt-2 w-1/2" />
+                                <div className="aspect-square bg-gray-700 rounded-lg" />
+                                <div className="h-4 bg-gray-700 rounded mt-3 w-3/4" />
+                                <div className="h-5 bg-gray-700 rounded mt-2 w-1/2" />
                             </div>
                         ))}
                     </div>
@@ -118,9 +118,9 @@ function ProductCarousel({
             {/* Header */}
             <div className="product-carousel-header">
                 <div>
-                    <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+                    <h2 className="text-xl font-bold text-white">{title}</h2>
                     {subtitle && (
-                        <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+                        <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
                     )}
                 </div>
 
@@ -179,7 +179,7 @@ function ProductCarousel({
                                             }}
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                                        <div className="w-full h-full flex items-center justify-center bg-gray-700">
                                             <span className="text-4xl opacity-30">📦</span>
                                         </div>
                                     )}
@@ -194,16 +194,16 @@ function ProductCarousel({
 
                                 {/* Product info */}
                                 <div className="mt-3">
-                                    <h3 className="font-semibold text-gray-800 text-sm line-clamp-2" title={productTitle}>
+                                    <h3 className="font-semibold text-white text-sm line-clamp-2" title={productTitle}>
                                         {productTitle}
                                     </h3>
                                     {price && (
-                                        <p className="text-orange-500 font-bold mt-1">
+                                        <p className="text-blue-400 font-bold mt-1">
                                             {price}
                                         </p>
                                     )}
                                     {product.marca && (
-                                        <p className="text-xs text-gray-500 mt-0.5">
+                                        <p className="text-xs text-gray-400 mt-0.5">
                                             {product.marca}
                                         </p>
                                     )}

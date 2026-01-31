@@ -225,7 +225,9 @@ export function AuthProvider({ children }) {
         // Clear local storage and state
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
+        localStorage.removeItem('pendingEmailConfirmation');
         setUser(null);
+        setPendingEmailConfirmation(null);
     }, []);
 
     const value = {

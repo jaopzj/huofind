@@ -17,13 +17,13 @@ function CreditPackageCard({
     const getBadgeStyles = () => {
         if (badgeType === 'best') {
             return {
-                bg: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
+                bg: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
                 icon: <LuFlame className="w-3 h-3" />,
                 text: 'Melhor Custo'
             };
         }
         return {
-            bg: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 100%)',
+            bg: 'linear-gradient(135deg, #06b6d4 0%, #0891b2 100%)',
             icon: <LuStar className="w-3 h-3" />,
             text: 'Popular'
         };
@@ -37,44 +37,46 @@ function CreditPackageCard({
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay }}
             whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            className="relative bg-white rounded-3xl p-6 border border-gray-100 shadow-sm hover:shadow-xl transition-shadow duration-300"
+            className="relative bg-[#1f2937] rounded-3xl p-6 border border-white/10 shadow-sm hover:shadow-xl transition-shadow duration-300"
         >
             {/* Badge */}
-            {badge && (
-                <motion.div
-                    initial={{ scale: 0, rotate: -12 }}
-                    animate={{ scale: 1, rotate: -12 }}
-                    transition={{ delay: delay + 0.2, type: 'spring', stiffness: 300 }}
-                    className="absolute -top-3 -right-2 px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-lg"
-                    style={{ background: badgeStyles.bg }}
-                >
-                    {badgeStyles.icon}
-                    {badgeStyles.text}
-                </motion.div>
-            )}
+            {
+                badge && (
+                    <motion.div
+                        initial={{ scale: 0, rotate: -12 }}
+                        animate={{ scale: 1, rotate: -12 }}
+                        transition={{ delay: delay + 0.2, type: 'spring', stiffness: 300 }}
+                        className="absolute -top-3 -right-2 px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-lg"
+                        style={{ background: badgeStyles.bg }}
+                    >
+                        {badgeStyles.icon}
+                        {badgeStyles.text}
+                    </motion.div>
+                )
+            }
 
             {/* Credits Icon */}
             <div className="mb-4">
                 <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
                     style={{
-                        background: 'linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%)',
-                        border: '1px solid rgba(251, 146, 60, 0.2)'
+                        background: 'rgba(59, 130, 246, 0.05)',
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
                     }}
                 >
-                    <LuZap className="w-7 h-7 text-orange-500" />
+                    <LuZap className="w-7 h-7 text-blue-500" />
                 </div>
             </div>
 
             {/* Credits Amount */}
             <div className="text-center mb-4">
-                <p className="text-4xl font-black text-gray-900 mb-1">{credits}</p>
-                <p className="text-sm font-medium text-gray-500">créditos</p>
+                <p className="text-4xl font-black text-white mb-1">{credits}</p>
+                <p className="text-sm font-medium text-gray-400">créditos</p>
             </div>
 
             {/* Price */}
             <div className="text-center mb-5">
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-white">
                     R$ {price.toFixed(2).replace('.', ',')}
                 </p>
                 <p className="text-xs text-gray-400 mt-1">
@@ -90,8 +92,8 @@ function CreditPackageCard({
                 disabled={isLoading}
                 className="w-full py-3.5 px-4 rounded-2xl font-bold text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 style={{
-                    background: 'linear-gradient(135deg, #F97316 0%, #EA580C 100%)',
-                    boxShadow: '0 4px 15px rgba(249, 115, 22, 0.3)'
+                    background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                    boxShadow: '0 4px 15px rgba(59, 130, 246, 0.3)'
                 }}
             >
                 {isLoading ? (
@@ -103,7 +105,7 @@ function CreditPackageCard({
                     'Comprar'
                 )}
             </motion.button>
-        </motion.div>
+        </motion.div >
     );
 }
 

@@ -30,7 +30,7 @@ function InstitutionalSection() {
             {/* Container with subtle background */}
             <motion.div
                 className="rounded-2xl p-8"
-                style={{ backgroundColor: 'var(--color-cream-100)' }}
+                style={{ backgroundColor: '#1f2937' }}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
@@ -51,18 +51,18 @@ function InstitutionalSection() {
                                 <div
                                     className="w-12 h-12 rounded-xl flex items-center justify-center mb-3"
                                     style={{
-                                        background: 'linear-gradient(135deg, var(--color-orange-400) 0%, var(--color-orange-500) 100%)',
-                                        boxShadow: '0 4px 12px rgba(255, 107, 53, 0.25)'
+                                        background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.25)'
                                     }}
                                 >
                                     <Icon size={24} className="text-white" />
                                 </div>
 
                                 {/* Text */}
-                                <h3 className="font-bold text-gray-800 text-sm mb-1">
+                                <h3 className="font-bold text-white text-sm mb-1">
                                     {prop.text}
                                 </h3>
-                                <p className="text-xs text-gray-500 leading-relaxed">
+                                <p className="text-xs text-gray-400 leading-relaxed">
                                     {prop.description}
                                 </p>
                             </motion.div>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import HeroSection from './components/HeroSection';
 import SellerCard from './components/SellerCard';
@@ -74,6 +74,24 @@ function App() {
 
     // Virtual Paging
     const [activePage, setActivePage] = useState('home');
+
+    // Scroll state for Back to Top and Header transparency
+    const [showBackToTop, setShowBackToTop] = useState(false);
+    const mainRef = useRef(null);
+
+    const handleScroll = (e) => {
+        const scrollTop = e.currentTarget.scrollTop;
+        setShowBackToTop(scrollTop > 500);
+    };
+
+    const scrollToTop = () => {
+        if (mainRef.current) {
+            mainRef.current.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+    };
 
     // Compute isGuest - user is guest if not authenticated or tier is 'guest'/'convidado'
     const isGuest = !isAuthenticated ||
@@ -811,54 +829,88 @@ function App() {
                         setActivePage(page);
                     }}
                     onLogout={logout}
+                    showBRL={showBRL}
+                    onToggleCurrency={toggleCurrency}
+                    hasResults={hasResults}
                 />
             )}
             {/* Header - só aparece quando tem resultados e estamos na página de mineração */}
             {(hasResults && activePage === 'xianyu-mining') && (
                 <header
-                    className="hidden md:block sticky top-0 z-30 animate-in fade-in slide-in-from-top duration-500 md:ml-64"
-                    style={{
-                        background: 'rgba(255, 251, 247, 0.8)',
-                        backdropFilter: 'blur(12px)',
-                        borderBottom: '1px solid var(--color-cream-200)'
-                    }}
+                    className="hidden md:block fixed top-0 right-0 md:left-64 z-30 animate-in fade-in slide-in-from-top duration-500 bg-[#1f2937]/30 backdrop-blur-xl border-b border-white/10 shadow-lg"
                 >
                     <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            {/* Logo hidden here - shown in sidebar */}
+                        <div className="flex items-center gap-6">
+                            <button
+                                onClick={() => {
+                                    setProducts([]);
+                                    setSellerInfo(null);
+                                    setFilters({
+                                        keyword: '',
+                                        minPrice: '',
+                                        maxPrice: '',
+                                        sort: '',
+                                        iphoneModel: '',
+                                        storage: '',
+                                        unlockStatus: ''
+                                    });
+                                }}
+                                className="flex items-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200"
+                                style={{
+                                    background: '#3B82F6',
+                                    color: 'white',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.background = '#2563EB';
+                                    e.currentTarget.style.transform = 'scale(1.02)';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.background = '#3B82F6';
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                }}
+                            >
+                                <svg width="13px" height="10px" viewBox="0 0 13 10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12,5 L2,5" />
+                                    <polyline points="5 1 1 5 5 9" />
+                                </svg>
+                                <span>Nova busca</span>
+                            </button>
+
+                            {/* Currency Toggle in Header */}
+                            <div className="flex items-center gap-3 ml-2 px-4 py-2 rounded-xl bg-white/5 border border-white/10">
+                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: showBRL ? '#6B7280' : 'white' }}>
+                                    ¥ CNY
+                                </span>
+                                <button
+                                    onClick={toggleCurrency}
+                                    className="relative w-10 h-5 rounded-full transition-all duration-300"
+                                    style={{
+                                        background: showBRL ? '#3B82F6' : 'rgba(255, 255, 255, 0.2)'
+                                    }}
+                                >
+                                    <div
+                                        className="absolute top-1 w-3 h-3 bg-white rounded-full shadow-sm transition-all duration-300"
+                                        style={{
+                                            left: showBRL ? '24px' : '4px'
+                                        }}
+                                    />
+                                </button>
+                                <span className="text-xs font-bold uppercase tracking-wider" style={{ color: showBRL ? 'white' : '#6B7280' }}>
+                                    R$ BRL
+                                </span>
+                            </div>
                         </div>
-                        <button
-                            onClick={() => {
-                                setProducts([]);
-                                setSellerInfo(null);
-                                setFilters({
-                                    keyword: '',
-                                    minPrice: '',
-                                    maxPrice: '',
-                                    sort: '',
-                                    iphoneModel: '',
-                                    storage: '',
-                                    unlockStatus: ''
-                                });
-                            }}
-                            className="cta-button"
-                        >
-                            <svg width="13px" height="10px" viewBox="0 0 13 10">
-                                <path d="M12,5 L2,5" />
-                                <polyline points="5 1 1 5 5 9" />
-                            </svg>
-                            <span>Nova busca</span>
-                        </button>
 
                         {/* User Menu */}
-                        <div className="flex items-center gap-3 ml-4">
-                            <span className="text-sm font-medium" style={{ color: '#6B7280' }}>
+                        <div className="flex items-center gap-3">
+                            <span className="text-sm font-medium" style={{ color: '#9CA3AF' }}>
                                 {user?.name || user?.email?.split('@')[0]}
                             </span>
                             <button
                                 onClick={logout}
-                                className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-red-50"
-                                style={{ color: '#DC2626' }}
+                                className="px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200 hover:bg-red-900/30"
+                                style={{ color: '#F87171' }}
                             >
                                 Sair
                             </button>
@@ -867,7 +919,11 @@ function App() {
                 </header>
             )}
 
-            <main className="h-full md:ml-64 pt-14 md:pt-0 overflow-y-auto">
+            <main
+                ref={mainRef}
+                onScroll={handleScroll}
+                className={`h-full md:ml-64 overflow-y-auto ${activePage === 'xianyu-mining' && hasResults ? 'pt-14 md:pt-24' : 'pt-14 md:pt-0'}`}
+            >
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={activePage}
@@ -999,17 +1055,17 @@ function App() {
 
                                         {/* Stats Bar */}
                                         <div className="flex items-center justify-between mb-6">
-                                            <p style={{ color: '#6B7280' }}>
-                                                <span className="font-semibold" style={{ color: '#1F2937' }}>{filteredProducts.length}</span>
+                                            <p style={{ color: '#9CA3AF' }}>
+                                                <span className="font-semibold" style={{ color: 'white' }}>{filteredProducts.length}</span>
                                                 {' '}de{' '}
-                                                <span className="font-semibold" style={{ color: '#1F2937' }}>{products.length}</span>
+                                                <span className="font-semibold" style={{ color: 'white' }}>{products.length}</span>
                                                 {' '}produtos
                                             </p>
                                             <div className="flex items-center gap-2">
                                                 {availableModels.length > 0 && (
                                                     <span
                                                         className="badge"
-                                                        style={{ background: 'var(--color-cream-100)', color: '#6B7280' }}
+                                                        style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#9CA3AF', border: '1px solid rgba(255, 255, 255, 0.1)' }}
                                                     >
                                                         📱 {availableModels.length} modelos
                                                     </span>
@@ -1017,7 +1073,7 @@ function App() {
                                                 {availableStorages.length > 0 && (
                                                     <span
                                                         className="badge"
-                                                        style={{ background: 'var(--color-cream-100)', color: '#6B7280' }}
+                                                        style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#9CA3AF', border: '1px solid rgba(255, 255, 255, 0.1)' }}
                                                     >
                                                         💾 {availableStorages.length} capacidades
                                                     </span>
@@ -1056,10 +1112,10 @@ function App() {
                         {/* Sellers Page */}
                         {activePage === 'sellers' && (
                             <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-6">
-                                <h2 className="text-3xl md:text-4xl font-black mb-6 tracking-tight" style={{ color: '#1F2937' }}>
+                                <h2 className="text-3xl md:text-4xl font-black mb-6 tracking-tight text-white">
                                     Vendedores Salvos
                                 </h2>
-                                <section className="bg-white p-6 md:p-10 rounded-[2rem] shadow-xl border border-gray-100/50">
+                                <section className="bg-[#1f2937] p-6 md:p-10 rounded-[2rem] shadow-xl border border-white/5">
                                     <SavedSellersPanel
                                         tier={user?.tier}
                                         onSelectSeller={(sellerUrl) => {
@@ -1117,6 +1173,27 @@ function App() {
                 </AnimatePresence>
             </main>
 
+            {/* Back to Top Button */}
+            <AnimatePresence>
+                {showBackToTop && (
+                    <motion.button
+                        initial={{ opacity: 0, scale: 0.5, y: 20 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.5, y: 20 }}
+                        onClick={scrollToTop}
+                        className="fixed bottom-8 right-8 z-50 p-4 rounded-2xl bg-blue-600 text-white shadow-2xl hover:bg-blue-700 transition-all active:scale-95 group"
+                    >
+                        <svg
+                            className="w-6 h-6 transition-transform group-hover:-translate-y-1"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                        </svg>
+                    </motion.button>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

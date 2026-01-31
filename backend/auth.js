@@ -131,11 +131,12 @@ export async function checkEmailConfirmed(email) {
         const emailLower = user.email.toLowerCase();
         const userName = user.user_metadata?.name || null;
 
-        // Ensure user is in public.users
+        // Ensure user is in public.users with email_verified flag
         await supabase.from('users').upsert({
             id: user.id,
             email: emailLower,
-            name: userName
+            name: userName,
+            email_verified: true
         }, { onConflict: 'id' });
 
         // Ensure user_settings exists

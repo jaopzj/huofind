@@ -63,10 +63,10 @@ function QuickAccessCard({ item, onClick, index }) {
 
             {/* Text */}
             <div>
-                <h3 className="font-semibold text-gray-800 text-sm">
+                <h3 className="font-semibold text-white text-sm">
                     {item.label}
                 </h3>
-                <p className="text-xs text-gray-500 mt-0.5">
+                <p className="text-xs text-gray-300 mt-0.5">
                     {item.description}
                 </p>
             </div>

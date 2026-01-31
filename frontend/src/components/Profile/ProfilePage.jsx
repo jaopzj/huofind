@@ -8,8 +8,8 @@ import ProfileSettings from './ProfileSettings';
  * ProfilePage - Página principal do perfil do usuário
  * Gerencia estado de rascunho e comunicação com API
  */
-function ProfilePage({ 
-    user, 
+function ProfilePage({
+    user,
     miningInfo = { used: 0, limit: 10, tier: 'guest' },
     savedProductsCount = 0,
     savedSellersCount = 0,
@@ -20,12 +20,12 @@ function ProfilePage({
 }) {
     const [isUpdating, setIsUpdating] = useState(false);
     const [localUser, setLocalUser] = useState(user);
-    
+
     // Draft state for unsaved changes
     const [draftName, setDraftName] = useState(null);
     const [draftAvatarUrl, setDraftAvatarUrl] = useState(null);
     const [draftAvatarFile, setDraftAvatarFile] = useState(null);
-    
+
     // Check if there are unsaved changes
     const hasUnsavedChanges = draftName !== null || draftAvatarFile !== null;
 
@@ -54,10 +54,10 @@ function ProfilePage({
     const handleSaveChanges = async () => {
         setIsUpdating(true);
         let success = true;
-        
+
         try {
             const token = localStorage.getItem('accessToken');
-            
+
             // Save name if changed
             if (draftName !== null) {
                 const response = await fetch('/api/user/profile', {
@@ -210,10 +210,10 @@ function ProfilePage({
     return (
         <div className="w-full max-w-3xl mx-auto px-4 md:px-8 py-6">
             {/* Page Title */}
-            <motion.h1 
+            <motion.h1
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="text-3xl md:text-4xl font-black mb-6 tracking-tight text-gray-900"
+                className="text-3xl md:text-4xl font-black mb-6 tracking-tight text-white"
             >
                 Meu Perfil
             </motion.h1>
@@ -239,9 +239,9 @@ function ProfilePage({
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                     >
-                        <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
+                        <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                                <div className="flex items-center gap-2 text-orange-700">
+                                <div className="flex items-center gap-2 text-blue-400">
                                     <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
                                     </svg>
@@ -249,7 +249,7 @@ function ProfilePage({
                                         Você tem alterações não salvas
                                     </span>
                                 </div>
-                                
+
                                 <div className="flex items-center gap-2">
                                     {/* Discard Button */}
                                     <motion.button
@@ -257,18 +257,18 @@ function ProfilePage({
                                         whileTap={{ scale: 0.98 }}
                                         onClick={handleDiscardChanges}
                                         disabled={isUpdating}
-                                        className="px-4 py-2 text-sm font-bold text-gray-600 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                        className="px-4 py-2 text-sm font-bold text-gray-400 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:text-white transition-colors disabled:opacity-50"
                                     >
                                         Descartar
                                     </motion.button>
-                                    
+
                                     {/* Save Button */}
                                     <motion.button
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
                                         onClick={handleSaveChanges}
                                         disabled={isUpdating}
-                                        className="px-4 py-2 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-orange-600 rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 flex items-center gap-2"
+                                        className="px-4 py-2 text-sm font-bold text-white bg-blue-600 rounded-xl shadow-lg shadow-blue-600/20 hover:bg-blue-500 transition-all disabled:opacity-50 flex items-center gap-2"
                                     >
                                         {isUpdating ? (
                                             <>

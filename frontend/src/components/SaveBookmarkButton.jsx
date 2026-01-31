@@ -147,9 +147,9 @@ function SaveBookmarkButton({ isSaved = false, onToggle, disabled = false, size 
                     w-9 h-9 rounded-xl
                     transition-all duration-200
                     ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-                    ${isShaking ? 'bg-red-100 text-red-500' :
-                        localSaved ? 'bg-amber-100 text-amber-500' :
-                            'bg-gray-100 text-gray-400 hover:bg-orange-100 hover:text-orange-500'
+                    ${isShaking ? 'bg-red-500/40 text-red-500' :
+                        localSaved ? 'bg-blue-500/40 text-blue-500' :
+                            'bg-black/20 backdrop-blur-md text-white border border-white/10 hover:bg-blue-500 hover:text-white'
                     }
                 `}
                 style={{
@@ -168,7 +168,7 @@ function SaveBookmarkButton({ isSaved = false, onToggle, disabled = false, size 
                     <BookmarkIcon filled={false} />
 
                     <motion.div
-                        className={`absolute inset-0 flex items-center justify-center ${isShaking ? 'text-red-500' : 'text-amber-500'}`}
+                        className={`absolute inset-0 flex items-center justify-center ${isShaking ? 'text-red-500' : 'text-blue-500'}`}
                         initial={{ opacity: 0, scale: 0.5 }}
                         animate={{
                             opacity: localSaved || isShaking ? 1 : 0,
@@ -184,7 +184,7 @@ function SaveBookmarkButton({ isSaved = false, onToggle, disabled = false, size 
                             <motion.div
                                 className="absolute inset-0 rounded-full pointer-events-none"
                                 style={{
-                                    background: 'radial-gradient(circle, rgba(245,158,11,0.5) 0%, rgba(245,158,11,0) 70%)',
+                                    background: 'radial-gradient(circle, rgba(59,130,246,0.5) 0%, rgba(59,130,246,0) 70%)',
                                 }}
                                 initial={{ scale: 0, opacity: 0 }}
                                 animate={{ scale: [0, 2.5, 3], opacity: [0, 0.7, 0] }}
@@ -204,7 +204,7 @@ function SaveBookmarkButton({ isSaved = false, onToggle, disabled = false, size 
                                 return (
                                     <motion.div
                                         key={i}
-                                        className="absolute rounded-full bg-amber-400"
+                                        className="absolute rounded-full bg-blue-400"
                                         style={{ width: '4px', height: '4px' }}
                                         initial={{ scale: 0, opacity: 0.8, x: 0, y: 0 }}
                                         animate={{

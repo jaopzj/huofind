@@ -29,8 +29,8 @@ function ExploreSection({ onCategoryClick }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.4 }}
             >
-                <h2 className="text-lg font-bold text-gray-800">Explorar</h2>
-                <p className="text-sm text-gray-500 mt-0.5">
+                <h2 className="text-lg font-bold text-white">Explorar</h2>
+                <p className="text-sm text-gray-400 mt-0.5">
                     Descubra produtos por categoria
                 </p>
             </motion.div>

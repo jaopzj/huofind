@@ -16,15 +16,15 @@ function CollectionsPanel({
     const [menuOpenId, setMenuOpenId] = useState(null);
 
     return (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+        <div className="bg-[#1f2937]/90 backdrop-blur-md rounded-2xl border border-white/10 shadow-sm p-4">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wider">
+                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
                     Coleções
                 </h3>
                 <button
                     onClick={onCreate}
-                    className="p-1.5 rounded-lg bg-orange-50 text-orange-600 hover:bg-orange-100 transition-colors"
+                    className="p-1.5 rounded-lg bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 transition-colors border border-blue-500/20"
                     title="Nova coleção"
                 >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -37,8 +37,8 @@ function CollectionsPanel({
             <button
                 onClick={() => onSelectCollection(null)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${activeCollectionId === null
-                        ? 'bg-orange-50 text-orange-700 font-semibold'
-                        : 'text-gray-600 hover:bg-gray-50'
+                    ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold'
+                    : 'text-gray-400 hover:bg-white/5 hover:text-white'
                     }`}
             >
                 <span className="text-lg">📦</span>
@@ -52,8 +52,8 @@ function CollectionsPanel({
                         <button
                             onClick={() => onSelectCollection(collection.id)}
                             className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${activeCollectionId === collection.id
-                                    ? 'bg-orange-50 text-orange-700 font-semibold'
-                                    : 'text-gray-600 hover:bg-gray-50'
+                                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold'
+                                : 'text-gray-400 hover:bg-white/5 hover:text-white'
                                 }`}
                         >
                             <span
@@ -77,7 +77,7 @@ function CollectionsPanel({
                                 e.stopPropagation();
                                 setMenuOpenId(menuOpenId === collection.id ? null : collection.id);
                             }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-gray-100 transition-all"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 hover:bg-white/10 transition-all"
                         >
                             <svg className="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                                 <circle cx="12" cy="5" r="2" />
@@ -93,7 +93,7 @@ function CollectionsPanel({
                                     initial={{ opacity: 0, scale: 0.95, y: -5 }}
                                     animate={{ opacity: 1, scale: 1, y: 0 }}
                                     exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                                    className="absolute right-0 top-full mt-1 z-10 bg-white rounded-xl shadow-lg border border-gray-100 py-1 w-32"
+                                    className="absolute right-0 top-full mt-1 z-10 bg-[#1f2937] rounded-xl shadow-2xl border border-white/10 py-1 w-32"
                                     onClick={(e) => e.stopPropagation()}
                                 >
                                     <button
@@ -101,7 +101,7 @@ function CollectionsPanel({
                                             onEdit(collection);
                                             setMenuOpenId(null);
                                         }}
-                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                                        className="w-full px-3 py-2 text-left text-sm text-white/80 hover:bg-white/5 flex items-center gap-2"
                                     >
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -115,7 +115,7 @@ function CollectionsPanel({
                                             }
                                             setMenuOpenId(null);
                                         }}
-                                        className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                        className="w-full px-3 py-2 text-left text-sm text-red-500 hover:bg-red-500/10 flex items-center gap-2"
                                     >
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -138,7 +138,7 @@ function CollectionsPanel({
             {/* Create Collection CTA */}
             <button
                 onClick={onCreate}
-                className="w-full mt-4 py-2.5 px-3 rounded-xl border-2 border-dashed border-gray-200 text-sm text-gray-500 hover:border-orange-300 hover:text-orange-600 transition-colors flex items-center justify-center gap-2"
+                className="w-full mt-4 py-2.5 px-3 rounded-xl border-2 border-dashed border-white/10 text-sm text-gray-500 hover:border-blue-500/50 hover:text-blue-400 transition-colors flex items-center justify-center gap-2"
             >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -166,14 +166,14 @@ function getColorBg(color) {
 
 function getColorText(color) {
     const colors = {
-        orange: '#ea580c',
-        blue: '#2563eb',
-        green: '#16a34a',
-        purple: '#7c3aed',
-        pink: '#db2777',
-        red: '#dc2626',
-        yellow: '#ca8a04',
-        gray: '#4b5563'
+        orange: '#3B82F6', // Orange mapped to Standard Blue
+        blue: '#3B82F6',
+        green: '#10b981',
+        purple: '#8b5cf6',
+        pink: '#ec4899',
+        red: '#ef4444',
+        yellow: '#f59e0b',
+        gray: '#9ca3af'
     };
     return colors[color] || colors.orange;
 }

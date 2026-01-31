@@ -108,11 +108,11 @@ function SavedProductsPage({
         return (
             <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-6">
                 <div className="animate-pulse space-y-6">
-                    <div className="h-10 bg-gray-200 rounded-xl w-1/3" />
-                    <div className="h-12 bg-gray-200 rounded-xl" />
+                    <div className="h-10 bg-white/5 rounded-xl w-1/3" />
+                    <div className="h-12 bg-white/5 rounded-xl" />
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         {[1, 2, 3, 4].map(i => (
-                            <div key={i} className="aspect-square bg-gray-200 rounded-2xl" />
+                            <div key={i} className="aspect-square bg-white/5 rounded-2xl border border-white/5" />
                         ))}
                     </div>
                 </div>
@@ -185,12 +185,12 @@ function SavedProductsPage({
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
                                 exit={{ opacity: 0 }}
-                                className="bg-gray-50 p-12 rounded-3xl border border-dashed border-gray-200 text-center"
+                                className="bg-[#1f2937]/60 backdrop-blur-sm p-12 rounded-3xl border border-dashed border-white/10 text-center"
                             >
                                 <span className="text-5xl block mb-4">
                                     {searchQuery ? '🔍' : activeCollectionId ? '📁' : '📦'}
                                 </span>
-                                <p className="text-gray-500 font-medium">
+                                <p className="text-white/60 font-medium">
                                     {searchQuery
                                         ? 'Nenhum produto encontrado para esta busca.'
                                         : activeCollectionId
@@ -200,7 +200,7 @@ function SavedProductsPage({
                                 {searchQuery && (
                                     <button
                                         onClick={() => setSearchQuery('')}
-                                        className="mt-4 px-4 py-2 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors"
+                                        className="mt-4 px-4 py-2 text-sm font-medium text-blue-400 hover:text-blue-300 transition-colors"
                                     >
                                         Limpar busca
                                     </button>
@@ -231,7 +231,7 @@ function SavedProductsPage({
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                         onClick={() => setMoveModalProduct(null)}
                     >
                         <motion.div
@@ -239,17 +239,17 @@ function SavedProductsPage({
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.95, opacity: 0 }}
                             onClick={e => e.stopPropagation()}
-                            className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-xl"
+                            className="bg-[#1f2937] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl"
                         >
-                            <h3 className="text-lg font-bold text-gray-900 mb-4">
+                            <h3 className="text-lg font-bold text-white mb-4">
                                 Mover para coleção
                             </h3>
-                            <div className="space-y-2 max-h-64 overflow-y-auto">
+                            <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
                                 <button
                                     onClick={() => handleMoveProduct(moveModalProduct.id, null)}
                                     className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${!moveModalProduct.collection_id
-                                            ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                                            : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                        ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold'
+                                        : 'bg-white/5 hover:bg-white/10 text-white/70'
                                         }`}
                                 >
                                     <span className="mr-2">📦</span>
@@ -260,8 +260,8 @@ function SavedProductsPage({
                                         key={collection.id}
                                         onClick={() => handleMoveProduct(moveModalProduct.id, collection.id)}
                                         className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${moveModalProduct.collection_id === collection.id
-                                                ? 'bg-orange-50 text-orange-600 border border-orange-200'
-                                                : 'bg-gray-50 hover:bg-gray-100 text-gray-700'
+                                            ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30 font-semibold'
+                                            : 'bg-white/5 hover:bg-white/10 text-white/70'
                                             }`}
                                     >
                                         <span className="mr-2">{getCollectionEmoji(collection.icon)}</span>
@@ -271,7 +271,7 @@ function SavedProductsPage({
                             </div>
                             <button
                                 onClick={() => setMoveModalProduct(null)}
-                                className="w-full mt-4 px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 transition-colors"
+                                className="w-full mt-4 px-4 py-2 text-sm font-medium text-gray-500 hover:text-white transition-colors"
                             >
                                 Cancelar
                             </button>
