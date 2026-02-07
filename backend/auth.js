@@ -46,10 +46,34 @@ function verifyToken(token) {
 
 /**
  * Register a new user using Supabase Auth (with email confirmation)
+ * @param {string} email
+ * @param {string} password
+ * @param {string} name
+ * @param {string|null} refCode - Optional referral code
  */
-export async function registerUser(email, password, name) {
+export async function registerUser(email, password, name, refCode = null) {
     try {
         const emailLower = email.toLowerCase();
+
+        // Validate referral code if provided (case-insensitive search)
+        let referrerId = null;
+        let referrerCode = null;
+        if (refCode && refCode.length === 7) {
+            // Use ilike for case-insensitive search
+            const { data: referrer, error: refError } = await supabase
+                .from('users')
+                .select('id, ref_id')
+                .ilike('ref_id', refCode)
+                .single();
+
+            if (!refError && referrer) {
+                referrerId = referrer.id;
+                referrerCode = referrer.ref_id;
+                console.log(`[Auth] Valid referral code ${refCode} -> ${referrerCode} from user ${referrerId}`);
+            } else {
+                console.log(`[Auth] Invalid referral code provided: ${refCode}`, refError?.message);
+            }
+        }
 
         // Use Supabase Auth to create user
         const { data: authData, error: authError } = await supabaseAuth.auth.signUp({
@@ -70,15 +94,55 @@ export async function registerUser(email, password, name) {
 
         const userId = authData.user.id;
 
-        // Sync to public.users table immediately
-        await supabase.from('users').upsert({
+        // Generate unique ref_id for new user
+        const generateRefId = () => {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 7; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        };
+
+        const newRefId = generateRefId();
+
+        // Build user data object
+        const userData = {
             id: userId,
             email: emailLower,
             name: name || null,
             tier: 'guest',
             credits: 3,
-            mining_count: 0
-        }, { onConflict: 'id' });
+            mining_count: 0,
+            ref_id: newRefId
+        };
+
+        // Add referral data if valid
+        if (referrerId && referrerCode) {
+            userData.referred_by_id = referrerId;
+            userData.referred_by_code = referrerCode;
+        }
+
+        // Sync to public.users table immediately
+        const { error: upsertError } = await supabase.from('users').upsert(userData, { onConflict: 'id' });
+
+        if (upsertError) {
+            console.error('[Auth] Error upserting user:', upsertError);
+        } else {
+            console.log(`[Auth] User created with ref_id: ${newRefId}`);
+        }
+
+        // Log referral in history if applicable
+        if (referrerId && referrerCode) {
+            await supabase.from('referral_history').insert({
+                referrer_id: referrerId,
+                referred_id: userId,
+                ref_code: referrerCode,
+                registered_at: new Date().toISOString()
+            });
+            console.log(`[Auth] Referral logged: ${userId} referred by ${referrerId}`);
+        }
+
 
         // Check if email confirmation is required
         if (authData.user && !authData.user.email_confirmed_at) {

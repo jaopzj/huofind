@@ -124,7 +124,17 @@ function AuthCard() {
             return;
         }
 
-        const result = await register(registerEmail, registerPassword, registerName);
+        // Check for stored referral code
+        const refCode = sessionStorage.getItem('referralCode');
+
+        const result = await register(registerEmail, registerPassword, registerName, refCode);
+
+        // Clear referral code after registration attempt
+        if (refCode) {
+            sessionStorage.removeItem('referralCode');
+            console.log('[Auth] Referral code cleared after registration');
+        }
+
         if (result.success && result.needsEmailConfirmation) {
             setRegisterStep(3);
         }

@@ -1,10 +1,13 @@
 import { useState, useEffect, useMemo, memo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LuSearch, LuFilter, LuX, LuChevronLeft, LuChevronRight, LuArrowDownUp, LuCheck, LuChevronDown } from 'react-icons/lu';
+import { LuSearch, LuFilter, LuX, LuChevronLeft, LuChevronRight, LuArrowDownUp, LuCheck, LuChevronDown, LuBadgeCheck } from 'react-icons/lu';
 import WifiLoader from '../WifiLoader';
 import { Slider } from '../ui/slider';
 import SaveBookmarkButton from '../SaveBookmarkButton';
 import UpgradeModal from '../UpgradeModal';
+import { isRecommendedBatch, normalizeBatchMap } from '../../utils/batchValidator';
+import batchValidatorData from '../../../public/data/batch-validator.json';
+import './BatchBadge.css';
 
 
 const SORT_OPTIONS = [
@@ -26,6 +29,9 @@ export default function YupooSearchPage({
     const [allProducts, setAllProducts] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+
+    // Normalized batch map for validation (memoized)
+    const normalizedBatchMap = useMemo(() => normalizeBatchMap(batchValidatorData), []);
 
     // State for filters
     const [keyword, setKeyword] = useState('');
@@ -618,6 +624,7 @@ export default function YupooSearchPage({
                                             exchangeRate={exchangeRate}
                                             isSaved={savedProductUrls.includes(product.product_url)}
                                             onSaveToggle={onSaveToggle}
+                                            batchMap={normalizedBatchMap}
                                         />
                                     ))}
                                 </div>
@@ -822,7 +829,13 @@ CollapsibleCategory.displayName = 'CollapsibleCategory';
 
 
 // Memoized Product Card
-const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggle }) => {
+const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggle, batchMap }) => {
+    // Check if this product has the recommended batch
+    const hasRecommendedBatch = useMemo(() => {
+        if (!batchMap || !product.batch || product.categoria !== 'Calçados') return false;
+        return isRecommendedBatch(product, batchMap);
+    }, [product, batchMap]);
+
     return (
         <a
             href={product.product_url}
@@ -841,6 +854,15 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
                 />
                 {/* Overlay Gradient on Hover */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+
+                {/* Recommended Batch Badge */}
+                {hasRecommendedBatch && (
+                    <div className="absolute top-2 left-2 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 border-2 border-white/40 shadow-lg shadow-emerald-500/30 animate-pulse">
+                        <LuBadgeCheck size={14} />
+                        <span className="hidden sm:inline">Batch recomendada!</span>
+                        <span className="sm:hidden">✓ Batch</span>
+                    </div>
+                )}
 
                 {/* Save Button */}
                 {onSaveToggle && (
@@ -887,3 +909,4 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
     );
 });
 ProductCard.displayName = 'ProductCard';
+

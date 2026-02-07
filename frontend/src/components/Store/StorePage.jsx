@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LuShoppingBag, LuSparkles, LuZap } from 'react-icons/lu';
 import CreditBalanceCard from './CreditBalanceCard';
 import CreditPackageCard from './CreditPackageCard';
 import SubscriptionSlider from './SubscriptionSlider';
 import PurchaseHistorySection from './PurchaseHistorySection';
+import ReferralCodeInput from './ReferralCodeInput';
 
 const CREDIT_PACKAGES = [
     { id: 'basic', credits: 50, price: 9.90, pricePerCredit: 0.20 },
@@ -15,6 +16,11 @@ const CREDIT_PACKAGES = [
 function StorePage({ user, miningInfo = {} }) {
     const [loadingPackage, setLoadingPackage] = useState(null);
     const [loadingSubscription, setLoadingSubscription] = useState(false);
+    const [storedRefCode, setStoredRefCode] = useState(null);
+    const [refCodeLocked, setRefCodeLocked] = useState(false);
+    const [hasReferralCode, setHasReferralCode] = useState(false);
+
+    const token = localStorage.getItem('accessToken');
 
     // Extract user info
     const credits = miningInfo.credits || 0;
@@ -32,6 +38,37 @@ function StorePage({ user, miningInfo = {} }) {
     } else {
         currentTier = 'guest';
     }
+
+    // Fetch stored referral code on mount
+    useEffect(() => {
+        const fetchStoredCode = async () => {
+            if (!token) return;
+            try {
+                const res = await fetch('/api/referral/stored-code', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.code) {
+                        setStoredRefCode(data.code);
+                        setRefCodeLocked(!data.used);
+                        setHasReferralCode(true);
+                    }
+                }
+            } catch (err) {
+                console.error('[StorePage] Error fetching stored ref code:', err);
+            }
+        };
+        fetchStoredCode();
+    }, [token]);
+
+    // Handle referral code applied
+    const handleCodeApplied = (code, discount) => {
+        setStoredRefCode(code);
+        setRefCodeLocked(true);
+        setHasReferralCode(true);
+        console.log('[StorePage] Referral code applied:', code, discount + '%');
+    };
 
     // Handle package purchase (mock for now)
     const handlePurchasePackage = async (packageId) => {
@@ -83,6 +120,20 @@ function StorePage({ user, miningInfo = {} }) {
                 nextRenewal={nextRenewal}
                 tier={currentTier}
             />
+
+            {/* Referral Code Input */}
+            <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.05 }}
+                className="mb-6"
+            >
+                <ReferralCodeInput
+                    onCodeApplied={handleCodeApplied}
+                    refCodeLocked={refCodeLocked}
+                    storedRefCode={storedRefCode}
+                />
+            </motion.div>
 
             {/* Subscription Plans Section */}
             <motion.section

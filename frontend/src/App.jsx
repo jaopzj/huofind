@@ -15,6 +15,8 @@ import { SavedProductsPage } from './components/SavedProducts';
 import { ProfilePage } from './components/Profile';
 import { StorePage } from './components/Store';
 import YupooSearchPage from './components/YupooSearch/YupooSearchPage';
+import { FeeCalculatorPage } from './components/FeeCalculator';
+import { DeclarationAssistantPage } from './components/DeclarationAssistant';
 import { useAuth } from './contexts/AuthContext';
 import useSavedProductsRealtime from './hooks/useSavedProductsRealtime';
 import {
@@ -114,6 +116,22 @@ function App() {
 
     // URL no campo de busca (HeroSection)
     const [heroUrl, setHeroUrl] = useState('');
+
+    // ===== CAPTURA DE CÓDIGO DE REFERÊNCIA =====
+    // Captura parâmetro ?ref= da URL e armazena para uso no registro
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const refCode = urlParams.get('ref');
+        if (refCode && refCode.length === 7) {
+            // Store in sessionStorage for registration
+            sessionStorage.setItem('referralCode', refCode);
+            console.log('[App] Referral code detected:', refCode);
+
+            // Clean URL without page refresh
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, '', newUrl);
+        }
+    }, []);
 
     // ===== PERSISTÊNCIA DE SESSÃO DE MINERAÇÃO =====
     // Restaura sessão salva ao carregar a página
@@ -1165,6 +1183,23 @@ function App() {
                             <StorePage
                                 user={user}
                                 miningInfo={miningInfo}
+                            />
+                        )}
+
+                        {/* Fee Calculator Page */}
+                        {activePage === 'fee-calculator' && (
+                            <FeeCalculatorPage />
+                        )}
+
+                        {/* Declaration Assistant Page */}
+                        {activePage === 'declaration-assistant' && (
+                            <DeclarationAssistantPage
+                                onNavigate={(page, params) => {
+                                    if (params?.initialValue) {
+                                        window.__feeCalculatorInitialValue = params.initialValue;
+                                    }
+                                    setActivePage(page);
+                                }}
                             />
                         )}
 

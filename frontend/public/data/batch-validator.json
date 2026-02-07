@@ -1,0 +1,16 @@
+{
+  "_README": "=== COMO ATUALIZAR ESTE ARQUIVO ===",
+  "_INSTRUCOES": [
+    "1. Faça upload da planilha Excel (.xlsx) ou CSV no caminho: d:/xiner/frontend/public/data/",
+    "2. O arquivo deve ter:",
+    "   - Coluna C: 'ID' (ex: HQ8487-100)",
+    "   - Coluna D: 'MELHOR BATCH' (ex: LJR, M, GX, etc.)",
+    "3. Após upload, me avise para converter os dados para este arquivo JSON",
+    "4. O formato final será: { 'ID': 'BATCH', ... }"
+  ],
+  "_PLANILHA_UPLOAD_PATH": "d:/xiner/frontend/public/data/sua_planilha.xlsx",
+  "EXEMPLO-001": "LJR",
+  "EXEMPLO-002": "M",
+  "EXEMPLO-003": "GX",
+  "555088-105": "LJR"
+}

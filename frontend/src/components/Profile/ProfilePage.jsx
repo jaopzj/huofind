@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ProfileHeader from './ProfileHeader';
 import ProfileStats from './ProfileStats';
 import ProfileSettings from './ProfileSettings';
+import ReferralSection from './ReferralSection';
 
 /**
  * ProfilePage - Página principal do perfil do usuário
@@ -298,6 +299,11 @@ function ProfilePage({
                 savedSellersCount={savedSellersCount}
                 collectionsCount={collectionsCount}
             />
+
+            {/* Referral Section */}
+            <div className="mt-6">
+                <ReferralSection />
+            </div>
 
             {/* Settings */}
             <ProfileSettings

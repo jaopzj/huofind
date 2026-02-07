@@ -774,6 +774,245 @@ const SettingsIcon = () => (
     </svg>
 );
 
+// Calculator Icon - Animated chart bars for fee calculator
+const CalculatorIcon = forwardRef(({ onMouseEnter, onMouseLeave, isActive, className, size = 20, ...props }, ref) => {
+    const controls = useAnimation();
+    const isControlledRef = useRef(false);
+
+    useImperativeHandle(ref, () => {
+        isControlledRef.current = true;
+        return {
+            startAnimation: () => {
+                if (!isActive) controls.start("animate");
+            },
+            stopAnimation: () => controls.start("normal"),
+        };
+    }, [controls, isActive]);
+
+    const handleMouseEnter = useCallback(
+        (e) => {
+            if (isActive) return;
+            if (isControlledRef.current) {
+                onMouseEnter?.(e);
+            } else {
+                controls.start("animate");
+            }
+        },
+        [controls, onMouseEnter, isActive]
+    );
+
+    const handleMouseLeave = useCallback(
+        (e) => {
+            if (isControlledRef.current) {
+                onMouseLeave?.(e);
+            } else {
+                controls.start("normal");
+            }
+        },
+        [controls, onMouseLeave]
+    );
+
+    const bar1Variants = {
+        normal: { pathLength: 1, opacity: 1 },
+        animate: {
+            pathLength: [0, 1],
+            opacity: [0, 1],
+            transition: { duration: 0.4, ease: "easeInOut", delay: 0 },
+        },
+    };
+
+    const bar2Variants = {
+        normal: { pathLength: 1, opacity: 1 },
+        animate: {
+            pathLength: [0, 1],
+            opacity: [0, 1],
+            transition: { duration: 0.4, ease: "easeInOut", delay: 0.15 },
+        },
+    };
+
+    const bar3Variants = {
+        normal: { pathLength: 1, opacity: 1 },
+        animate: {
+            pathLength: [0, 1],
+            opacity: [0, 1],
+            transition: { duration: 0.4, ease: "easeInOut", delay: 0.3 },
+        },
+    };
+
+    return (
+        <div
+            className={className}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            {...props}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: size,
+                height: size,
+                cursor: 'pointer'
+            }}
+        >
+            <motion.svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={size}
+                height={size}
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+            >
+                {/* Axis */}
+                <path d="M3 3v16a2 2 0 0 0 2 2h16" />
+                {/* Animated bars */}
+                <motion.path
+                    d="M8 17V5"
+                    variants={bar1Variants}
+                    initial="normal"
+                    animate={controls}
+                />
+                <motion.path
+                    d="M13 17V9"
+                    variants={bar2Variants}
+                    initial="normal"
+                    animate={controls}
+                />
+                <motion.path
+                    d="M18 17V13"
+                    variants={bar3Variants}
+                    initial="normal"
+                    animate={controls}
+                />
+            </motion.svg>
+        </div>
+    );
+});
+CalculatorIcon.displayName = "CalculatorIcon";
+
+// AI Assistant Icon - Animated Bot
+const botVariants = {
+    path1: {
+        normal: {},
+        animate: {}
+    },
+    rect: {
+        normal: {},
+        animate: {}
+    },
+    path4: {
+        normal: { x: 0, y: 0 },
+        animate: {
+            x: [0, -1.5, 1.5, 0],
+            y: [0, 1.5, 1.5, 0],
+            transition: { ease: 'easeInOut', duration: 1.3 },
+        },
+    },
+    path5: {
+        normal: { x: 0, y: 0 },
+        animate: {
+            x: [0, -1.5, 1.5, 0],
+            y: [0, 1.5, 1.5, 0],
+            transition: { ease: 'easeInOut', duration: 1.3 },
+        },
+    },
+};
+
+// AI Assistant Icon - Animated Bot
+const BotIcon = forwardRef(({ onMouseEnter, onMouseLeave, isActive, className, size = 20, ...props }, ref) => {
+    const controls = useAnimation();
+    const isControlledRef = useRef(false);
+
+    useImperativeHandle(ref, () => {
+        isControlledRef.current = true;
+        return {
+            startAnimation: () => {
+                if (!isActive) controls.start("animate");
+            },
+            stopAnimation: () => controls.start("normal"),
+        };
+    }, [controls, isActive]);
+
+    const handleMouseEnter = useCallback(
+        (e) => {
+            if (isActive) return;
+            if (isControlledRef.current) {
+                onMouseEnter?.(e);
+            } else {
+                controls.start("animate");
+            }
+        },
+        [controls, onMouseEnter, isActive]
+    );
+
+    const handleMouseLeave = useCallback(
+        (e) => {
+            if (isControlledRef.current) {
+                onMouseLeave?.(e);
+            } else {
+                controls.start("normal");
+            }
+        },
+        [controls, onMouseLeave]
+    );
+
+    return (
+        <motion.svg
+            xmlns="http://www.w3.org/2000/svg"
+            width={size}
+            height={size}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className={className}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            animate={controls}
+            initial="normal"
+            style={{
+                display: 'block',
+                cursor: 'pointer',
+                filter: isActive ? 'drop-shadow(0 0 5px rgba(59, 130, 246, 0.5))' : 'none'
+            }}
+            {...props}
+        >
+            {/* Antenna */}
+            <motion.path
+                d="M12 8V4H8"
+                variants={botVariants.path1}
+            />
+            {/* Head */}
+            <motion.rect
+                width={16}
+                height={12}
+                x={4}
+                y={8}
+                rx={2}
+                variants={botVariants.rect}
+            />
+            {/* Side parts */}
+            <path d="M2 14h2" />
+            <path d="M20 14h2" />
+            {/* Eyes */}
+            <motion.path
+                d="M15 13v2"
+                variants={botVariants.path4}
+            />
+            <motion.path
+                d="M9 13v2"
+                variants={botVariants.path5}
+            />
+        </motion.svg>
+    );
+});
+BotIcon.displayName = "BotIcon";
+
+
 // Tier Icons and Names mapping
 const TIER_CONFIG = {
     guest: {
@@ -936,7 +1175,7 @@ const SidebarContent = ({
     toggleSidebar,
     refs
 }) => {
-    const { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef } = refs;
+    const { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef, calculatorIconRef, botIconRef: aiIconRef } = refs;
 
     return (
         <div className="flex flex-col h-full">
@@ -1143,22 +1382,30 @@ const SidebarContent = ({
 
                 <div className="mt-4 space-y-2">
                     <p className="px-4 mb-2 text-xs font-bold text-white/50 uppercase tracking-wider">
-                        Configurações
+                        Ferramentas
                     </p>
-                    <CollapsibleSection title="Preferências" icon={<SettingsIcon />}>
-                        <ul className="space-y-1">
-                            <li>
-                                <button className="w-full text-left py-2 px-3 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                                    Aparência
-                                </button>
-                            </li>
-                            <li>
-                                <button className="w-full text-left py-2 px-3 text-sm text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors">
-                                    Notificações
-                                </button>
-                            </li>
-                        </ul>
-                    </CollapsibleSection>
+                    <ul className="space-y-1 px-2">
+                        <li>
+                            <NavItem
+                                icon={<CalculatorIcon ref={calculatorIconRef} isActive={activePage === 'fee-calculator'} />}
+                                label="Calcular Taxa"
+                                isActive={activePage === 'fee-calculator'}
+                                onClick={() => onNavClick('fee-calculator')}
+                                onMouseEnter={() => calculatorIconRef.current?.startAnimation()}
+                                onMouseLeave={() => calculatorIconRef.current?.stopAnimation()}
+                            />
+                        </li>
+                        <li>
+                            <NavItem
+                                icon={<BotIcon ref={aiIconRef} isActive={activePage === 'declaration-assistant'} />}
+                                label="IA Declaração"
+                                isActive={activePage === 'declaration-assistant'}
+                                onClick={() => onNavClick('declaration-assistant')}
+                                onMouseEnter={() => aiIconRef.current?.startAnimation()}
+                                onMouseLeave={() => aiIconRef.current?.stopAnimation()}
+                            />
+                        </li>
+                    </ul>
                 </div>
             </nav>
 
@@ -1186,6 +1433,8 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL
     const sellersIconRef = useRef(null);
     const homeIconRef = useRef(null);
     const storeIconRef = useRef(null);
+    const calculatorIconRef = useRef(null);
+    const botIconRef = useRef(null);
 
     const toggleSidebar = () => setIsOpen(!isOpen);
 
@@ -1202,7 +1451,7 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL
         onLogout,
         isOpen,
         toggleSidebar,
-        refs: { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef }
+        refs: { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef, calculatorIconRef, botIconRef }
     };
 
     return (

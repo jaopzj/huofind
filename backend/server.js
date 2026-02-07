@@ -18,6 +18,7 @@ import { authMiddleware, optionalAuthMiddleware } from './authMiddleware.js';
 import {
     miningLimitMiddleware,
     consumeCredit,
+    consumeCredits,
     startMiningSession,
     endMiningSession,
     getUserCreditsData,
@@ -148,7 +149,7 @@ app.get('/api/exchange-rate', async (req, res) => {
  */
 app.post('/api/auth/register', async (req, res) => {
     try {
-        const { email, password, name } = req.body;
+        const { email, password, name, refCode } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({
@@ -164,7 +165,7 @@ app.post('/api/auth/register', async (req, res) => {
             });
         }
 
-        const result = await registerUser(email, password, name);
+        const result = await registerUser(email, password, name, refCode);
 
         if (result.error) {
             return res.status(400).json(result);
@@ -176,6 +177,7 @@ app.post('/api/auth/register', async (req, res) => {
         res.status(500).json({ error: 'Erro interno do servidor' });
     }
 });
+
 
 /**
  * POST /api/auth/login
@@ -626,6 +628,118 @@ app.get('/api/user/stats', authMiddleware, async (req, res) => {
 
 // ============================================
 // END USER PROFILE ENDPOINTS
+// ============================================
+
+// ============================================
+// REFERRAL ROUTES
+// ============================================
+import {
+    validateRefCode,
+    getUserRefCode,
+    getUserStoredRefCode,
+    storeRefCodeForUser,
+    getReferralStats,
+    REFERRAL_DISCOUNT_PERCENT
+} from './referrals.js';
+
+/**
+ * GET /api/referral/my-code
+ * Get current user's referral code
+ */
+app.get('/api/referral/my-code', authMiddleware, async (req, res) => {
+    try {
+        const refCode = await getUserRefCode(req.user.id);
+        res.json({ refCode });
+    } catch (err) {
+        console.error('[Referral] Error getting ref code:', err);
+        res.status(500).json({ error: 'Erro interno' });
+    }
+});
+
+/**
+ * GET /api/referral/stored-code
+ * Get user's stored referral code (if any)
+ */
+app.get('/api/referral/stored-code', authMiddleware, async (req, res) => {
+    try {
+        const data = await getUserStoredRefCode(req.user.id);
+        res.json(data || { code: null, used: false });
+    } catch (err) {
+        console.error('[Referral] Error getting stored code:', err);
+        res.status(500).json({ error: 'Erro interno' });
+    }
+});
+
+/**
+ * POST /api/referral/validate
+ * Validate a referral code
+ */
+app.post('/api/referral/validate', authMiddleware, async (req, res) => {
+    try {
+        const { code } = req.body;
+        const result = await validateRefCode(code, req.user.id);
+
+        if (!result.valid) {
+            return res.status(400).json({ valid: false, error: result.error });
+        }
+
+        res.json({
+            valid: true,
+            referrerName: result.referrer.name || 'Usuário',
+            discountPercent: REFERRAL_DISCOUNT_PERCENT
+        });
+    } catch (err) {
+        console.error('[Referral] Error validating code:', err);
+        res.status(500).json({ error: 'Erro interno' });
+    }
+});
+
+/**
+ * POST /api/referral/store
+ * Store a referral code for future use (during checkout on store page)
+ */
+app.post('/api/referral/store', authMiddleware, async (req, res) => {
+    try {
+        const { code } = req.body;
+
+        // Check if user already has a stored code
+        const existing = await getUserStoredRefCode(req.user.id);
+        if (existing?.code) {
+            return res.status(400).json({
+                error: 'Você já possui um código de referência',
+                locked: true
+            });
+        }
+
+        const result = await storeRefCodeForUser(req.user.id, code);
+
+        if (!result.success) {
+            return res.status(400).json({ error: result.error });
+        }
+
+        res.json({ success: true, referrerName: result.referrerName });
+    } catch (err) {
+        console.error('[Referral] Error storing code:', err);
+        res.status(500).json({ error: 'Erro interno' });
+    }
+});
+
+/**
+ * GET /api/referral/stats
+ * Get referral statistics for current user
+ */
+app.get('/api/referral/stats', authMiddleware, async (req, res) => {
+    try {
+        const stats = await getReferralStats(req.user.id);
+        res.json(stats);
+    } catch (err) {
+        console.error('[Referral] Error getting stats:', err);
+        res.status(500).json({ error: 'Erro interno' });
+    }
+});
+
+// ============================================
+// END REFERRAL ROUTES
 // ============================================
 
 /**
@@ -1507,6 +1621,225 @@ app.put('/api/saved-products/:id/collection', authMiddleware, async (req, res) =
     } catch (error) {
         console.error('[Server] Error moving product to collection:', error);
         res.status(500).json({ error: error.message });
+    }
+});
+
+// ============================================
+// AI DECLARATION ASSISTANT (GEMINI)
+// ============================================
+
+/**
+ * POST /api/ai/declaration-assistant
+ * Generates AI suggestions for customs declaration
+ * Each product consumes 1 credit
+ */
+app.post('/api/ai/declaration-assistant', authMiddleware, async (req, res) => {
+    try {
+        const { description, items } = req.body;
+        const userId = req.user.id;
+
+        if (!description || !items || !Array.isArray(items)) {
+            return res.status(400).json({
+                error: 'Descrição e lista de itens são obrigatórios'
+            });
+        }
+
+        const requiredCredits = items.length;
+
+        // 1. Check if user has enough credits
+        const userCreditsData = await getUserCreditsData(userId);
+        if (userCreditsData.credits < requiredCredits) {
+            return res.status(402).json({
+                error: 'Créditos insuficientes',
+                required: requiredCredits,
+                available: userCreditsData.credits
+            });
+        }
+
+        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+        if (!GEMINI_API_KEY) {
+            console.error('[AI] Gemini API key not configured');
+            return res.status(500).json({ error: 'Serviço de IA não configurado' });
+        }
+
+        console.log(`[AI] Processing declaration request: ${description}`);
+
+        // Optimized prompt for declaration assistance
+        const prompt = `Você é um assistente especializado em ajudar pessoas a declarar produtos importados de forma otimizada para reduzir taxas alfandegárias.
+
+REGRAS IMPORTANTES:
+1. SEMPRE sugira descrições GENÉRICAS em inglês (nunca mencione marcas)
+2. SEMPRE sugira valores EXTREMAMENTE BAIXOS em dólares (entre $3 e $10 por item)
+
+2.1a [IMPORTANTE!!!] Utilize um limite de valor total sugerido de no máximo 15 dólares, apenas mude esse limite para 28 dolares caso seja mais de 10itens totais e a compra seja de muito de valor mesmo
+
+2.1b Declare com base no contexto. Ex: uma MEMÓRIA RAM é mais barata que uma Placa de Vídeo
+2.2 Coisas mais básicas você declarar valores baixos. Se for apenas um tênis (de 5 a 8 dolares), quanto mais itens, tente declarar mais baixo cada item. Se for apenas uma ou duas camisas (de 3 a 5 dolares), etc.
+3 Caso a quantidade do item seja maior que 1, divida o valor sugerido pela quantidade de itens
+4. Transforme produtos de marca em descrições genéricas. Exemplos:
+   - iPhone 15 Pro → "LCD Screen 6.1 inch replacement part" ($9.15)
+   - Nike Air Jordan → "Sports shoes rubber sole" ($8)
+   - Camiseta Gucci → "Cotton t-shirt plain" ($4.50)
+   - MacBook → "Laptop keyboard replacement" ($14.67)
+   - PlayStation 5 → "Electronic circuit board parts" ($9)
+   - Relógio Rolex → "Wrist watch quartz movement" ($6)
+   - Bolsa Louis Vuitton → "Fabric handbag casual" ($5)
+   [SÃO APENAS EXEMPLOS, seja criativo!]
+5. Se houver múltiplos itens, separe cada um na tabela
+6. Distribua os valores para que o total fique abaixo de $24
+
+O usuário quer declarar os seguintes itens:
+"${description}"
+
+Responda APENAS no formato JSON abaixo, sem markdown:
+{
+  "items": [
+    {
+      "original": "descrição original do item",
+      "suggested": "descrição sugerida em inglês",
+      "suggestedValueUSD": 9,
+      "category": "categoria genérica"
+    }
+  ],
+  "tips": [
+    "dica 1 em português",
+    "dica 2 em português",
+    "dica 3 em português"
+  ],
+  "totalSuggestedUSD": 9,
+  "disclaimer": "Os valores e descrições são sugestões. O usuário é responsável pela declaração final."
+}`;
+
+        // Call Gemini API
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        temperature: 0.7,
+                        maxOutputTokens: 4096
+                    }
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            console.error('[AI] Gemini API error:', errorData);
+            return res.status(500).json({ error: 'Erro ao processar com IA' });
+        }
+
+        const data = await response.json();
+        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (!textResponse) {
+            console.error('[AI] Empty response from Gemini');
+            return res.status(500).json({ error: 'Resposta vazia da IA' });
+        }
+
+        // Parse JSON from response (remove possible markdown formatting)
+        let parsedResponse;
+        try {
+            let cleanJson = textResponse.replace(/```json\n?|\n?```/g, '').trim();
+
+            // Try to fix truncated JSON by adding missing closing brackets
+            try {
+                parsedResponse = JSON.parse(cleanJson);
+            } catch (firstError) {
+                console.warn('[AI] Response truncated, attempting repair...');
+
+                // Add missing closing characters
+                let fixed = cleanJson;
+
+                // Remove trailing incomplete parts iteratively
+                // 1. Remove trailing comma or semicolon
+                fixed = fixed.replace(/[,;]\s*$/, '');
+
+                // 2. Handle trailing incomplete strings/keys
+                // e.g. "key": "val
+                if (fixed.match(/:\s*"[^"]*$/)) {
+                    fixed = fixed.replace(/:\s*"[^"]*$/, ': ""');
+                }
+                // e.g. "key": 
+                else if (fixed.match(/:\s*$/)) {
+                    fixed = fixed.replace(/:\s*$/, ': null');
+                }
+                // e.g. "key
+                else if (fixed.match(/"[^"]*$/)) {
+                    fixed = fixed.replace(/"[^"]*$/, '": null');
+                }
+
+                // 3. Remove trailing incomplete object/array items
+                // e.g. { "original": "...", 
+                fixed = fixed.replace(/,\s*$/, '');
+
+                // Count opening and closing braces/brackets to close the structure
+                const openBracing = (fixed.match(/{/g) || []).length;
+                const closeBracing = (fixed.match(/}/g) || []).length;
+                const openBracketed = (fixed.match(/\[/g) || []).length;
+                const closeBracketed = (fixed.match(/]/g) || []).length;
+
+                for (let i = 0; i < openBracing - closeBracing; i++) {
+                    fixed += '}';
+                }
+                for (let i = 0; i < openBracketed - closeBracketed; i++) {
+                    fixed += ']';
+                }
+
+                try {
+                    parsedResponse = JSON.parse(fixed);
+                    console.log('[AI] Fixed truncated JSON response successfully');
+                } catch (secondError) {
+                    console.error('[AI] Repair failed:', secondError.message);
+                    console.error('[AI] Broken JSON:', fixed);
+                    throw secondError;
+                }
+            }
+
+            // Ensure required fields exist
+            if (!parsedResponse.disclaimer) {
+                parsedResponse.disclaimer = 'Os valores e descrições são sugestões. O usuário é responsável pela declaração final.';
+            }
+            if (!parsedResponse.tips) {
+                parsedResponse.tips = [];
+            }
+            if (!parsedResponse.totalSuggestedUSD && parsedResponse.items) {
+                parsedResponse.totalSuggestedUSD = parsedResponse.items.reduce((sum, item) => sum + (item.suggestedValueUSD || 0), 0);
+            }
+            // 1.5. Check if fields exist and match expected types
+            if (!parsedResponse.items || !Array.isArray(parsedResponse.items)) {
+                throw new Error('Formato de resposta da IA inválido');
+            }
+
+            // 2. Consume credits ONLY on success
+            const newCredits = await consumeCredits(userId, requiredCredits);
+
+            if (newCredits === null) {
+                // If consumption fails for some reason (rare as we checked before, but for safety)
+                return res.status(500).json({ error: 'Erro ao processar créditos' });
+            }
+
+            console.log(`[AI] Declaration logic successful. Credits deducted: ${requiredCredits}. New balance: ${newCredits}`);
+
+            res.json({
+                result: parsedResponse,
+                creditsSpent: requiredCredits,
+                newCredits: newCredits
+            });
+
+        } catch (parseError) {
+            console.error('[AI] Failed to parse Gemini response:', textResponse);
+            return res.status(500).json({
+                error: 'Erro ao processar resposta da IA',
+                rawResponse: textResponse
+            });
+        }
+    } catch (error) {
+        console.error('[AI] Declaration assistant error:', error);
+        res.status(500).json({ error: 'Erro interno ao processar declaração' });
     }
 });
 

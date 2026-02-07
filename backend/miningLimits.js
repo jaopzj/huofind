@@ -1,249 +1,182 @@
-/**
- * Mining Credits System
- * 
- * Sistema UNIFICADO para controle de créditos de mineração.
- * TODOS os usuários devem estar autenticados.
- * 
- * Tiers (Créditos Mensais):
- * - guest: Usuário logado sem plano (3 créditos, não renova)
- * - bronze: Plano básico (50 créditos/mês | Max 100 produtos)
- * - silver/prata: Plano intermediário (150 créditos/mês | Max 200 produtos)
- * - gold/ouro: Plano premium (300 créditos/mês | Max 500 produtos)
- */
-
 import supabase from './supabase.js';
-import { getTierByName, getTierCredits, isTierRenewable } from './tiers.js';
+import { TIER_CREDITS } from './tiers.js';
+export { TIER_CREDITS };
 
-// ============================================
-// CONFIGURAÇÃO DE CRÉDITOS
-// ============================================
-
-export const TIER_CREDITS = {
-    guest: 3,
-    bronze: 50,
-    silver: 150,
-    gold: 300
-};
-
-// Limite de produtos por operação de mineração
-export const TIER_MINING_MAX_PRODUCTS = {
-    guest: 30,
-    bronze: 100,
-    silver: 200,
-    gold: 500
-};
-
-// ============================================
-// SESSÕES ATIVAS (MEMÓRIA)
-// ============================================
-
-const activeSessions = new Map(); // userId -> { startTime, url }
-
-// ============================================
-// FUNÇÕES PRINCIPAIS
-// ============================================
+// Cache para sessões ativas
+const activeSessions = new Map();
 
 /**
- * Busca dados de créditos do usuário no Supabase
- * @param {string} userId - ID do usuário
- * @returns {Promise<{tier: string, credits: number, creditsLastReset: Date, email: string}>}
+ * Busca dados de créditos e limites do usuário
  */
 export async function getUserCreditsData(userId) {
-    console.log(`[Credits] 🔍 Buscando dados do usuário: ${userId}`);
-
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('email, tier, credits, credits_last_reset')
+            .select('email, tier, credits, credits_last_reset, mining_count')
             .eq('id', userId)
             .single();
 
-        if (error) {
-            console.error(`[Credits] ❌ Erro ao buscar usuário: ${error.message}`);
-            return { tier: 'guest', credits: 0, creditsLastReset: null, email: 'unknown' };
-        }
+        if (error || !data) return null;
 
-        const result = {
-            email: data.email || 'unknown',
-            tier: data.tier || 'guest',
-            credits: data.credits ?? getTierCredits(data.tier || 'guest'),
-            creditsLastReset: data.credits_last_reset ? new Date(data.credits_last_reset) : null
+        const tierInfo = TIER_CREDITS[data.tier] || TIER_CREDITS.guest;
+
+        // Se credits for NULL (usuário legado), usar o padrão do tier
+        const currentCredits = data.credits !== null ? data.credits : tierInfo.credits;
+
+        return {
+            email: data.email,
+            tier: data.tier,
+            credits: currentCredits,
+            maxCredits: tierInfo.credits,
+            maxProducts: tierInfo.maxProducts,
+            lastReset: data.credits_last_reset,
+            miningCount: data.mining_count || 0
         };
-
-        console.log(`[Credits] 📋 Usuário: ${result.email} | Tier: ${result.tier} | Créditos: ${result.credits}`);
-        return result;
-
     } catch (err) {
-        console.error(`[Credits] ❌ Erro: ${err.message}`);
-        return { tier: 'guest', credits: 0, creditsLastReset: null, email: 'unknown' };
+        console.error('[Credits] Error fetching user data:', err);
+        return null;
     }
 }
 
 /**
- * Verifica se o usuário precisa de renovação de créditos e renova se necessário
- * @param {string} userId - ID do usuário
- * @returns {Promise<{renewed: boolean, newCredits: number|null}>}
+ * Verifica se os créditos precisam de renovação (mensal)
  */
 export async function checkAndRenewCredits(userId) {
-    console.log(`[Credits] 🔄 Verificando renovação para: ${userId}`);
-
     try {
         const userData = await getUserCreditsData(userId);
-        
-        // Guest não renova
-        if (!isTierRenewable(userData.tier)) {
-            console.log(`[Credits] ⏭️ Tier ${userData.tier} não renova créditos`);
-            return { renewed: false, newCredits: null };
-        }
+        if (!userData) return null;
 
-        const lastReset = userData.creditsLastReset;
+        // Bronze, Silver e Gold renovam mensalmente
+        if (userData.tier === 'guest') return userData;
+
+        const lastReset = userData.lastReset ? new Date(userData.lastReset) : new Date(0);
         const now = new Date();
-        
-        // Se não tem data de reset, define agora (primeira vez)
-        if (!lastReset) {
-            const tierCredits = getTierCredits(userData.tier);
-            await supabase
-                .from('users')
-                .update({ 
-                    credits: tierCredits, 
-                    credits_last_reset: now.toISOString() 
-                })
-                .eq('id', userId);
-            
-            console.log(`[Credits] 🆕 Primeira renovação: ${tierCredits} créditos`);
-            return { renewed: true, newCredits: tierCredits };
-        }
 
-        // Verificar se passou 30 dias
-        const daysSinceReset = Math.floor((now - lastReset) / (1000 * 60 * 60 * 24));
-        
+        // Verifica se passou 30 dias
+        const daysSinceReset = (now - lastReset) / (1000 * 60 * 60 * 24);
+
         if (daysSinceReset >= 30) {
-            const tierCredits = getTierCredits(userData.tier);
-            
-            await supabase
+            console.log(`[Credits] 🔄 Renovando créditos para: ${userData.email}`);
+
+            const tierInfo = TIER_CREDITS[userData.tier] || TIER_CREDITS.guest;
+
+            const { error: updateError } = await supabase
                 .from('users')
-                .update({ 
-                    credits: tierCredits, 
-                    credits_last_reset: now.toISOString() 
+                .update({
+                    credits: tierInfo.credits,
+                    credits_last_reset: now.toISOString()
                 })
                 .eq('id', userId);
-            
-            console.log(`[Credits] ✅ Renovação realizada: ${tierCredits} créditos (${daysSinceReset} dias desde último reset)`);
-            return { renewed: true, newCredits: tierCredits };
+
+            if (updateError) {
+                console.error('[Credits] Error renewing credits:', updateError);
+            } else {
+                userData.credits = tierInfo.credits;
+                userData.lastReset = now.toISOString();
+            }
         }
 
-        console.log(`[Credits] ⏳ Sem renovação: ${30 - daysSinceReset} dias restantes`);
-        return { renewed: false, newCredits: null };
-
+        return userData;
     } catch (err) {
-        console.error(`[Credits] ❌ Erro na renovação: ${err.message}`);
-        return { renewed: false, newCredits: null };
+        console.error('[Credits] Error checking renewal:', err);
+        return null;
     }
 }
 
 /**
  * Calcula a data da próxima renovação
- * @param {Date} lastReset - Data do último reset
- * @returns {Date|null}
  */
-export function getNextRenewalDate(lastReset) {
-    if (!lastReset) return null;
-    const nextRenewal = new Date(lastReset);
-    nextRenewal.setDate(nextRenewal.getDate() + 30);
-    return nextRenewal;
+export function getNextRenewalDate(lastResetIso) {
+    if (!lastResetIso) return null;
+    const date = new Date(lastResetIso);
+    date.setDate(date.getDate() + 30);
+    return date.toISOString();
 }
 
 /**
- * Verifica se o usuário pode minerar (tem créditos)
- * @param {string} userId - ID do usuário
- * @returns {Promise<{allowed: boolean, reason?: string, tier: string, credits: number, maxCredits: number}>}
+ * Verifica créditos antes de permitir operação
  */
 export async function checkCredits(userId) {
-    console.log(`[Credits] ⚡ Verificando créditos para: ${userId}`);
+    const userData = await checkAndRenewCredits(userId);
+    if (!userData) return { allowed: false, reason: 'Erro ao verificar créditos' };
 
-    // Primeiro, verificar e renovar créditos se necessário
-    await checkAndRenewCredits(userId);
-    
-    // Buscar dados atualizados
-    const userData = await getUserCreditsData(userId);
-    const maxCredits = getTierCredits(userData.tier);
+    const tierInfo = TIER_CREDITS[userData.tier] || TIER_CREDITS.guest;
 
-    console.log(`[Credits] 📊 ${userData.email}: ${userData.credits}/${maxCredits} créditos (${userData.tier})`);
-
-    // Verificar se tem créditos
     if (userData.credits <= 0) {
-        const tierInfo = getTierByName(userData.tier);
-        console.log(`[Credits] 🚫 SEM CRÉDITOS: ${userData.credits}`);
-
         return {
             allowed: false,
-            reason: `Você não tem créditos disponíveis. ${tierInfo.isRenewable ? 'Seus créditos serão renovados mensalmente.' : 'Faça upgrade para um plano pago para mais créditos.'}`,
+            reason: userData.tier === 'guest' ?
+                'Limite de mineração grátis atingido.' :
+                'Seus créditos acabaram. Aguarde a renovação ou compre mais.',
             tier: userData.tier,
-            credits: userData.credits,
-            maxCredits
+            credits: 0,
+            maxCredits: tierInfo.credits,
+            nextRenewal: getNextRenewalDate(userData.lastReset)
         };
     }
 
-    console.log(`[Credits] ✅ Mineração PERMITIDA: ${userData.credits} créditos disponíveis`);
-
     return {
         allowed: true,
-        tier: userData.tier,
         credits: userData.credits,
-        maxCredits,
-        nextRenewal: isTierRenewable(userData.tier) ? getNextRenewalDate(userData.creditsLastReset) : null
+        maxCredits: tierInfo.credits,
+        tier: userData.tier,
+        nextRenewal: getNextRenewalDate(userData.lastReset)
     };
 }
 
 /**
- * Consome 1 crédito do usuário
- * @param {string} userId - ID do usuário
- * @returns {Promise<number|null>} - Novo saldo de créditos ou null se falhou
+ * Consome um único crédito (legado/mineração)
  */
 export async function consumeCredit(userId) {
-    console.log(`[Credits] ⬇️ Consumindo 1 crédito de: ${userId}`);
+    return consumeCredits(userId, 1);
+}
+
+/**
+ * Consome múltiplos créditos do usuário
+ */
+export async function consumeCredits(userId, amount) {
+    if (amount <= 0) return null;
+    console.log(`[Credits] ⬇️ Consumindo ${amount} créditos de: ${userId}`);
 
     try {
-        // Buscar valor atual
-        const { data: user, error: fetchError } = await supabase
+        const { data: user, error } = await supabase
             .from('users')
-            .select('email, credits')
+            .select('credits, tier, email')
             .eq('id', userId)
             .single();
 
-        if (fetchError) {
-            console.error(`[Credits] ❌ Erro ao buscar: ${fetchError.message}`);
+        if (error || !user) {
+            console.error('[Credits] Error fetching user for consumption:', error);
             return null;
         }
 
-        const currentCredits = user?.credits ?? 0;
-        const newCredits = Math.max(0, currentCredits - 1);
+        const tierInfo = TIER_CREDITS[user.tier] || TIER_CREDITS.guest;
+        let currentCredits = user.credits !== null ? user.credits : tierInfo.credits;
 
-        console.log(`[Credits] 📉 ${user?.email}: ${currentCredits} → ${newCredits}`);
+        if (currentCredits < amount) {
+            console.warn(`[Credits] Insufficient credits for ${user.email}: ${currentCredits} < ${amount}`);
+            return null;
+        }
 
-        // Atualizar no Supabase
+        const newBalance = currentCredits - amount;
+
         const { error: updateError } = await supabase
             .from('users')
-            .update({ credits: newCredits })
+            .update({ credits: newBalance })
             .eq('id', userId);
 
         if (updateError) {
-            console.error(`[Credits] ❌ Erro ao atualizar: ${updateError.message}`);
+            console.error('[Credits] Error updating credits balance:', updateError);
             return null;
         }
 
-        console.log(`[Credits] ✅ Crédito consumido. Saldo: ${newCredits}`);
-        return newCredits;
-
+        console.log(`[Credits] ✅ ${user.email}: ${currentCredits} → ${newBalance}`);
+        return newBalance;
     } catch (err) {
-        console.error(`[Credits] ❌ Erro: ${err.message}`);
+        console.error('[Credits] Unexpected error in consumeCredits:', err);
         return null;
     }
 }
-
-// ============================================
-// CONTROLE DE SESSÕES ATIVAS
-// ============================================
 
 /**
  * Verifica se usuário tem mineração ativa
@@ -259,13 +192,12 @@ export function startMiningSession(userId, url) {
     console.log(`[Credits] 🟢 Iniciando sessão: ${userId}`);
     activeSessions.set(userId, { startTime: Date.now(), url });
 
-    // Auto-limpar após 10 minutos
     setTimeout(() => {
         if (activeSessions.has(userId)) {
             activeSessions.delete(userId);
             console.log(`[Credits] 🧹 Sessão expirada limpa: ${userId}`);
         }
-    }, 10 * 60 * 1000);
+    }, 10 * 60 * 1000); // 10 min
 }
 
 /**
@@ -276,76 +208,36 @@ export function endMiningSession(userId) {
     activeSessions.delete(userId);
 }
 
-// ============================================
-// MIDDLEWARE EXPRESS
-// ============================================
-
 /**
- * Middleware que verifica autenticação e créditos
- * REQUER que o usuário esteja autenticado
+ * Middleware para limites de mineração
  */
 export async function miningLimitMiddleware(req, res, next) {
-    console.log('\n[Credits] ═══════════════════════════════════════');
-    console.log('[Credits] 📥 Nova requisição de mineração');
-
-    // 1. Verificar autenticação
-    if (!req.user?.id) {
-        console.log('[Credits] ❌ Usuário NÃO autenticado');
-        return res.status(401).json({
-            error: 'Autenticação necessária',
-            message: 'Você precisa fazer login para minerar.',
-            code: 'AUTH_REQUIRED'
-        });
-    }
+    if (!req.user?.id) return res.status(401).json({ error: 'Auth required' });
 
     const userId = req.user.id;
-    console.log(`[Credits] 👤 Usuário autenticado: ${userId}`);
-
-    // 2. Verificar se já está minerando
     if (isUserMining(userId)) {
-        console.log('[Credits] ⏳ Mineração já em andamento');
-        return res.status(429).json({
-            error: 'Mineração em andamento',
-            message: 'Você já tem uma mineração em andamento. Aguarde sua conclusão.',
-            code: 'CONCURRENT_MINING'
-        });
+        return res.status(429).json({ error: 'Mineração em andamento' });
     }
 
-    // 3. Verificar créditos
     const creditsCheck = await checkCredits(userId);
-
     if (!creditsCheck.allowed) {
-        console.log('[Credits] 🚫 Sem créditos - bloqueando');
         return res.status(429).json({
-            error: 'Sem créditos disponíveis',
+            error: 'Sem créditos',
             message: creditsCheck.reason,
-            code: 'NO_CREDITS',
-            tier: creditsCheck.tier,
-            credits: creditsCheck.credits,
-            maxCredits: creditsCheck.maxCredits,
-            upgrade: creditsCheck.tier === 'guest'
+            credits: creditsCheck.credits
         });
     }
-
-    // 4. Tudo OK - adicionar info ao request
-    req.miningInfo = {
-        tier: creditsCheck.tier,
-        credits: creditsCheck.credits,
-        maxCredits: creditsCheck.maxCredits,
-        nextRenewal: creditsCheck.nextRenewal
-    };
-
-    console.log('[Credits] ✅ Mineração AUTORIZADA');
-    console.log('[Credits] ═══════════════════════════════════════\n');
 
     next();
 }
 
-// Aliases para compatibilidade
-export const getUserMiningData = getUserCreditsData;
-export const checkMiningLimit = checkCredits;
-export const incrementMiningCount = consumeCredit;
-export const TIER_LIMITS = TIER_CREDITS;
+// Aliases e TIER_MINING_MAX_PRODUCTS
+export const TIER_MINING_MAX_PRODUCTS = {
+    guest: 30,
+    bronze: 50,
+    silver: 150,
+    gold: 1000 // Unlimited-ish
+};
 
 export default {
     getUserCreditsData,
@@ -353,15 +245,11 @@ export default {
     getNextRenewalDate,
     checkCredits,
     consumeCredit,
+    consumeCredits,
     isUserMining,
     startMiningSession,
     endMiningSession,
     miningLimitMiddleware,
     TIER_CREDITS,
-    TIER_MINING_MAX_PRODUCTS,
-    // Aliases for backward compatibility
-    getUserMiningData: getUserCreditsData,
-    checkMiningLimit: checkCredits,
-    incrementMiningCount: consumeCredit,
-    TIER_LIMITS: TIER_CREDITS
+    TIER_MINING_MAX_PRODUCTS
 };

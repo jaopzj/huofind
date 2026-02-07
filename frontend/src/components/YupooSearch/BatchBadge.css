@@ -1,0 +1,118 @@
+/**
+ * RecommendedBatchBadge - Animated badge with glowing effects
+ * Shows when a product has the recommended batch for its model
+ */
+
+.batch-badge-container {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 9999px;
+    font-size: 11px;
+    font-weight: 700;
+    color: white;
+    background: linear-gradient(135deg, #059669 0%, #10b981 50%, #34d399 100%);
+    box-shadow:
+        0 4px 15px rgba(16, 185, 129, 0.5),
+        0 0 25px rgba(16, 185, 129, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    animation: badgePulse 2s ease-in-out infinite;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    overflow: hidden;
+}
+
+/* Shimmer effect overlay */
+.batch-badge-shimmer {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: linear-gradient(120deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.4) 50%,
+            transparent 70%);
+    background-size: 200% 100%;
+    animation: shimmerMove 2s ease-in-out infinite;
+    pointer-events: none;
+}
+
+/* Badge icon with subtle pulse */
+.batch-badge-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+/* Badge text */
+.batch-badge-text {
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    white-space: nowrap;
+}
+
+/* Keyframe animations */
+@keyframes borderMove {
+    0% {
+        background-position: 0% 50%;
+    }
+
+    100% {
+        background-position: 300% 50%;
+    }
+}
+
+@keyframes shimmerMove {
+    0% {
+        background-position: 200% 0;
+    }
+
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+@keyframes badgePulse {
+
+    0%,
+    100% {
+        box-shadow:
+            0 4px 15px rgba(16, 185, 129, 0.5),
+            0 0 25px rgba(16, 185, 129, 0.3),
+            inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    50% {
+        box-shadow:
+            0 4px 20px rgba(16, 185, 129, 0.7),
+            0 0 35px rgba(16, 185, 129, 0.5),
+            inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    }
+}
+
+/* Hover effect */
+.batch-badge-container:hover {
+    transform: scale(1.08);
+    box-shadow:
+        0 6px 25px rgba(16, 185, 129, 0.6),
+        0 0 40px rgba(16, 185, 129, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4);
+    transition: all 0.3s ease;
+}
+
+/* Responsive - smaller on mobile */
+@media (max-width: 640px) {
+    .batch-badge-container {
+        padding: 5px 10px;
+        font-size: 9px;
+        gap: 4px;
+    }
+
+    .batch-badge-icon svg {
+        width: 12px;
+        height: 12px;
+    }
+}

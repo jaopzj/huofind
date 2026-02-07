@@ -79,7 +79,7 @@ export function AuthProvider({ children }) {
         }
     };
 
-    const register = useCallback(async (email, password, name) => {
+    const register = useCallback(async (email, password, name, refCode = null) => {
         setError(null);
         setLoading(true);
 
@@ -87,7 +87,7 @@ export function AuthProvider({ children }) {
             const response = await fetch(`${API_URL}/api/auth/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password, name })
+                body: JSON.stringify({ email, password, name, refCode })
             });
 
             const data = await response.json();

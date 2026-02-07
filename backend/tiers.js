@@ -42,6 +42,14 @@ export const TIERS = {
     }
 };
 
+// Convenience mapping for credits and limits
+export const TIER_CREDITS = {
+    guest: { credits: 3, maxProducts: 30 },
+    bronze: { credits: 50, maxProducts: 50 },
+    silver: { credits: 150, maxProducts: 150 },
+    gold: { credits: 300, maxProducts: 1000 }
+};
+
 /**
  * Get tier by name
  * Guest = usuário logado sem plano pago
@@ -111,4 +119,4 @@ export const getTierInfo = (tierName) => {
     };
 };
 
-export default { TIERS, getTierByName, getTierCredits, isTierRenewable, canUserMine, getTierInfo };
+export default { TIERS, TIER_CREDITS, getTierByName, getTierCredits, isTierRenewable, canUserMine, getTierInfo };
