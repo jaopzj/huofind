@@ -1349,20 +1349,10 @@ const SidebarContent = ({
 
                         <li>
                             <NavItem
-                                icon={<SellersIcon ref={sellersIconRef} isActive={activePage === 'sellers'} />}
-                                label="Vendedores"
-                                isActive={activePage === 'sellers'}
-                                onClick={() => onNavClick('sellers')}
-                                onMouseEnter={() => sellersIconRef.current?.startAnimation()}
-                                onMouseLeave={() => sellersIconRef.current?.stopAnimation()}
-                            />
-                        </li>
-                        <li>
-                            <NavItem
-                                icon={<ProductsIcon ref={productsIconRef} isActive={activePage === 'products'} />}
-                                label="Produtos"
-                                isActive={activePage === 'products'}
-                                onClick={() => onNavClick('products')}
+                                icon={<ProductsIcon ref={productsIconRef} isActive={activePage === 'saved'} />}
+                                label="Salvos"
+                                isActive={activePage === 'saved'}
+                                onClick={() => onNavClick('saved')}
                                 onMouseEnter={() => productsIconRef.current?.startAnimation()}
                                 onMouseLeave={() => productsIconRef.current?.stopAnimation()}
                             />

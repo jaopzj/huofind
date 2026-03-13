@@ -11,8 +11,7 @@ import Sidebar from './components/Sidebar';
 import { HomePage } from './components/Home';
 import { LuCheck, LuX } from 'react-icons/lu';
 
-import SavedSellersPanel from './components/SavedSellersPanel';
-import { SavedProductsPage } from './components/SavedProducts';
+import SavedPage from './components/SavedPage';
 import { ProfilePage } from './components/Profile';
 import { StorePage } from './components/Store';
 import YupooSearchPage from './components/YupooSearch/YupooSearchPage';
@@ -1192,28 +1191,9 @@ function App() {
                             </div>
                         )}
 
-                        {/* Sellers Page */}
-                        {activePage === 'sellers' && (
-                            <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-6">
-                                <h2 className="text-3xl md:text-4xl font-black mb-6 tracking-tight text-white">
-                                    Vendedores Salvos
-                                </h2>
-                                <section className="bg-[#1f2937] p-6 md:p-10 rounded-[2rem] shadow-xl border border-white/5">
-                                    <SavedSellersPanel
-                                        tier={user?.tier}
-                                        onSelectSeller={(sellerUrl) => {
-                                            setHeroUrl(sellerUrl);
-                                            setActivePage('xianyu-mining');
-                                            handleUrlChange(sellerUrl);
-                                        }}
-                                    />
-                                </section>
-                            </div>
-                        )}
-
-                        {/* Products Page */}
-                        {activePage === 'products' && (
-                            <SavedProductsPage
+                        {/* Salvos Page (Products + Sellers) */}
+                        {activePage === 'saved' && (
+                            <SavedPage
                                 products={savedProducts}
                                 collections={collections}
                                 collectionIcons={collectionIcons}
@@ -1223,6 +1203,12 @@ function App() {
                                 onDeleteCollection={handleDeleteCollection}
                                 onMoveProductToCollection={handleMoveProductToCollection}
                                 onRemoveProduct={handleRemoveProduct}
+                                tier={user?.tier}
+                                onSelectSeller={(sellerUrl) => {
+                                    setHeroUrl(sellerUrl);
+                                    setActivePage('xianyu-mining');
+                                    handleUrlChange(sellerUrl);
+                                }}
                             />
                         )}
 
