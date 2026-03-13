@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { LuShoppingBag, LuSparkles, LuZap } from 'react-icons/lu';
+import { LuShoppingBag, LuSparkles, LuZap, LuCheck, LuX } from 'react-icons/lu';
 import CreditBalanceCard from './CreditBalanceCard';
 import CreditPackageCard from './CreditPackageCard';
 import SubscriptionSlider from './SubscriptionSlider';
@@ -19,6 +19,7 @@ function StorePage({ user, miningInfo = {} }) {
     const [storedRefCode, setStoredRefCode] = useState(null);
     const [refCodeLocked, setRefCodeLocked] = useState(false);
     const [hasReferralCode, setHasReferralCode] = useState(false);
+    const [feedback, setFeedback] = useState(null); // { type: 'success' | 'canceled', message }
 
     const token = localStorage.getItem('accessToken');
 
@@ -70,22 +71,92 @@ function StorePage({ user, miningInfo = {} }) {
         console.log('[StorePage] Referral code applied:', code, discount + '%');
     };
 
-    // Handle package purchase (mock for now)
+    // Auto-dismiss feedback after 8s
+    useEffect(() => {
+        if (feedback) {
+            const timer = setTimeout(() => setFeedback(null), 8000);
+            return () => clearTimeout(timer);
+        }
+    }, [feedback]);
+
+    // Handle package purchase via Stripe Checkout
     const handlePurchasePackage = async (packageId) => {
         setLoadingPackage(packageId);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setLoadingPackage(null);
-        // TODO: Integrate with Stripe
-        console.log('Purchase package:', packageId);
+        try {
+            const res = await fetch('/api/stripe/checkout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ packageId, useReferral: hasReferralCode && refCodeLocked })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Erro ao iniciar pagamento');
+            }
+
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+        } catch (err) {
+            console.error('[StorePage] Purchase error:', err);
+            setFeedback({ type: 'canceled', message: err.message });
+            setLoadingPackage(null);
+        }
     };
 
-    // Handle subscription (mock for now)
+    // Handle subscription via Stripe Checkout
     const handleSubscribe = async (planId) => {
         setLoadingSubscription(true);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        setLoadingSubscription(false);
-        console.log('Subscribe to plan:', planId);
+        try {
+            const res = await fetch('/api/stripe/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ planId, useReferral: hasReferralCode && refCodeLocked })
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Erro ao iniciar assinatura');
+            }
+
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+        } catch (err) {
+            console.error('[StorePage] Subscribe error:', err);
+            setFeedback({ type: 'canceled', message: err.message });
+            setLoadingSubscription(false);
+        }
+    };
+
+    // Handle portal session for managing existing subscription
+    const handleManageSubscription = async () => {
+        try {
+            const res = await fetch('/api/stripe/portal', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Erro ao abrir portal');
+            }
+
+            window.location.href = data.url;
+        } catch (err) {
+            console.error('[StorePage] Portal error:', err);
+            setFeedback({ type: 'canceled', message: err.message });
+        }
     };
 
     return (
@@ -121,6 +192,31 @@ function StorePage({ user, miningInfo = {} }) {
                 tier={currentTier}
             />
 
+            {/* Payment Feedback Toast */}
+            {feedback && (
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    className={`mb-6 p-4 rounded-2xl border flex items-center gap-3 ${feedback.type === 'success'
+                        ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                        : 'bg-red-500/10 border-red-500/30 text-red-400'
+                        }`}
+                >
+                    {feedback.type === 'success'
+                        ? <LuCheck className="w-5 h-5 flex-shrink-0" />
+                        : <LuX className="w-5 h-5 flex-shrink-0" />
+                    }
+                    <span className="text-sm font-medium">{feedback.message}</span>
+                    <button
+                        onClick={() => setFeedback(null)}
+                        className="ml-auto text-white/40 hover:text-white/80 text-lg leading-none"
+                    >
+                        ×
+                    </button>
+                </motion.div>
+            )}
+
             {/* Referral Code Input */}
             <motion.div
                 initial={{ opacity: 0 }}
@@ -153,7 +249,10 @@ function StorePage({ user, miningInfo = {} }) {
                 <SubscriptionSlider
                     currentTier={currentTier}
                     onSubscribe={handleSubscribe}
+                    onManageSubscription={handleManageSubscription}
                     isLoading={loadingSubscription}
+                    hasDiscount={hasReferralCode && refCodeLocked}
+                    discountPercent={15}
                 />
             </motion.section>
 
@@ -184,6 +283,8 @@ function StorePage({ user, miningInfo = {} }) {
                             onPurchase={() => handlePurchasePackage(pkg.id)}
                             isLoading={loadingPackage === pkg.id}
                             delay={0.1 + index * 0.1}
+                            hasDiscount={hasReferralCode && refCodeLocked}
+                            discountPercent={15}
                         />
                     ))}
                 </div>

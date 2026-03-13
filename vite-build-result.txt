@@ -1,0 +1,144 @@
+﻿[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+node.exe : Found 5 
+warnings while optimizing 
+generated CSS:
+No linha:1 caractere:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (F  
+  ound 5 warning... gen   
+ erated CSS::String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+
+Issue #1:
+[2mÔöé   display: 
+block;[22m
+[2mÔöé   border-radius: 
+50px;[22m
+[2mÔöé[22m   
+background: 
+var(--color-blue-900/30);
+[2mÔöå[22m              
+                     
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   width: 
+40px;[22m
+[2mÔöé   height: 
+40px;[22m
+
+Issue #2:
+[2mÔöé 
+.cta-button:hover:before 
+{[22m
+[2mÔöé   width: 
+100%;[22m
+[2mÔöé[22m   
+background: 
+var(--color-blue-900/200);
+[2mÔöå[22m              
+                     
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé }[22m
+[2mÔöé .cta-button:hover 
+span {[22m
+
+Issue #3:
+[2mÔöé   width: 
+100%;[22m
+[2mÔöé   height: 
+100%;[22m
+[2mÔöé[22m   
+background: 
+linear-gradient(135deg, 
+var(--color-blue-900/200) 
+0%, var(--color-blue-600) 
+100%);
+[2mÔöå[22m              
+                          
+                   
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   z-index: 
+100;[22m
+[2mÔöé   pointer-events: 
+none;[22m
+
+Issue #4:
+[2mÔöé   width: 8px;[22m
+[2mÔöé   height: 
+24px;[22m
+[2mÔöé[22m   
+background: 
+var(--color-blue-900/200);
+[2mÔöå[22m              
+                     
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   border-radius: 
+4px;[22m
+[2mÔöé }[22m
+
+Issue #5:
+[2mÔöé .legal-content 
+li::before {[22m
+[2mÔöé   content: 
+"ÔÇó";[22m
+[2mÔöé[22m   color: 
+var(--color-blue-900/200);
+[2mÔöå[22m              
+                
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   font-weight: 
+bold;[22m
+[2mÔöé   display: 
+inline-block;[22m
+
+[32mÔ£ô[39m 563 modules transformed.
+rendering chunks...
+computing gzip size...
+[2mdist/[22m[32mindex.html                 [39m[1m[2m  1.04 kB[22m[1m[22m[2m Ôöé gzip:   0.62 kB[22m
+[2mdist/[22m[32massets/usa-CF9xdZlt.svg    [39m[1m[2m  4.41 kB[22m[1m[22m[2m Ôöé gzip:   1.26 kB[22m
+[2mdist/[22m[35massets/index-Ct1aP7ez.css  [39m[1m[2m113.94 kB[22m[1m[22m[2m Ôöé gzip:  19.03 kB[22m
+[2mdist/[22m[36massets/index-B7i9wJCd.js   [39m[1m[33m827.45 kB[39m[22m[2m Ôöé gzip: 234.99 kB[22m
+[33m
+(!) Some chunks are 
+larger than 500 kB after 
+minification. Consider:
+- Using dynamic import() 
+to code-split the 
+application
+- Use build.rollupOptions.
+output.manualChunks to 
+improve chunking: https://
+rollupjs.org/configuration
+-options/#output-manualchu
+nks
+- Adjust chunk size limit 
+for this warning via build
+.chunkSizeWarningLimit.[3
+9m
+[32mÔ£ô built in 4.59s[39m

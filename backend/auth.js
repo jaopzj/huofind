@@ -8,8 +8,13 @@ const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback_secret_change_me';
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
+
+if (!JWT_SECRET) {
+    console.error('[Auth] CRITICAL: JWT_SECRET environment variable is not set! Server cannot start securely.');
+    process.exit(1);
+}
 
 /**
  * Generate JWT token for user

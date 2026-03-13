@@ -75,7 +75,7 @@ const PLANS_DATA = [
 /**
  * SubscriptionSlider - Carousel-style subscription plan display
  */
-function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = false }) {
+function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscription, isLoading = false, hasDiscount = false, discountPercent = 15 }) {
     const [activeIndex, setActiveIndex] = useState(2); // Start with Ouro (best) plan
 
     // Tier hierarchy for comparison
@@ -87,6 +87,8 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
     const planTierRank = TIER_RANK[currentPlan.id] || 0;
     const isCurrentUserPlan = currentTier === currentPlan.id;
     const isLowerThanUserPlan = planTierRank < userTierRank;
+
+    const discountedPrice = hasDiscount ? currentPlan.price * (1 - discountPercent / 100) : currentPlan.price;
 
     const goToPrevious = () => {
         setActiveIndex((prev) => (prev === 0 ? PLANS_DATA.length - 1 : prev - 1));
@@ -211,13 +213,38 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                         transition={{ delay: 0.2, duration: 0.3 }}
                                         className="mb-6"
                                     >
-                                        <div className="flex items-baseline gap-1">
-                                            <span className="text-sm font-medium text-gray-400">R$</span>
-                                            <span className="text-5xl font-black text-white">
-                                                {currentPlan.price.toFixed(2).replace('.', ',')}
-                                            </span>
-                                            <span className="text-sm font-medium text-gray-400">/mês</span>
-                                        </div>
+                                        {hasDiscount ? (
+                                            <>
+                                                <div className="flex items-baseline gap-2 mb-1">
+                                                    <span className="text-lg text-gray-500 line-through font-medium">
+                                                        R$ {currentPlan.price.toFixed(2).replace('.', ',')}
+                                                    </span>
+                                                    <span className="text-xs font-bold text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">
+                                                        -{discountPercent}%
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-sm font-medium text-green-400">R$</span>
+                                                    <span className="text-5xl font-black text-green-400">
+                                                        {discountedPrice.toFixed(2).replace('.', ',')}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-400">/1º mês</span>
+                                                </div>
+                                                <p className="text-xs text-green-400/70 mt-1">
+                                                    Desconto de indicação aplicado no primeiro mês
+                                                </p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className="flex items-baseline gap-1">
+                                                    <span className="text-sm font-medium text-gray-400">R$</span>
+                                                    <span className="text-5xl font-black text-white">
+                                                        {currentPlan.price.toFixed(2).replace('.', ',')}
+                                                    </span>
+                                                    <span className="text-sm font-medium text-gray-400">/mês</span>
+                                                </div>
+                                            </>
+                                        )}
                                         <p className="text-xs text-gray-400 mt-1">
                                             {currentPlan.credits} créditos renovados mensalmente
                                         </p>
@@ -231,13 +258,21 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                     transition={{ delay: 0.3, duration: 0.3 }}
                                 >
                                     <motion.button
-                                        whileHover={{ scale: (isCurrentUserPlan || isLowerThanUserPlan) ? 1 : 1.02 }}
-                                        whileTap={{ scale: (isCurrentUserPlan || isLowerThanUserPlan) ? 1 : 0.98 }}
-                                        onClick={() => onSubscribe?.(currentPlan.id)}
-                                        disabled={isLoading || isCurrentUserPlan || isLowerThanUserPlan}
-                                        className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 ${(isCurrentUserPlan || isLowerThanUserPlan)
+                                        whileHover={{ scale: isLowerThanUserPlan ? 1 : 1.02 }}
+                                        whileTap={{ scale: isLowerThanUserPlan ? 1 : 0.98 }}
+                                        onClick={() => {
+                                            if (isCurrentUserPlan && onManageSubscription) {
+                                                onManageSubscription();
+                                            } else {
+                                                onSubscribe?.(currentPlan.id);
+                                            }
+                                        }}
+                                        disabled={isLoading || isLowerThanUserPlan}
+                                        className={`w-full py-4 px-6 rounded-2xl font-bold text-lg transition-all disabled:cursor-not-allowed flex items-center justify-center gap-2 ${isLowerThanUserPlan
                                             ? 'bg-white/5 text-gray-600'
-                                            : 'text-white'
+                                            : isCurrentUserPlan
+                                                ? 'bg-white/5 text-white border border-white/10 hover:bg-white/10'
+                                                : 'text-white'
                                             }`}
                                         style={!(isCurrentUserPlan || isLowerThanUserPlan) ? {
                                             background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
@@ -250,7 +285,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, isLoading = fa
                                                 <span>Processando...</span>
                                             </>
                                         ) : isCurrentUserPlan ? (
-                                            'Plano Atual'
+                                            'Gerenciar Assinatura'
                                         ) : isLowerThanUserPlan ? (
                                             'Você já possui um plano superior'
                                         ) : (

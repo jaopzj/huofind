@@ -1,0 +1,214 @@
+﻿[36mvite v5.4.21 [32mbuilding for production...[36m[39m
+transforming...
+node.exe : Found 5 
+warnings while optimizing 
+generated CSS:
+No linha:1 caractere:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo        
+      : NotSpecified: (F  
+  ound 5 warning... gen   
+ erated CSS::String) [    
+], RemoteException
+    + FullyQualifiedError 
+   Id : NativeCommandErr  
+  or
+ 
+
+Issue #1:
+[2mÔöé   display: 
+block;[22m
+[2mÔöé   border-radius: 
+50px;[22m
+[2mÔöé[22m   
+background: 
+var(--color-blue-900/30);
+[2mÔöå[22m              
+                     
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   width: 
+40px;[22m
+[2mÔöé   height: 
+40px;[22m
+
+Issue #2:
+[2mÔöé 
+.cta-button:hover:before 
+{[22m
+[2mÔöé   width: 
+100%;[22m
+[2mÔöé[22m   
+background: 
+var(--color-blue-900/200);
+[2mÔöå[22m              
+                     
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé }[22m
+[2mÔöé .cta-button:hover 
+span {[22m
+
+Issue #3:
+[2mÔöé   width: 
+100%;[22m
+[2mÔöé   height: 
+100%;[22m
+[2mÔöé[22m   
+background: 
+linear-gradient(135deg, 
+var(--color-blue-900/200) 
+0%, var(--color-blue-600) 
+100%);
+[2mÔöå[22m              
+                          
+                   
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   z-index: 
+100;[22m
+[2mÔöé   pointer-events: 
+none;[22m
+
+Issue #4:
+[2mÔöé   width: 8px;[22m
+[2mÔöé   height: 
+24px;[22m
+[2mÔöé[22m   
+background: 
+var(--color-blue-900/200);
+[2mÔöå[22m              
+                     
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   border-radius: 
+4px;[22m
+[2mÔöé }[22m
+
+Issue #5:
+[2mÔöé .legal-content 
+li::before {[22m
+[2mÔöé   content: 
+"ÔÇó";[22m
+[2mÔöé[22m   color: 
+var(--color-blue-900/200);
+[2mÔöå[22m              
+                
+[33m[2m^--[22m 
+Unexpected token 
+Delim('/')[39m
+[2mÔöå[22m
+[2mÔöé   font-weight: 
+bold;[22m
+[2mÔöé   display: 
+inline-block;[22m
+
+[32mÔ£ô[39m 563 modules transformed.
+[31mx[39m Build failed 
+in 2.45s
+[31merror during build:
+[31msrc/components/YupooS
+earch/YupooSearchPage.jsx 
+(3:147): "LuLoader2" is 
+not exported by "node_modu
+les/react-icons/lu/index.m
+js", imported by "src/comp
+onents/YupooSearch/YupooSe
+archPage.jsx".[31m
+file: [36mD:/xiner/fronte
+nd/src/components/YupooSea
+rch/YupooSearchPage.jsx:3:
+147[31m
+[33m
+1: import { useState, 
+useEffect, useMemo, memo, 
+useCallback, useRef } 
+from 'react';
+2: import { motion, 
+AnimatePresence } from 
+'framer-motion';
+3: import { LuSearch, 
+LuFilter, LuX, 
+LuChevronLeft, 
+LuChevronRight, 
+LuArrowDownUp, LuCheck, 
+LuChevronDown, 
+LuBadgeCheck, LuCamera, 
+LuUpload, LuImage, 
+LuLoader2 ...
+                          
+                          
+                          
+                          
+                          
+                    ^
+4: import WifiLoader from 
+'../WifiLoader';
+5: import { Slider } from 
+'../ui/slider';
+[31m
+    at getRollupError (fil
+e:///D:/xiner/frontend/nod
+e_modules/rollup/dist/es/s
+hared/parseAst.js:401:41)
+    at error (file:///D:/x
+iner/frontend/node_modules
+/rollup/dist/es/shared/par
+seAst.js:397:42)
+    at Module.error (file:
+///D:/xiner/frontend/node_
+modules/rollup/dist/es/sha
+red/node-entry.js:17022:16
+)
+    at 
+Module.traceVariable (file
+:///D:/xiner/frontend/node
+_modules/rollup/dist/es/sh
+ared/node-entry.js:17478:2
+9)
+    at 
+ModuleScope.findVariable (
+file:///D:/xiner/frontend/
+node_modules/rollup/dist/e
+s/shared/node-entry.js:151
+41:39)
+    at FunctionScope.findV
+ariable (file:///D:/xiner/
+frontend/node_modules/roll
+up/dist/es/shared/node-ent
+ry.js:5688:38)
+    at FunctionBodyScope.f
+indVariable (file:///D:/xi
+ner/frontend/node_modules/
+rollup/dist/es/shared/node
+-entry.js:5688:38)
+    at Identifier.bind (fi
+le:///D:/xiner/frontend/no
+de_modules/rollup/dist/es/
+shared/node-entry.js:5462:
+40)
+    at 
+CallExpression.bind (file:
+///D:/xiner/frontend/node_
+modules/rollup/dist/es/sha
+red/node-entry.js:2825:28)
+    at 
+CallExpression.bind (file:
+///D:/xiner/frontend/node_
+modules/rollup/dist/es/sha
+red/node-entry.js:12172:15
+)[39m

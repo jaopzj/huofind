@@ -226,6 +226,7 @@ const BRAND_PATTERNS = [
     { patterns: ['BR🔥IN D🔥AD', 'BRAIN DEAD'], brand: 'Brain Dead' },
     { patterns: ['BROKEN PLANET'], brand: 'Broken Planet' },
     { patterns: ['B🔥L🔥🔥🔥IA🔥A', 'BALENCIAGA'], brand: 'Balenciaga' },
+    { patterns: ['🔥RB🔥RRY'], brand: 'Burberry' },
     { patterns: ['BROOKS BROTHERS'], brand: 'Brooks Brothers' },
     { patterns: ['BIRTH OF ROYAL CHILD'], brand: 'Birth of Royal Child' },
     { patterns: ['B🔥TT🔥🔥A V🔥N🔥TA', 'BOTTEGA VENETA', 'BOTTEGA'], brand: 'Bottega Veneta' },
@@ -246,7 +247,7 @@ const BRAND_PATTERNS = [
     { patterns: ['COLE BUXTON'], brand: 'Cole Buxton' },
     { patterns: ['C🔥S🔥BL🔥🔥C🔥', 'CASABLANCA'], brand: 'Casablanca' },
     { patterns: ['C🔥L🔥IN K🔥E🔥N', 'CALVIN KLEIN', 'CK'], brand: 'Calvin Klein' },
-    { patterns: ['CH🔥OM🔥 HE🔥RTS', 'CHROME HEARTS'], brand: 'Chrome Hearts' },
+    { patterns: ['CH🔥OM🔥 HE🔥RTS', 'CH🔥OM🔥HE🔥RTS', '🔥OM🔥 HE🔥RTS', 'CHROME HEARTS'], brand: 'Chrome Hearts' },
     { patterns: ['C🔥N🔥🔥A G🔥🔥🔥E', 'CANADA GOOSE'], brand: 'Canada Goose' },
 
     // D
@@ -299,7 +300,7 @@ const BRAND_PATTERNS = [
     { patterns: ['HOLLISTER'], brand: 'Hollister' },
     { patterns: ['H🔥R🔥E🔥', 'HERMES', 'HERMÈS'], brand: 'Hermès' },
     { patterns: ['HA🔥🔥🔥S', 'HANES'], brand: 'Hanes' },
-    { patterns: ['H🔥G🔥 B🔥🔥S', 'HUGO BOSS', 'BOSS'], brand: 'Hugo Boss' },
+    { patterns: ['H🔥G🔥 B🔥🔥S', 'H🔥G🔥B🔥🔥S', 'HUGO BOSS', 'BOSS'], brand: 'Hugo Boss' },
     { patterns: ['HELLY HANSEN'], brand: 'Helly Hansen' },
     { patterns: ['H🔥M🔥N MA🔥E', 'HUMAN MADE'], brand: 'Human Made' },
     { patterns: ['HOUSE OF ERRORS'], brand: 'House of Errors' },
@@ -400,6 +401,7 @@ const BRAND_PATTERNS = [
     // S
     { patterns: ['SYNA', 'SYNAWORLD'], brand: 'Syna' },
     { patterns: ['STUSSY', 'STÜSSY'], brand: 'Stussy' },
+    { patterns: ['S/DOUBLE'], brand: 'S/Double' },
     { patterns: ['S🔥C🔥I', 'SACAI'], brand: 'Sacai' },
     { patterns: ['S🔥5D🔥R', 'S5DR'], brand: 'S5DR' },
     { patterns: ['S🔥P🔥E🔥E', 'SUPREME'], brand: 'Supreme' },
@@ -420,7 +422,7 @@ const BRAND_PATTERNS = [
     { patterns: ['TRAVIS SCOTT', 'CACTUS JACK'], brand: 'Travis Scott' },
     { patterns: ['TH🔥M B🔥🔥WE', 'THOM BROWNE'], brand: 'Thom Browne' },
     { patterns: ['T🔥🔥 N🔥🔥F🔥🔥', 'THE NORTH FACE', 'TNF'], brand: 'The North Face' },
-    { patterns: ['T 🔥🔥🔥 H🔥🔥🔥R', 'TOMMY HILFIGER', 'TOMMY'], brand: 'Tommy Hilfiger' },
+    { patterns: ['T 🔥🔥🔥 H🔥🔥🔥R', 'TOMMY HILFIGER', 'TOMMY', 'T🔥🔥🔥 H🔥🔥🔥R', 'T🔥🔥🔥H🔥🔥🔥R'], brand: 'Tommy Hilfiger' },
     { patterns: ['T🔥M🔥🔥🔥L🔥🔥D', 'TIMBERLAND'], brand: 'Timberland' },
     { patterns: ["TH🔥T'S A AW🔥UL L🔥T OF C..", "THAT'S AWFUL"], brand: "That's Awful" },
 
@@ -611,7 +613,8 @@ const SHOE_MODEL_PATTERNS = [
 // Vendedores especializados em tênis (todos produtos são calçados)
 const SHOE_VENDORS = [
     'tianjin-no1.x.yupoo.com',
-    'jmdy.x.yupoo.com'
+    'jmdy.x.yupoo.com',
+    '4urun-1.x.yupoo.com'
 ];
 
 // ============================================
@@ -631,6 +634,7 @@ const BATCH_PATTERNS = [
     'GX',
     '89',
     'PK',
+    'LW]',
     'MAX',
     'MOK',
     'TG',
@@ -712,7 +716,19 @@ const BATCH_PATTERNS = [
     'PK 4.0',
     'BS',
     'Z版',
-    'OK'
+    'OK',
+    'LW',
+    'TG Batch',
+    'TG',
+    'Y3版',
+    'ST',
+    '5A',
+    'KX',
+    'RN',
+    'MX',
+    'KZ',
+    'OG',
+    'DU'
 ];
 
 // ============================================
@@ -734,12 +750,12 @@ const CATEGORY_KEYWORDS = {
         '鞋', '运动鞋', '靴', 'HOT STEP', 'DUNK', 'AIR FORCE', 'AF1', 'AJ1', 'AJ4', 'RETRO'
     ],
     'Camisetas': [
-        'T-SHIRT', 'T-SHIR', 'TSHIRT', 'TEE', 'TEES', 'SHIRT', 'SHIRTS', 'TOP',
+        'T-SHIRT', 'T-SHIT', 'T-SHIR', 'TSHIRT', 'TEE', 'TEES', 'SHIRT', 'SHIRTS', 'TOP',
         'T恤', '衬衫', 'TANK TOP', 'TANKTOP', 'JERSEY', 'POLO'
     ],
     'Moletons': [
         'HOODIE', 'HOODIES', 'SWEATSHIRT', 'SWEAT SHIRT', 'CREWNECK', 'CREW NECK',
-        'SWEATER', 'PULLOVER', 'FLEECE', 'LONG SLEEVED', 'SLEEVDE', 'LONG-SLEEVED', 'LONG SLEEVE', 'LONG-SLEEVE',
+        'SWEATER', 'PULLOVER', 'FLEECE', 'LONG SLEEVED', 'SLEEVDE', 'LONG-SLEEVED', 'LONG SLEEVE', 'LONG-SLEEE',
         '卫衣', '套头', 'HOODED', 'HOOD', 'SUNSCREEN CLOTHING'
     ],
     'Algodão': [
@@ -764,7 +780,10 @@ const CATEGORY_KEYWORDS = {
     ],
     'Acessórios de Cabeça': [
         'HAT', 'HATS', 'CAP', 'CAPS', 'SNAPBACK', 'BASEBALL CAP', 'DAD HAT', 'FITTED CAP',
-        'TRUCKER', '帽子', '棒球帽', '鸭舌帽', 'VISOR'
+        'TRUCKER', '帽子', '棒球帽', '鸭舌帽', 'VISOR', 'HEADGEAR'
+    ],
+    'Óculos': [
+        'SUNGLASSES', 'GLASSES'
     ],
     'Lenços': [
         'SCART', 'SCARTS', 'SCARF', 'SCARFS'
@@ -791,29 +810,46 @@ const CATEGORY_KEYWORDS = {
 
 /**
  * Extrai o preço do título
- * Formatos suportados: 460Y, ￥135, Y460, 135￥, 【460Y】, ¥135
+ * Formatos suportados: 460Y, ￥135, 135￥, 【220Y】, ¥135, ￥~349
+ * Regra: o PRIMEIRO símbolo de moeda encontrado no título define o preço.
+ * Y sozinho só é reconhecido no formato NúmeroY (ex: 220Y, 460Y).
  */
 function extractPrice(title) {
-    // Padrões de preço
     const patterns = [
-        // Prioriza formato "Symbol Number" (ex: ￥518) para evitar falsos positivos com "1:1"
-        /【?[Y￥¥]\s*(\d+(?:\.\d+)?)】?/gi,  // ￥135, Y460, 【￥460】
+        // ￥/¥ seguido de número: ￥135, ¥460, 【￥460】 (inequívoco)
+        /【?[￥¥]\s*(\d+(?:\.\d+)?)】?/gi,
 
-        // Formato "Number Symbol" (ex: 500Y) com proteção contra ":" precedente (ex: ignore 1:1)
-        /(?:^|[^:])【?(\d+(?:\.\d+)?)\s*[Y￥¥]】?/gi,  // 460Y, 460￥, 【460Y】
+        // Número seguido de ￥/¥: 460￥, 135¥ (inequívoco)
+        /(?:^|[^:])【?(\d+(?:\.\d+)?)\s*[￥¥]】?/gi,
 
-        /[Y￥¥]~\s*(\d+(?:\.\d+)?)/gi,       // ￥~66
-        /(\d+(?:\.\d+)?)\s*yuan/gi,          // 135 yuan
+        // ￥/¥ com til: ￥~66, ￥～349 (inequívoco)
+        /[￥¥][~～]\s*(\d+(?:\.\d+)?)/gi,
+
+        // NúmeroY: 220Y, 460Y, 【220Y】 — Y NÃO seguido de letra/dígito
+        // Evita matches parciais em códigos como GY9693
+        /(?:^|[^:])【?(\d+(?:\.\d+)?)\s*Y(?![a-zA-Z\d])】?/gi,
+
+        // Y com til: Y~66, Y～349 — Y NÃO precedido de letra
+        /(?:^|[^a-zA-Z])Y[~～]\s*(\d+(?:\.\d+)?)/gi,
+
+        // yuan textual: 135 yuan
+        /(\d+(?:\.\d+)?)\s*yuan/gi,
     ];
 
+    // Encontra o match mais cedo (primeiro símbolo de moeda no título = preço real)
+    let earliest = null;
+
     for (const pattern of patterns) {
+        pattern.lastIndex = 0;
         const match = pattern.exec(title);
         if (match) {
-            return parseFloat(match[1]); // Grupo 1 é sempre o valor numérico
+            if (earliest === null || match.index < earliest.position) {
+                earliest = { position: match.index, value: parseFloat(match[1]) };
+            }
         }
     }
 
-    return null;
+    return earliest ? earliest.value : null;
 }
 
 /**

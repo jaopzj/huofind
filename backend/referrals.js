@@ -109,42 +109,58 @@ export async function applyReferralBenefits(userId, planPrice, planId = null) {
     const finalPrice = planPrice - discount;
     const now = new Date().toISOString();
 
-    // 1. Mark referral as used and give bonus credits to referred user
-    // Using raw SQL increment since supabase.sql is not available
-    const { data: currentUser } = await supabase
+    // SECURITY (H3): Atomically claim the referral — only succeeds if referral_used_at is still NULL
+    // This prevents two concurrent requests from both consuming the referral
+    const { data: currentUser, error: claimError } = await supabase
         .from('users')
-        .select('credits')
+        .select('credits, credits_package')
         .eq('id', userId)
+        .is('referral_used_at', null)  // Atomic guard — only matches if not yet claimed
         .single();
 
-    const newReferredCredits = (currentUser?.credits || 0) + REFERRED_BONUS_CREDITS;
+    if (claimError || !currentUser) {
+        console.warn(`[Referral] Referral already claimed by another request for user ${userId}`);
+        return { applied: false, discount: 0, finalPrice: planPrice, error: 'Referral já utilizado' };
+    }
 
-    const { error: updateRefError } = await supabase
+    const newReferredCredits = (currentUser?.credits || 0) + REFERRED_BONUS_CREDITS;
+    const newReferredPackage = (currentUser?.credits_package || 0) + REFERRED_BONUS_CREDITS;
+
+    // Atomic update: only succeeds if referral_used_at is STILL null (race protection)
+    const { data: claimResult, error: updateRefError } = await supabase
         .from('users')
         .update({
             referral_used_at: now,
             credits: newReferredCredits,
+            credits_package: newReferredPackage,
             bonus_credits_received: true
         })
-        .eq('id', userId);
+        .eq('id', userId)
+        .is('referral_used_at', null) // Double-guard: atomic claim
+        .select('id')
+        .single();
 
-    if (updateRefError) {
-        console.error('[Referral] Error updating referred user:', updateRefError);
+    if (updateRefError || !claimResult) {
+        console.warn(`[Referral] Atomic claim failed for user ${userId} — likely concurrent request`);
         return { applied: false, discount: 0, finalPrice: planPrice, error: 'Erro ao aplicar benefícios' };
     }
 
-    // 2. Give bonus credits to referrer
+    // 2. Give bonus credits to referrer (also as package credits — permanent)
     const { data: referrerData } = await supabase
         .from('users')
-        .select('credits')
+        .select('credits, credits_package')
         .eq('id', user.referred_by_id)
         .single();
 
     const newReferrerCredits = (referrerData?.credits || 0) + REFERRER_BONUS_CREDITS;
+    const newReferrerPackage = (referrerData?.credits_package || 0) + REFERRER_BONUS_CREDITS;
 
     const { error: updateReferrerError } = await supabase
         .from('users')
-        .update({ credits: newReferrerCredits })
+        .update({
+            credits: newReferrerCredits,
+            credits_package: newReferrerPackage
+        })
         .eq('id', user.referred_by_id);
 
     if (updateReferrerError) {

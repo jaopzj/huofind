@@ -344,8 +344,14 @@ const DeclarationAssistantPage = ({ onNavigate }) => {
                     </h1>
                 </div>
                 <p className="text-white/60 text-sm md:text-base">
-                    IA que ajuda você a declarar suas encomendas de forma otimizada
+                    Assistente que ajuda você a declarar suas encomendas de forma otimizada
                 </p>
+                <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                    <p className="text-blue-300/90 text-xs leading-relaxed flex items-start gap-2">
+                        <span>💡</span>
+                        <span><strong>Dica:</strong> Descreva seus produtos pelo tipo (ex: "tênis", "camiseta", "celular"). Você pode incluir a marca ou modelo — o sistema converte automaticamente para descrições genéricas.</span>
+                    </p>
+                </div>
             </motion.div>
 
             {/* Main Card */}
@@ -607,7 +613,7 @@ const DeclarationAssistantPage = ({ onNavigate }) => {
                         Como funciona?
                     </h3>
                     <p className="text-white/60 text-xs leading-relaxed">
-                        Nossa IA analisa seus produtos e sugere descrições genéricas em inglês
+                        Nosso sistema analisa seus produtos e sugere descrições genéricas em inglês
                         com valores otimizados em dólar para minimizar taxas de importação.
                     </p>
                 </motion.div>
@@ -624,7 +630,7 @@ const DeclarationAssistantPage = ({ onNavigate }) => {
                     </h3>
                     <p className="text-white/60 text-xs leading-relaxed">
                         Adicione cada item separadamente com a quantidade correta.
-                        A IA vai gerar descrições genéricas e valores baixos automaticamente.
+                        O sistema vai gerar descrições genéricas e valores baixos automaticamente.
                     </p>
                 </motion.div>
             </div>

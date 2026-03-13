@@ -12,7 +12,9 @@ function CreditPackageCard({
     badgeType = 'popular', // 'popular' | 'best'
     onPurchase,
     isLoading = false,
-    delay = 0
+    delay = 0,
+    hasDiscount = false,
+    discountPercent = 15
 }) {
     const getBadgeStyles = () => {
         if (badgeType === 'best') {
@@ -30,6 +32,8 @@ function CreditPackageCard({
     };
 
     const badgeStyles = badge ? getBadgeStyles() : null;
+    const discountedPrice = hasDiscount ? price * (1 - discountPercent / 100) : price;
+    const discountedPerCredit = hasDiscount ? discountedPrice / credits : pricePerCredit;
 
     return (
         <motion.div
@@ -76,11 +80,25 @@ function CreditPackageCard({
 
             {/* Price */}
             <div className="text-center mb-5">
-                <p className="text-2xl font-bold text-white">
-                    R$ {price.toFixed(2).replace('.', ',')}
-                </p>
+                {hasDiscount ? (
+                    <>
+                        <p className="text-sm text-gray-500 line-through mb-1">
+                            R$ {price.toFixed(2).replace('.', ',')}
+                        </p>
+                        <p className="text-2xl font-bold text-green-400">
+                            R$ {discountedPrice.toFixed(2).replace('.', ',')}
+                        </p>
+                        <p className="text-xs text-green-400/70 mt-1">
+                            -{discountPercent}% com indicação
+                        </p>
+                    </>
+                ) : (
+                    <p className="text-2xl font-bold text-white">
+                        R$ {price.toFixed(2).replace('.', ',')}
+                    </p>
+                )}
                 <p className="text-xs text-gray-400 mt-1">
-                    R$ {pricePerCredit.toFixed(2).replace('.', ',')} por crédito
+                    R$ {discountedPerCredit.toFixed(2).replace('.', ',')} por crédito
                 </p>
             </div>
 

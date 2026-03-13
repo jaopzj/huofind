@@ -9,6 +9,7 @@ import AuthCard from './components/AuthCard';
 import LegalPage from './pages/LegalPage';
 import Sidebar from './components/Sidebar';
 import { HomePage } from './components/Home';
+import { LuCheck, LuX } from 'react-icons/lu';
 
 import SavedSellersPanel from './components/SavedSellersPanel';
 import { SavedProductsPage } from './components/SavedProducts';
@@ -73,6 +74,7 @@ function App() {
     // Estado para créditos de mineração
     const [miningInfo, setMiningInfo] = useState({ credits: 0, maxCredits: 3, maxProducts: 30 });
     const [showLimitError, setShowLimitError] = useState(false);
+    const [paymentFeedback, setPaymentFeedback] = useState(null); // Global payment feedback
 
     // Virtual Paging
     const [activePage, setActivePage] = useState('home');
@@ -210,36 +212,99 @@ function App() {
     }, []);
 
     // Fetch mining status when user is authenticated
-    useEffect(() => {
-        const fetchMiningStatus = async () => {
-            if (!isAuthenticated) {
-                setMiningInfo(null);
-                return;
-            }
+    const fetchMiningStatus = useCallback(async () => {
+        if (!isAuthenticated) {
+            setMiningInfo(null);
+            return;
+        }
 
-            try {
-                const token = localStorage.getItem('accessToken');
-                const response = await fetch('/api/user/mining-status', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch('/api/user/mining-status', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.ok) {
+                const data = await response.json();
+                setMiningInfo({
+                    tier: data.tier?.name || 'guest',
+                    credits: data.credits || 0,
+                    maxCredits: data.maxCredits || 3,
+                    maxProducts: data.maxProducts || 30,
+                    nextRenewal: data.nextRenewal,
+                    subscriptionEnd: data.subscriptionEnd || null,
                 });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setMiningInfo({
-                        tier: data.tier?.name || 'guest',
-                        credits: data.credits || 0,
-                        maxCredits: data.maxCredits || 3,
-                        maxProducts: data.maxProducts || 30,
-                        nextRenewal: data.nextRenewal
-                    });
-                }
-            } catch (err) {
-                console.error('[App] Error fetching mining status:', err);
             }
-        };
-
-        fetchMiningStatus();
+        } catch (err) {
+            console.error('[App] Error fetching mining status:', err);
+        }
     }, [isAuthenticated]);
+
+    useEffect(() => {
+        fetchMiningStatus();
+    }, [fetchMiningStatus]);
+
+    // Listen for 'credits-updated' event (fired after payment verification)
+    useEffect(() => {
+        const handleCreditsUpdated = () => {
+            console.log('[App] Credits updated event — refreshing mining status');
+            fetchMiningStatus();
+        };
+        window.addEventListener('credits-updated', handleCreditsUpdated);
+        return () => window.removeEventListener('credits-updated', handleCreditsUpdated);
+    }, [fetchMiningStatus]);
+
+    // ===== STRIPE PAYMENT VERIFICATION =====
+    // Verifies and fulfills Stripe Checkout Sessions after redirect
+    // Runs at the App root level so it works from ANY page
+    useEffect(() => {
+        const params = new URLSearchParams(window.location.search);
+        const sessionId = params.get('session_id');
+        const token = localStorage.getItem('accessToken');
+
+        if (params.get('success') === 'true' && sessionId && token) {
+            // Clean URL immediately to prevent re-processing on refresh
+            window.history.replaceState({}, '', window.location.pathname);
+
+            const verifySession = async () => {
+                try {
+                    const res = await fetch('/api/stripe/verify-session', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ sessionId })
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        setPaymentFeedback({ type: 'success', message: 'Pagamento realizado com sucesso! Seus créditos foram atualizados.' });
+                        // Refresh credits immediately
+                        fetchMiningStatus();
+                    } else {
+                        setPaymentFeedback({ type: 'error', message: data.error || 'Erro ao verificar pagamento' });
+                    }
+                } catch (err) {
+                    console.error('[App] Verify session error:', err);
+                    setPaymentFeedback({ type: 'success', message: 'Pagamento realizado! Recarregue a página para ver seus créditos.' });
+                }
+            };
+            verifySession();
+        } else if (params.get('canceled') === 'true') {
+            window.history.replaceState({}, '', window.location.pathname);
+            setPaymentFeedback({ type: 'canceled', message: 'Pagamento cancelado. Nenhuma cobrança foi feita.' });
+        }
+    }, []);
+
+    // Auto-dismiss payment feedback after 8 seconds
+    useEffect(() => {
+        if (paymentFeedback) {
+            const timer = setTimeout(() => setPaymentFeedback(null), 8000);
+            return () => clearTimeout(timer);
+        }
+    }, [paymentFeedback]);
 
     // Busca taxa de câmbio quando ativar modo BRL
     useEffect(() => {
@@ -1227,6 +1292,46 @@ function App() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 10l7-7m0 0l7 7m-7-7v18" />
                         </svg>
                     </motion.button>
+                )}
+            </AnimatePresence>
+
+            {/* Global Payment Feedback Toast */}
+            <AnimatePresence>
+                {paymentFeedback && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50, scale: 0.9 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.9 }}
+                        className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-3 px-6 py-4 rounded-2xl shadow-2xl backdrop-blur-xl border border-white/10"
+                        style={{
+                            background: paymentFeedback.type === 'success'
+                                ? 'rgba(16, 185, 129, 0.9)' // Green
+                                : paymentFeedback.type === 'canceled'
+                                    ? 'rgba(107, 114, 128, 0.9)' // Gray
+                                    : 'rgba(239, 68, 68, 0.9)'    // Red
+                        }}
+                    >
+                        {paymentFeedback.type === 'success' ? (
+                            <LuCheck className="w-6 h-6 text-white" />
+                        ) : (
+                            <LuX className="w-6 h-6 text-white" />
+                        )}
+                        <div className="flex flex-col">
+                            <p className="text-white font-bold leading-tight">
+                                {paymentFeedback.type === 'success' ? 'Sucesso!' :
+                                    paymentFeedback.type === 'canceled' ? 'Cancelado' : 'Erro'}
+                            </p>
+                            <p className="text-white/90 text-sm">
+                                {paymentFeedback.message}
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setPaymentFeedback(null)}
+                            className="ml-4 p-1 hover:bg-white/10 rounded-lg transition-colors"
+                        >
+                            <LuX className="w-5 h-5 text-white" />
+                        </button>
+                    </motion.div>
                 )}
             </AnimatePresence>
         </div>

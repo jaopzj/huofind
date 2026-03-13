@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, forwardRef, useCallback, useImperativeHandle, useRef } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
@@ -1292,6 +1292,16 @@ const SidebarContent = ({
                     <ul className="space-y-1">
                         <li>
                             <NavItem
+                                icon={<ProfileIcon ref={profileIconRef} isActive={activePage === 'profile'} />}
+                                label="Perfil"
+                                isActive={activePage === 'profile'}
+                                onClick={() => onNavClick('profile')}
+                                onMouseEnter={() => profileIconRef.current?.startAnimation()}
+                                onMouseLeave={() => profileIconRef.current?.stopAnimation()}
+                            />
+                        </li>
+                        <li>
+                            <NavItem
                                 icon={<HomeIcon ref={homeIconRef} isActive={activePage === 'home'} />}
                                 label="Início"
                                 isActive={activePage === 'home'}
@@ -1359,16 +1369,6 @@ const SidebarContent = ({
                         </li>
                         <li>
                             <NavItem
-                                icon={<ProfileIcon ref={profileIconRef} isActive={activePage === 'profile'} />}
-                                label="Perfil"
-                                isActive={activePage === 'profile'}
-                                onClick={() => onNavClick('profile')}
-                                onMouseEnter={() => profileIconRef.current?.startAnimation()}
-                                onMouseLeave={() => profileIconRef.current?.stopAnimation()}
-                            />
-                        </li>
-                        <li>
-                            <NavItem
                                 icon={<StoreIcon ref={storeIconRef} isActive={activePage === 'store'} />}
                                 label="Loja"
                                 isActive={activePage === 'store'}
@@ -1398,7 +1398,7 @@ const SidebarContent = ({
                         <li>
                             <NavItem
                                 icon={<BotIcon ref={aiIconRef} isActive={activePage === 'declaration-assistant'} />}
-                                label="IA Declaração"
+                                label="Assis. Declaração"
                                 isActive={activePage === 'declaration-assistant'}
                                 onClick={() => onNavClick('declaration-assistant')}
                                 onMouseEnter={() => aiIconRef.current?.startAnimation()}

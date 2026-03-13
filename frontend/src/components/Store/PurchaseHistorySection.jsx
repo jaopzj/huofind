@@ -1,40 +1,43 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LuChevronDown, LuPackage, LuCrown, LuCreditCard, LuCheck, LuX, LuClock } from 'react-icons/lu';
-
-// Mock data for now - will be replaced with API data
-const MOCK_HISTORY = [
-    {
-        id: 1,
-        type: 'package',
-        description: '150 Créditos',
-        amount: 24.90,
-        status: 'completed',
-        date: '2026-01-20T14:30:00'
-    },
-    {
-        id: 2,
-        type: 'subscription',
-        description: 'Assinatura Escavador',
-        amount: 39.90,
-        status: 'completed',
-        date: '2026-01-15T10:00:00'
-    },
-    {
-        id: 3,
-        type: 'package',
-        description: '50 Créditos',
-        amount: 9.90,
-        status: 'pending',
-        date: '2026-01-10T18:45:00'
-    }
-];
+import { LuChevronDown, LuPackage, LuCrown, LuCreditCard, LuCheck, LuX, LuClock, LuRefreshCw } from 'react-icons/lu';
 
 /**
- * PurchaseHistorySection - Collapsible section showing purchase history
+ * PurchaseHistorySection - Collapsible section showing real purchase history from API
  */
-function PurchaseHistorySection({ purchases = MOCK_HISTORY }) {
+function PurchaseHistorySection() {
     const [isOpen, setIsOpen] = useState(false);
+    const [purchases, setPurchases] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const [hasFetched, setHasFetched] = useState(false);
+
+    const token = localStorage.getItem('accessToken');
+
+    // Fetch when opened for the first time
+    useEffect(() => {
+        if (isOpen && !hasFetched) {
+            fetchHistory();
+        }
+    }, [isOpen]);
+
+    const fetchHistory = async () => {
+        if (!token) return;
+        setIsLoading(true);
+        try {
+            const res = await fetch('/api/purchase-history', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setPurchases(data.purchases || []);
+            }
+        } catch (err) {
+            console.error('[PurchaseHistory] Error:', err);
+        } finally {
+            setIsLoading(false);
+            setHasFetched(true);
+        }
+    };
 
     const getStatusConfig = (status) => {
         switch (status) {
@@ -44,13 +47,27 @@ function PurchaseHistorySection({ purchases = MOCK_HISTORY }) {
                 return { icon: LuClock, color: '#fbbf24', bg: 'rgba(251, 191, 36, 0.1)', label: 'Pendente' };
             case 'failed':
                 return { icon: LuX, color: '#f87171', bg: 'rgba(248, 113, 113, 0.1)', label: 'Falhou' };
+            case 'refunded':
+                return { icon: LuRefreshCw, color: '#60a5fa', bg: 'rgba(96, 165, 250, 0.1)', label: 'Reembolsado' };
             default:
                 return { icon: LuClock, color: '#9ca3af', bg: 'rgba(156, 163, 175, 0.1)', label: 'Desconhecido' };
         }
     };
 
     const getTypeIcon = (type) => {
-        return type === 'subscription' ? LuCrown : LuPackage;
+        return (type === 'subscription' || type === 'renewal') ? LuCrown : LuPackage;
+    };
+
+    const getDescription = (purchase) => {
+        if (purchase.type === 'credits') {
+            return `${purchase.credits_added || '?'} Créditos`;
+        } else if (purchase.type === 'subscription') {
+            const planNames = { bronze: 'Explorador', prata: 'Escavador', ouro: 'Minerador' };
+            return `Assinatura ${planNames[purchase.plan_id] || purchase.plan_id}`;
+        } else if (purchase.type === 'renewal') {
+            return `Renovação mensal (${purchase.credits_added} créditos)`;
+        }
+        return purchase.type;
     };
 
     const formatDate = (dateStr) => {
@@ -82,7 +99,11 @@ function PurchaseHistorySection({ purchases = MOCK_HISTORY }) {
                     </div>
                     <div className="text-left">
                         <p className="font-bold text-white">Histórico de Compras</p>
-                        <p className="text-xs text-gray-400">{purchases.length} transações</p>
+                        <p className="text-xs text-gray-400">
+                            {hasFetched
+                                ? `${purchases.length} transaç${purchases.length === 1 ? 'ão' : 'ões'}`
+                                : 'Clique para ver'}
+                        </p>
                     </div>
                 </div>
 
@@ -105,7 +126,13 @@ function PurchaseHistorySection({ purchases = MOCK_HISTORY }) {
                         className="overflow-hidden"
                     >
                         <div className="border-t border-white/5">
-                            {purchases.length === 0 ? (
+                            {isLoading ? (
+                                /* Loading State */
+                                <div className="py-12 text-center">
+                                    <div className="w-8 h-8 mx-auto mb-3 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                    <p className="text-gray-400 text-sm">Carregando histórico...</p>
+                                </div>
+                            ) : purchases.length === 0 ? (
                                 /* Empty State */
                                 <div className="py-12 text-center">
                                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-white/5 flex items-center justify-center">
@@ -134,7 +161,7 @@ function PurchaseHistorySection({ purchases = MOCK_HISTORY }) {
                                                     <div
                                                         className="w-10 h-10 rounded-xl flex items-center justify-center"
                                                         style={{
-                                                            background: purchase.type === 'subscription'
+                                                            background: (purchase.type === 'subscription' || purchase.type === 'renewal')
                                                                 ? 'rgba(251, 191, 36, 0.1)'
                                                                 : 'rgba(59, 130, 246, 0.1)'
                                                         }}
@@ -142,19 +169,19 @@ function PurchaseHistorySection({ purchases = MOCK_HISTORY }) {
                                                         <TypeIcon
                                                             className="w-5 h-5"
                                                             style={{
-                                                                color: purchase.type === 'subscription' ? '#fbbf24' : '#3B82F6'
+                                                                color: (purchase.type === 'subscription' || purchase.type === 'renewal') ? '#fbbf24' : '#3B82F6'
                                                             }}
                                                         />
                                                     </div>
                                                     <div>
-                                                        <p className="font-semibold text-white text-sm">{purchase.description}</p>
-                                                        <p className="text-xs text-gray-500">{formatDate(purchase.date)}</p>
+                                                        <p className="font-semibold text-white text-sm">{getDescription(purchase)}</p>
+                                                        <p className="text-xs text-gray-500">{formatDate(purchase.created_at)}</p>
                                                     </div>
                                                 </div>
 
                                                 <div className="flex items-center gap-3">
                                                     <p className="font-bold text-white">
-                                                        R$ {purchase.amount.toFixed(2).replace('.', ',')}
+                                                        R$ {(purchase.amount_brl || 0).toFixed(2).replace('.', ',')}
                                                     </p>
                                                     <div
                                                         className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold"

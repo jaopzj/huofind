@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo, memo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { LuSearch, LuFilter, LuX, LuChevronLeft, LuChevronRight, LuArrowDownUp, LuCheck, LuChevronDown, LuBadgeCheck } from 'react-icons/lu';
+import { LuSearch, LuFilter, LuX, LuChevronLeft, LuChevronRight, LuArrowDownUp, LuCheck, LuChevronDown, LuBadgeCheck, LuCamera, LuUpload, LuImage, LuLoaderCircle } from 'react-icons/lu';
 import WifiLoader from '../WifiLoader';
 import { Slider } from '../ui/slider';
 import SaveBookmarkButton from '../SaveBookmarkButton';
 import UpgradeModal from '../UpgradeModal';
 import { isRecommendedBatch, normalizeBatchMap } from '../../utils/batchValidator';
-import batchValidatorData from '../../../public/data/batch-validator.json';
+import batchValidatorData from '../../data/batch-validator.json';
 import './BatchBadge.css';
 
 
@@ -16,6 +16,12 @@ const SORT_OPTIONS = [
     { id: 'price-desc', label: 'Maior Preço' },
     { id: 'alpha-asc', label: 'A-Z' },
 ];
+
+const VENDOR_DISPLAY_NAMES = {
+    'tianjin-no1': 'JMDY',
+    'scorpio-reps': 'Taurus-reps',
+};
+const getVendorDisplayName = (name) => VENDOR_DISPLAY_NAMES[name] || name;
 
 export default function YupooSearchPage({
     showBRL = false,
@@ -27,6 +33,9 @@ export default function YupooSearchPage({
 }) {
     // State for data
     const [allProducts, setAllProducts] = useState([]);
+    useEffect(() => {
+        console.log('[YupooSearch] allProducts updated, total count:', allProducts.length);
+    }, [allProducts]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
@@ -40,7 +49,16 @@ export default function YupooSearchPage({
     const [selectedBrands, setSelectedBrands] = useState([]);
     const [selectedBatches, setSelectedBatches] = useState([]);
     const [selectedModels, setSelectedModels] = useState([]);
+    const [selectedVendors, setSelectedVendors] = useState([]);
     const [isShoesExpanded, setIsShoesExpanded] = useState(false);
+
+    // Image Search State
+    const [isImageSearchOpen, setIsImageSearchOpen] = useState(false);
+    const [imageSearchLoading, setImageSearchLoading] = useState(false);
+    const [imageSearchPreview, setImageSearchPreview] = useState(null);
+    const [imageSearchResults, setImageSearchResults] = useState(null); // { results, totalMatches, duration }
+    const [isDragging, setIsDragging] = useState(false);
+    const imageInputRef = useRef(null);
 
     // Price & Sort State
     const [priceRange, setPriceRange] = useState([0, 2000]); // [min, max]
@@ -122,12 +140,115 @@ export default function YupooSearchPage({
         }
     }, []);
 
-    // Reset pagination when filters change
+    // Image search handler
+    const handleImageSearch = useCallback(async (file) => {
+        if (!file || !file.type.startsWith('image/')) return;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => setImageSearchPreview(e.target.result);
+        reader.readAsDataURL(file);
+
+        setImageSearchLoading(true);
+
+        try {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            const res = await fetch('/api/yupoo/image-search', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Erro na busca');
+            }
+
+            if (!data.results || data.results.length === 0) {
+                setImageSearchResults({ products: [], totalMatches: 0, duration: data.duration });
+                setIsImageSearchOpen(false);
+                return;
+            }
+
+            // High-reliability URL normalization
+            const norm = (u) => {
+                if (!u) return '';
+                try {
+                    return u.toLowerCase()
+                        .replace(/^https?:\/\//, '')
+                        .replace(/^www\./, '')
+                        .split('?')[0]
+                        .replace(/\/$/, '')
+                        .trim();
+                } catch (e) {
+                    return u.toLowerCase().trim();
+                }
+            };
+
+            // Map results to normalized URLs for lookup
+            const resultScores = new Map();
+            data.results.forEach(r => {
+                resultScores.set(norm(r.product_url), r.similarity);
+            });
+
+            // Map to local products
+            const matchedProducts = allProducts
+                .filter(p => resultScores.has(norm(p.product_url)))
+                .map(p => ({
+                    ...p,
+                    _similarity: resultScores.get(norm(p.product_url))
+                }))
+                .sort((a, b) => b._similarity - a._similarity);
+
+            setImageSearchResults({
+                products: matchedProducts,
+                totalMatches: data.results.length,
+                duration: data.duration
+            });
+
+            // Success logic
+            setIsImageSearchOpen(false);
+            setCurrentPage(1);
+            setKeyword(''); // Clear text search
+
+        } catch (err) {
+            console.error('Image search error:', err);
+            alert('Erro ao buscar por imagem: ' + err.message);
+        } finally {
+            setImageSearchLoading(false);
+        }
+    }, [allProducts]);
+
+    // Handle paste from clipboard
+    useEffect(() => {
+        const handlePaste = (e) => {
+            if (!isImageSearchOpen) return;
+            const items = e.clipboardData?.items;
+            if (!items) return;
+            for (const item of items) {
+                if (item.type.startsWith('image/')) {
+                    const file = item.getAsFile();
+                    if (file) handleImageSearch(file);
+                    break;
+                }
+            }
+        };
+        document.addEventListener('paste', handlePaste);
+        return () => document.removeEventListener('paste', handlePaste);
+    }, [isImageSearchOpen, handleImageSearch]);
+
+    const clearImageSearch = useCallback(() => {
+        setImageSearchResults(null);
+        setImageSearchPreview(null);
+    }, []);
+
     // Reset pagination when filters change
     useEffect(() => {
         setCurrentPage(1);
         document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
-    }, [debouncedKeyword, selectedCategories, selectedBrands, selectedBatches, selectedModels, priceRange, sortBy, itemsPerPage]);
+    }, [debouncedKeyword, selectedCategories, selectedBrands, selectedBatches, selectedModels, selectedVendors, priceRange, sortBy, itemsPerPage]);
 
     // Scroll to top when page changes
     useEffect(() => {
@@ -187,11 +308,12 @@ export default function YupooSearchPage({
     }, []);
 
     // Derived state for filters (memoized to avoid recalculation)
-    const { categories, brands, batches, models } = useMemo(() => {
+    const { categories, brands, batches, models, vendors } = useMemo(() => {
         const catCount = {};
         const brandCount = {};
         const batchCount = {};
         const modelCount = {};
+        const vendorCount = {};
 
         allProducts.forEach(p => {
             if (p.categoria) {
@@ -206,6 +328,9 @@ export default function YupooSearchPage({
             }
             if (p.modelo && p.categoria === 'Calçados') {
                 modelCount[p.modelo] = (modelCount[p.modelo] || 0) + 1;
+            }
+            if (p.vendedor) {
+                vendorCount[p.vendedor] = (vendorCount[p.vendedor] || 0) + 1;
             }
         });
 
@@ -225,13 +350,20 @@ export default function YupooSearchPage({
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
 
-        return { categories: sortedCategories, brands: sortedBrands, batches: sortedBatches, models: sortedModels };
+        const sortedVendors = Object.entries(vendorCount)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+
+        return { categories: sortedCategories, brands: sortedBrands, batches: sortedBatches, models: sortedModels, vendors: sortedVendors };
     }, [allProducts]);
 
     // Filter Logic (memoized)
     const filteredProducts = useMemo(() => {
+        // Source: if image search is active, use its results as base, otherwise use allProducts
+        let sourcePool = imageSearchResults ? imageSearchResults.products : allProducts;
+
         // 1. Filter
-        let result = allProducts.filter(product => {
+        let result = sourcePool.filter(product => {
             // Keyword match
             if (debouncedKeyword) {
                 const lowerKw = debouncedKeyword.toLowerCase();
@@ -241,33 +373,19 @@ export default function YupooSearchPage({
                 if (!matchTitle && !matchBrand && !matchModel) return false;
             }
 
-            // Category match
-            if (selectedCategories.length > 0) {
-                if (!selectedCategories.includes(product.categoria)) return false;
-            }
-
-            // Brand match
-            if (selectedBrands.length > 0) {
-                if (!selectedBrands.includes(product.marca)) return false;
-            }
-
-            // Model match
-            if (selectedModels.length > 0) {
-                if (!selectedModels.includes(product.modelo)) return false;
-            }
-
-            // Batch match (only for Calçados)
+            // Category/Brand/Batch/Model matches...
+            if (selectedCategories.length > 0 && !selectedCategories.includes(product.categoria)) return false;
+            if (selectedBrands.length > 0 && !selectedBrands.includes(product.marca)) return false;
+            if (selectedModels.length > 0 && !selectedModels.includes(product.modelo)) return false;
             if (selectedBatches.length > 0) {
-                if (!product.batch) return false;
-                if (!selectedBatches.includes(product.batch)) return false;
+                if (!product.batch || !selectedBatches.includes(product.batch)) return false;
             }
+            if (selectedVendors.length > 0 && !selectedVendors.includes(product.vendedor)) return false;
 
             // Price Range
             if (product.preco > 0) {
                 if (product.preco < priceRange[0] || product.preco > priceRange[1]) return false;
-            } else {
-                if (priceRange[0] > 0) return false;
-            }
+            } else if (priceRange[0] > 0) return false;
 
             return true;
         });
@@ -275,25 +393,15 @@ export default function YupooSearchPage({
         // 2. Sort
         if (sortBy !== 'default') {
             result.sort((a, b) => {
-                if (sortBy === 'price-asc') {
-                    const pA = a.preco || Infinity;
-                    const pB = b.preco || Infinity;
-                    return pA - pB;
-                }
-                if (sortBy === 'price-desc') {
-                    const pA = a.preco || 0;
-                    const pB = b.preco || 0;
-                    return pB - pA;
-                }
-                if (sortBy === 'alpha-asc') {
-                    return a.titulo.localeCompare(b.titulo);
-                }
+                if (sortBy === 'price-asc') return (a.preco || Infinity) - (b.preco || Infinity);
+                if (sortBy === 'price-desc') return (b.preco || 0) - (a.preco || 0);
+                if (sortBy === 'alpha-asc') return a.titulo.localeCompare(b.titulo);
                 return 0;
             });
         }
 
         return result;
-    }, [allProducts, debouncedKeyword, selectedCategories, selectedBrands, selectedBatches, selectedModels, priceRange, sortBy]);
+    }, [allProducts, debouncedKeyword, selectedCategories, selectedBrands, selectedBatches, selectedModels, selectedVendors, priceRange, sortBy, imageSearchResults]);
 
     // Pagination Calculation
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
@@ -326,6 +434,12 @@ export default function YupooSearchPage({
     const toggleModel = useCallback((model) => {
         setSelectedModels(prev =>
             prev.includes(model) ? prev.filter(m => m !== model) : [...prev, model]
+        );
+    }, []);
+
+    const toggleVendor = useCallback((vendor) => {
+        setSelectedVendors(prev =>
+            prev.includes(vendor) ? prev.filter(v => v !== vendor) : [...prev, vendor]
         );
     }, []);
 
@@ -366,6 +480,29 @@ export default function YupooSearchPage({
                             Filtros
                         </h3>
                     </div>
+
+                    {/* Vendors */}
+                    {vendors.length > 1 && (
+                        <div className="mb-6">
+                            <div className="flex items-center justify-between mb-3">
+                                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Vendedores</h4>
+                                {selectedVendors.length > 0 && (
+                                    <button onClick={() => setSelectedVendors([])} className="text-[10px] text-blue-400 font-bold hover:underline">Limpar</button>
+                                )}
+                            </div>
+                            <div className="space-y-2 max-h-48 overflow-y-auto custom-scrollbar pr-2">
+                                {vendors.map(vendor => (
+                                    <FilterItem
+                                        key={vendor.name}
+                                        name={getVendorDisplayName(vendor.name)}
+                                        count={vendor.count}
+                                        isSelected={selectedVendors.includes(vendor.name)}
+                                        onToggle={() => toggleVendor(vendor.name)}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+                    )}
 
                     {/* Categories */}
                     <div className="mb-6">
@@ -473,18 +610,27 @@ export default function YupooSearchPage({
                                     <input
                                         type="text"
                                         placeholder="Buscar produto, marca ou modelo..."
-                                        className="block w-full pl-10 pr-3 py-2.5 border border-white/10 rounded-xl leading-5 bg-white/5 text-white placeholder-gray-500 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                        className="block w-full pl-10 pr-12 py-2.5 border border-white/10 rounded-xl leading-5 bg-white/5 text-white placeholder-gray-500 focus:outline-none focus:bg-white/10 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                                         value={keyword}
                                         onChange={(e) => setKeyword(e.target.value)}
                                     />
-                                    {keyword && (
+                                    <div className="absolute inset-y-0 right-0 flex items-center gap-1 pr-2">
+                                        {keyword && (
+                                            <button
+                                                onClick={() => setKeyword('')}
+                                                className="p-1 text-gray-500 hover:text-white transition-colors"
+                                            >
+                                                <LuX size={16} />
+                                            </button>
+                                        )}
                                         <button
-                                            onClick={() => setKeyword('')}
-                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-white"
+                                            onClick={() => setIsImageSearchOpen(true)}
+                                            className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200"
+                                            title="Buscar por imagem"
                                         >
-                                            <LuX size={16} />
+                                            <LuCamera size={18} />
                                         </button>
-                                    )}
+                                    </div>
                                 </div>
 
                                 {/* Disclaimer */}
@@ -585,23 +731,62 @@ export default function YupooSearchPage({
 
                     {/* Product Data Content */}
                     <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-transparent">
-                        {visibleProducts.length === 0 ? (
+
+                        {/* Image Search Active Banner */}
+                        {imageSearchResults && (
+                            <div className="mb-6 flex items-center gap-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/20">
+                                {imageSearchPreview && (
+                                    <img
+                                        src={imageSearchPreview}
+                                        alt="Busca"
+                                        className="w-14 h-14 rounded-lg object-cover border-2 border-blue-500/30 flex-shrink-0"
+                                    />
+                                )}
+                                <div className="flex-1 min-w-0">
+                                    <p className="text-sm font-semibold text-blue-400">
+                                        Busca por imagem — {imageSearchResults.products.length} resultado{imageSearchResults.products.length !== 1 ? 's' : ''}
+                                    </p>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        Encontrado em {imageSearchResults.duration}ms
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={clearImageSearch}
+                                    className="flex-shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                                >
+                                    Limpar
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Decide what to show: image search results or filtered results */}
+                        {filteredProducts.length === 0 ? (
                             <div className="flex flex-col items-center justify-center h-64 text-center">
                                 <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4 text-gray-600">
-                                    <LuSearch size={32} />
+                                    {imageSearchResults ? <LuImage size={32} /> : <LuSearch size={32} />}
                                 </div>
-                                <h3 className="text-lg font-medium text-white">Nenhum produto encontrado</h3>
+                                <h3 className="text-lg font-medium text-white">
+                                    {imageSearchResults ? 'Nenhum produto similar encontrado' : 'Nenhum produto encontrado'}
+                                </h3>
+                                {imageSearchResults ? (
+                                    <p className="text-sm text-gray-400 mt-1">Tente com outra imagem ou limpe a busca</p>
+                                ) : null}
                                 <button
                                     onClick={() => {
-                                        setKeyword('');
-                                        setSelectedCategories([]);
-                                        setSelectedBrands([]);
-                                        setSelectedBatches([]);
-                                        setSelectedModels([]);
+                                        if (imageSearchResults) {
+                                            clearImageSearch();
+                                        } else {
+                                            setKeyword('');
+                                            setSelectedCategories([]);
+                                            setSelectedBrands([]);
+                                            setSelectedBatches([]);
+                                            setSelectedModels([]);
+                                            setSelectedVendors([]);
+                                        }
                                     }}
                                     className="mt-4 text-blue-500 font-medium hover:underline"
                                 >
-                                    Limpar filtros
+                                    {imageSearchResults ? 'Voltar ao catálogo' : 'Limpar filtros'}
                                 </button>
                             </div>
                         ) : (
@@ -625,6 +810,7 @@ export default function YupooSearchPage({
                                             isSaved={savedProductUrls.includes(product.product_url)}
                                             onSaveToggle={onSaveToggle}
                                             batchMap={normalizedBatchMap}
+                                            similarity={product._similarity}
                                         />
                                     ))}
                                 </div>
@@ -642,6 +828,134 @@ export default function YupooSearchPage({
                     </div>
                 </main>
             </div>
+
+            {/* Image Search Modal */}
+            <AnimatePresence>
+                {isImageSearchOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+                        onClick={() => !imageSearchLoading && setIsImageSearchOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="relative w-full max-w-md bg-[#111827] rounded-2xl border border-white/10 shadow-2xl overflow-hidden"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between p-5 border-b border-white/10">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-xl bg-blue-500/15 flex items-center justify-center">
+                                        <LuCamera className="text-blue-400" size={18} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-base font-bold text-white">Buscar por imagem</h3>
+                                        <p className="text-xs text-gray-500">Envie uma foto para encontrar produtos similares</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => !imageSearchLoading && setIsImageSearchOpen(false)}
+                                    className="p-1.5 rounded-lg text-gray-500 hover:text-white hover:bg-white/5 transition-colors"
+                                >
+                                    <LuX size={18} />
+                                </button>
+                            </div>
+
+                            {/* Drop Zone */}
+                            <div className="p-5">
+                                <div
+                                    className={`relative border-2 border-dashed rounded-xl transition-all duration-300 ${isDragging
+                                        ? 'border-blue-500 bg-blue-500/10'
+                                        : imageSearchPreview
+                                            ? 'border-blue-500/30 bg-blue-500/5'
+                                            : 'border-white/10 hover:border-white/20 bg-white/[0.02]'
+                                        }`}
+                                    onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+                                    onDragLeave={() => setIsDragging(false)}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setIsDragging(false);
+                                        const file = e.dataTransfer.files?.[0];
+                                        if (file) handleImageSearch(file);
+                                    }}
+                                >
+                                    {imageSearchLoading ? (
+                                        <div className="flex flex-col items-center justify-center py-12 gap-4">
+                                            <div className="relative">
+                                                <div className="w-16 h-16 rounded-full border-2 border-blue-500/20 flex items-center justify-center">
+                                                    <LuLoaderCircle size={28} className="text-blue-400 animate-spin" />
+                                                </div>
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-sm font-medium text-white">Analisando imagem...</p>
+                                                <p className="text-xs text-gray-500 mt-1">Comparando com o catálogo</p>
+                                            </div>
+                                        </div>
+                                    ) : imageSearchPreview ? (
+                                        <div className="flex flex-col items-center py-6 gap-4">
+                                            <img
+                                                src={imageSearchPreview}
+                                                alt="Preview"
+                                                className="w-32 h-32 rounded-xl object-cover border-2 border-white/10 shadow-lg"
+                                            />
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => { setImageSearchPreview(null); imageInputRef.current?.click(); }}
+                                                    className="px-4 py-2 rounded-lg text-xs font-medium text-gray-300 bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+                                                >
+                                                    Trocar imagem
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div
+                                            className="flex flex-col items-center py-12 gap-3 cursor-pointer"
+                                            onClick={() => imageInputRef.current?.click()}
+                                        >
+                                            <div className="w-14 h-14 rounded-full bg-white/5 flex items-center justify-center">
+                                                <LuUpload size={24} className={isDragging ? 'text-blue-400' : 'text-gray-500'} />
+                                            </div>
+                                            <div className="text-center">
+                                                <p className="text-sm font-medium text-white">
+                                                    {isDragging ? 'Solte a imagem aqui' : 'Clique ou arraste uma imagem'}
+                                                </p>
+                                                <p className="text-xs text-gray-500 mt-1">
+                                                    Suporta JPG, PNG, WebP • Máx 10MB
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <input
+                                        ref={imageInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={(e) => {
+                                            const file = e.target.files?.[0];
+                                            if (file) handleImageSearch(file);
+                                            e.target.value = ''; // Reset for re-selection
+                                        }}
+                                    />
+                                </div>
+
+                                {/* Tips */}
+                                <div className="mt-4 flex items-center gap-2 text-xs text-gray-500">
+                                    <span className="inline-flex items-center gap-1 px-2 py-1 rounded bg-white/5 border border-white/5 font-mono text-[10px]">
+                                        Ctrl+V
+                                    </span>
+                                    <span>para colar da área de transferência</span>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </>
     );
 }
@@ -829,7 +1143,7 @@ CollapsibleCategory.displayName = 'CollapsibleCategory';
 
 
 // Memoized Product Card
-const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggle, batchMap }) => {
+const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggle, batchMap, similarity }) => {
     // Check if this product has the recommended batch
     const hasRecommendedBatch = useMemo(() => {
         if (!batchMap || !product.batch || product.categoria !== 'Calçados') return false;
@@ -855,8 +1169,20 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
                 {/* Overlay Gradient on Hover */}
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
 
+                {/* Similarity Badge (Image Search) */}
+                {similarity != null && (
+                    <div className={`absolute top-2 left-2 z-20 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-white border border-white/20 shadow-lg ${similarity >= 0.8
+                        ? 'bg-emerald-600/90'
+                        : similarity >= 0.6
+                            ? 'bg-yellow-600/90'
+                            : 'bg-orange-600/90'
+                        }`}>
+                        {Math.round(similarity * 100)}% match
+                    </div>
+                )}
+
                 {/* Recommended Batch Badge */}
-                {hasRecommendedBatch && (
+                {hasRecommendedBatch && !similarity && (
                     <div className="absolute top-2 left-2 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-emerald-400 border-2 border-white/40 shadow-lg shadow-emerald-500/30 animate-pulse">
                         <LuBadgeCheck size={14} />
                         <span className="hidden sm:inline">Batch recomendada!</span>
@@ -874,7 +1200,7 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
                                 name: product.titulo,
                                 price: product.preco,
                                 images: [product.image],
-                                sellerName: product.vendedor
+                                sellerName: getVendorDisplayName(product.vendedor)
                             })}
                             size={18}
                         />
@@ -900,8 +1226,8 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
                                 : `¥ ${product.preco}`)
                             : 'Consulte'}
                     </span>
-                    <span className="text-[10px] text-gray-400 px-1.5 py-0.5 bg-white/5 rounded border border-white/10 uppercase truncate max-w-[80px]" title={product.vendedor || 'Yupoo'}>
-                        {product.vendedor || 'Yupoo'}
+                    <span className="text-[10px] text-gray-400 px-1.5 py-0.5 bg-white/5 rounded border border-white/10 uppercase truncate max-w-[80px]" title={getVendorDisplayName(product.vendedor) || 'Yupoo'}>
+                        {getVendorDisplayName(product.vendedor) || 'Yupoo'}
                     </span>
                 </div>
             </div>

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 /**
  * AnimatedNumber - Número com animação de contagem
@@ -31,6 +31,139 @@ function AnimatedNumber({ value, duration = 1000 }) {
     }, [value, duration]);
 
     return <span>{displayValue}</span>;
+}
+
+/**
+ * SubscriptionCountdown - Real-time countdown timer for subscription expiry
+ * Updates every second with smooth animations
+ */
+function SubscriptionCountdown({ subscriptionEnd }) {
+    const [timeLeft, setTimeLeft] = useState(null);
+    const intervalRef = useRef(null);
+
+    useEffect(() => {
+        if (!subscriptionEnd) {
+            setTimeLeft(null);
+            return;
+        }
+
+        const targetDate = new Date(subscriptionEnd);
+
+        const updateCountdown = () => {
+            const now = new Date();
+            const diff = targetDate - now;
+
+            if (diff <= 0) {
+                setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, expired: true });
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                return;
+            }
+
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            setTimeLeft({ days, hours, minutes, seconds, expired: false });
+        };
+
+        updateCountdown();
+        intervalRef.current = setInterval(updateCountdown, 1000);
+
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+        };
+    }, [subscriptionEnd]);
+
+    if (!timeLeft) return null;
+
+    const isLow = timeLeft.days <= 3 && !timeLeft.expired;
+    const isCritical = timeLeft.days === 0 && !timeLeft.expired;
+
+    // Color scheme based on urgency
+    const getColor = () => {
+        if (timeLeft.expired) return { text: 'text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20', glow: 'shadow-red-500/5' };
+        if (isCritical) return { text: 'text-orange-400', bg: 'bg-orange-500/10', border: 'border-orange-500/20', glow: 'shadow-orange-500/5' };
+        if (isLow) return { text: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', glow: 'shadow-yellow-500/5' };
+        return { text: 'text-blue-400', bg: 'bg-blue-500/10', border: 'border-blue-500/20', glow: 'shadow-blue-500/5' };
+    };
+
+    const colors = getColor();
+
+    const TimeUnit = ({ value, label }) => (
+        <div className="flex flex-col items-center">
+            <motion.div
+                key={value}
+                initial={{ y: -4, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ duration: 0.3, ease: 'easeOut' }}
+                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-xl ${colors.bg} border ${colors.border} flex items-center justify-center shadow-lg ${colors.glow}`}
+            >
+                <span className={`text-xl sm:text-2xl font-black ${colors.text} tabular-nums`}>
+                    {String(value).padStart(2, '0')}
+                </span>
+            </motion.div>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-500 mt-1.5">
+                {label}
+            </span>
+        </div>
+    );
+
+    const Separator = () => (
+        <div className="flex flex-col items-center justify-center pb-5">
+            <motion.span
+                animate={{ opacity: [1, 0.3, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                className={`text-lg font-black ${colors.text}`}
+            >
+                :
+            </motion.span>
+        </div>
+    );
+
+    return (
+        <div className="mt-2">
+            {timeLeft.expired ? (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`flex items-center gap-3 p-3 rounded-xl ${colors.bg} border ${colors.border}`}
+                >
+                    <svg className="w-5 h-5 text-red-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm font-bold text-red-400">
+                        Assinatura expirada! Você foi movido para o plano Visitante.
+                    </span>
+                </motion.div>
+            ) : (
+                <div className="flex flex-col items-center gap-3">
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        <TimeUnit value={timeLeft.days} label="Dias" />
+                        <Separator />
+                        <TimeUnit value={timeLeft.hours} label="Horas" />
+                        <Separator />
+                        <TimeUnit value={timeLeft.minutes} label="Min" />
+                        <Separator />
+                        <TimeUnit value={timeLeft.seconds} label="Seg" />
+                    </div>
+
+                    {isLow && (
+                        <motion.p
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className={`text-xs font-bold ${isCritical ? 'text-orange-400' : 'text-yellow-400'}`}
+                        >
+                            {isCritical
+                                ? '⚠ Sua assinatura expira hoje!'
+                                : `⚠ Faltam apenas ${timeLeft.days} dia${timeLeft.days > 1 ? 's' : ''} para expirar`
+                            }
+                        </motion.p>
+                    )}
+                </div>
+            )}
+        </div>
+    );
 }
 
 /**
@@ -91,10 +224,14 @@ function ProfileStats({
     const miningCurrent = miningInfo.credits || 0;
     const isLowBalance = miningCurrent <= 10;
 
-    // Calculate days until renewal
+    // Calculate days until renewal (credit cycle)
     const daysUntilRenewal = miningInfo.nextRenewal
         ? Math.max(0, Math.ceil((new Date(miningInfo.nextRenewal) - new Date()) / (1000 * 60 * 60 * 24)))
         : null;
+
+    // Check if user has an active subscription (non-guest tier)
+    const isSubscriber = miningInfo.tier && miningInfo.tier !== 'guest' && miningInfo.tier !== 'convidado';
+    const hasSubscriptionEnd = isSubscriber && miningInfo.subscriptionEnd;
 
     return (
         <motion.div
@@ -162,6 +299,40 @@ function ProfileStats({
                     </motion.div>
                 )}
             </motion.div>
+
+            {/* Subscription Countdown Card - Only for active subscribers */}
+            <AnimatePresence>
+                {hasSubscriptionEnd && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -10 }}
+                        transition={{ duration: 0.4, delay: 0.15 }}
+                        className="bg-[#1f2937] rounded-[2rem] p-8 shadow-xl border border-white/10 mb-6"
+                    >
+                        <div className="flex flex-col items-center text-center gap-4">
+                            {/* Header */}
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-400 to-indigo-600 flex items-center justify-center text-white shadow-md">
+                                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <polyline points="12 6 12 12 16 14" />
+                                    </svg>
+                                </div>
+                                <div className="text-left">
+                                    <p className="text-xs font-black text-gray-500 uppercase tracking-widest">Tempo de Assinatura</p>
+                                    <p className="text-sm font-bold text-gray-300">
+                                        Sua assinatura {miningInfo.tier === 'gold' ? 'Ouro' : miningInfo.tier === 'silver' ? 'Prata' : 'Bronze'} expira em:
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Countdown Timer */}
+                            <SubscriptionCountdown subscriptionEnd={miningInfo.subscriptionEnd} />
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Stats Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">

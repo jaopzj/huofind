@@ -20,6 +20,8 @@
     "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.2",
     "playwright": "^1.40.0",
+    "sharp": "^0.34.5",
+    "stripe": "^20.4.0",
     "translate": "^3.0.0"
   }
 }

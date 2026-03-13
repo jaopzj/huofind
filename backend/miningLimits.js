@@ -12,7 +12,7 @@ export async function getUserCreditsData(userId) {
     try {
         const { data, error } = await supabase
             .from('users')
-            .select('email, tier, credits, credits_last_reset, mining_count')
+            .select('email, tier, credits, credits_package, credits_last_reset, mining_count')
             .eq('id', userId)
             .single();
 
@@ -22,11 +22,13 @@ export async function getUserCreditsData(userId) {
 
         // Se credits for NULL (usuário legado), usar o padrão do tier
         const currentCredits = data.credits !== null ? data.credits : tierInfo.credits;
+        const packageCredits = data.credits_package || 0;
 
         return {
             email: data.email,
             tier: data.tier,
             credits: currentCredits,
+            creditsPackage: packageCredits,
             maxCredits: tierInfo.credits,
             maxProducts: tierInfo.maxProducts,
             lastReset: data.credits_last_reset,
@@ -39,14 +41,15 @@ export async function getUserCreditsData(userId) {
 }
 
 /**
- * Verifica se os créditos precisam de renovação (mensal)
+ * Verifica se os créditos mensais precisam de renovação (mensal)
+ * Monthly credits expire after 30 days. Package credits are preserved.
  */
 export async function checkAndRenewCredits(userId) {
     try {
         const userData = await getUserCreditsData(userId);
         if (!userData) return null;
 
-        // Bronze, Silver e Gold renovam mensalmente
+        // Guest users don't have monthly renewal
         if (userData.tier === 'guest') return userData;
 
         const lastReset = userData.lastReset ? new Date(userData.lastReset) : new Date(0);
@@ -59,11 +62,17 @@ export async function checkAndRenewCredits(userId) {
             console.log(`[Credits] 🔄 Renovando créditos para: ${userData.email}`);
 
             const tierInfo = TIER_CREDITS[userData.tier] || TIER_CREDITS.guest;
+            const packageCredits = userData.creditsPackage || 0;
+
+            // Expire old monthly credits: remove tier amount, but never go below package credits
+            const afterExpiry = Math.max(packageCredits, userData.credits - tierInfo.credits);
+            // Add new monthly credits
+            const newBalance = afterExpiry + tierInfo.credits;
 
             const { error: updateError } = await supabase
                 .from('users')
                 .update({
-                    credits: tierInfo.credits,
+                    credits: newBalance,
                     credits_last_reset: now.toISOString()
                 })
                 .eq('id', userId);
@@ -71,7 +80,8 @@ export async function checkAndRenewCredits(userId) {
             if (updateError) {
                 console.error('[Credits] Error renewing credits:', updateError);
             } else {
-                userData.credits = tierInfo.credits;
+                console.log(`[Credits] ✅ Credits renewed: ${userData.credits} → expire(${afterExpiry}) + ${tierInfo.credits} = ${newBalance} (package: ${packageCredits})`);
+                userData.credits = newBalance;
                 userData.lastReset = now.toISOString();
             }
         }
@@ -132,50 +142,67 @@ export async function consumeCredit(userId) {
 }
 
 /**
- * Consome múltiplos créditos do usuário
+ * Consome múltiplos créditos do usuário.
+ * SECURITY: Uses optimistic locking to prevent race conditions.
+ * The UPDATE only succeeds if credits haven't changed since we read them.
  */
 export async function consumeCredits(userId, amount) {
     if (amount <= 0) return null;
     console.log(`[Credits] ⬇️ Consumindo ${amount} créditos de: ${userId}`);
 
-    try {
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('credits, tier, email')
-            .eq('id', userId)
-            .single();
+    const MAX_RETRIES = 3;
 
-        if (error || !user) {
-            console.error('[Credits] Error fetching user for consumption:', error);
+    for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+            const { data: user, error } = await supabase
+                .from('users')
+                .select('credits, tier, email')
+                .eq('id', userId)
+                .single();
+
+            if (error || !user) {
+                console.error('[Credits] Error fetching user for consumption:', error);
+                return null;
+            }
+
+            const tierInfo = TIER_CREDITS[user.tier] || TIER_CREDITS.guest;
+            let currentCredits = user.credits !== null ? user.credits : tierInfo.credits;
+
+            if (currentCredits < amount) {
+                console.warn(`[Credits] Insufficient credits for ${user.email}: ${currentCredits} < ${amount}`);
+                return null;
+            }
+
+            const newBalance = currentCredits - amount;
+
+            // Optimistic lock: only update if credits still match what we read
+            const { data: updated, error: updateError } = await supabase
+                .from('users')
+                .update({ credits: newBalance })
+                .eq('id', userId)
+                .eq('credits', currentCredits) // <- Optimistic lock condition
+                .select('credits')
+                .single();
+
+            if (updateError || !updated) {
+                // Another concurrent request changed credits — retry
+                if (attempt < MAX_RETRIES) {
+                    console.warn(`[Credits] Optimistic lock conflict for ${user.email} (attempt ${attempt}/${MAX_RETRIES}), retrying...`);
+                    continue;
+                }
+                console.error(`[Credits] Failed after ${MAX_RETRIES} retries for ${user.email}`);
+                return null;
+            }
+
+            console.log(`[Credits] ✅ ${user.email}: ${currentCredits} → ${updated.credits}`);
+            return updated.credits;
+        } catch (err) {
+            console.error('[Credits] Unexpected error in consumeCredits:', err);
             return null;
         }
-
-        const tierInfo = TIER_CREDITS[user.tier] || TIER_CREDITS.guest;
-        let currentCredits = user.credits !== null ? user.credits : tierInfo.credits;
-
-        if (currentCredits < amount) {
-            console.warn(`[Credits] Insufficient credits for ${user.email}: ${currentCredits} < ${amount}`);
-            return null;
-        }
-
-        const newBalance = currentCredits - amount;
-
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({ credits: newBalance })
-            .eq('id', userId);
-
-        if (updateError) {
-            console.error('[Credits] Error updating credits balance:', updateError);
-            return null;
-        }
-
-        console.log(`[Credits] ✅ ${user.email}: ${currentCredits} → ${newBalance}`);
-        return newBalance;
-    } catch (err) {
-        console.error('[Credits] Unexpected error in consumeCredits:', err);
-        return null;
     }
+
+    return null;
 }
 
 /**

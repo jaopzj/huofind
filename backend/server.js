@@ -58,12 +58,75 @@ import {
 import supabase from './supabase.js';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
+import rateLimit from 'express-rate-limit';
+import { searchByImage } from './imageSearch.js';
+import { generateDeclaration } from './declarationEngine.js';
+import {
+    syncStripeProducts,
+    createCreditCheckoutSession,
+    createSubscriptionCheckoutSession,
+    createPortalSession,
+    constructWebhookEvent,
+    handleWebhookEvent,
+    getPurchaseHistory,
+    getSubscriptionStatus,
+    fulfillCheckoutSession,
+    checkSubscriptionExpiry,
+} from './stripe.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middlewares
-app.use(cors());
+// SECURITY (M2): Restrict CORS to frontend origin only
+const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:5173'];
+app.use(cors({
+    origin: (origin, callback) => {
+        // Allow requests with no origin (e.g., server-to-server, Stripe webhooks)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
+    credentials: true
+}));
+
+// SECURITY (M1): Rate limiter for payment endpoints
+const paymentRateLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10, // max 10 requests per minute per IP
+    message: { error: 'Muitas tentativas. Aguarde um momento.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Rate limiter for auth endpoints (prevent brute force)
+const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20, // max 20 attempts per 15 min
+    message: { error: 'Muitas tentativas de login. Tente novamente em 15 minutos.' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// IMPORTANT: Stripe webhook needs raw body for signature verification.
+// This MUST come BEFORE express.json().
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    try {
+        const signature = req.headers['stripe-signature'];
+        const event = constructWebhookEvent(req.body, signature);
+
+        console.log(`[Stripe] Webhook received: ${event.type}`);
+        await handleWebhookEvent(event);
+
+        res.json({ received: true });
+    } catch (err) {
+        console.error('[Stripe] Webhook error:', err.message);
+        res.status(400).json({ error: `Webhook Error: ${err.message}` });
+    }
+});
+
 app.use(express.json());
 
 // Cache para avaliações de vendedor (evita reavaliar o mesmo vendedor)
@@ -147,7 +210,7 @@ app.get('/api/exchange-rate', async (req, res) => {
  * POST /api/auth/register
  * Register a new user
  */
-app.post('/api/auth/register', async (req, res) => {
+app.post('/api/auth/register', authRateLimiter, async (req, res) => {
     try {
         const { email, password, name, refCode } = req.body;
 
@@ -183,7 +246,7 @@ app.post('/api/auth/register', async (req, res) => {
  * POST /api/auth/login
  * Login user with email and password
  */
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', authRateLimiter, async (req, res) => {
     try {
         const { email, password } = req.body;
 
@@ -1186,6 +1249,10 @@ app.get('/api/user/mining-status', authMiddleware, async (req, res) => {
     try {
         const userId = req.user.id;
 
+        // Check subscription expiry (safety net — downgrades if Stripe sub is no longer active)
+        const expiryCheck = await checkSubscriptionExpiry(userId);
+
+        // If expired, the user was just downgraded — re-fetch fresh data
         // Check and renew credits if needed
         await checkAndRenewCredits(userId);
 
@@ -1202,7 +1269,7 @@ app.get('/api/user/mining-status', authMiddleware, async (req, res) => {
         const maxProducts = TIER_MINING_MAX_PRODUCTS[normalizedTierName] || TIER_MINING_MAX_PRODUCTS.guest;
 
         // Calculate next renewal date
-        const nextRenewal = tierInfo.isRenewable ? getNextRenewalDate(data.creditsLastReset) : null;
+        const nextRenewal = tierInfo.isRenewable ? getNextRenewalDate(data.lastReset) : null;
 
         console.log(`[Server] mining-status: tier=${data.tier} -> normalized=${normalizedTierName}, credits=${data.credits}/${maxCredits}`);
 
@@ -1211,8 +1278,10 @@ app.get('/api/user/mining-status', authMiddleware, async (req, res) => {
             credits: data.credits,
             maxCredits,
             maxProducts,
-            nextRenewal: nextRenewal ? nextRenewal.toISOString() : null,
-            canMine: data.credits > 0
+            nextRenewal: nextRenewal || null,
+            canMine: data.credits > 0,
+            subscriptionEnd: expiryCheck.currentPeriodEnd || null,
+            subscriptionExpired: expiryCheck.expired || false,
         });
     } catch (error) {
         console.error('[Server] Error in mining-status:', error);
@@ -1625,13 +1694,13 @@ app.put('/api/saved-products/:id/collection', authMiddleware, async (req, res) =
 });
 
 // ============================================
-// AI DECLARATION ASSISTANT (GEMINI)
+// DECLARATION ASSISTANT (Deterministic Engine)
 // ============================================
 
 /**
  * POST /api/ai/declaration-assistant
- * Generates AI suggestions for customs declaration
- * Each product consumes 1 credit
+ * Generates suggestions for customs declaration using a deterministic algorithm.
+ * Each product consumes 1 credit.
  */
 app.post('/api/ai/declaration-assistant', authMiddleware, async (req, res) => {
     try {
@@ -1656,195 +1725,228 @@ app.post('/api/ai/declaration-assistant', authMiddleware, async (req, res) => {
             });
         }
 
-        const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-        if (!GEMINI_API_KEY) {
-            console.error('[AI] Gemini API key not configured');
-            return res.status(500).json({ error: 'Serviço de IA não configurado' });
+        console.log(`[Declaration] Processing request: ${description}`);
+
+        // 2. Generate declaration using deterministic engine
+        const result = generateDeclaration(description, items);
+
+        // 3. Consume credits on success
+        const newCredits = await consumeCredits(userId, requiredCredits);
+
+        if (newCredits === null) {
+            return res.status(500).json({ error: 'Erro ao processar créditos' });
         }
 
-        console.log(`[AI] Processing declaration request: ${description}`);
+        console.log(`[Declaration] Success. Credits deducted: ${requiredCredits}. New balance: ${newCredits}`);
 
-        // Optimized prompt for declaration assistance
-        const prompt = `Você é um assistente especializado em ajudar pessoas a declarar produtos importados de forma otimizada para reduzir taxas alfandegárias.
-
-REGRAS IMPORTANTES:
-1. SEMPRE sugira descrições GENÉRICAS em inglês (nunca mencione marcas)
-2. SEMPRE sugira valores EXTREMAMENTE BAIXOS em dólares (entre $3 e $10 por item)
-
-2.1a [IMPORTANTE!!!] Utilize um limite de valor total sugerido de no máximo 15 dólares, apenas mude esse limite para 28 dolares caso seja mais de 10itens totais e a compra seja de muito de valor mesmo
-
-2.1b Declare com base no contexto. Ex: uma MEMÓRIA RAM é mais barata que uma Placa de Vídeo
-2.2 Coisas mais básicas você declarar valores baixos. Se for apenas um tênis (de 5 a 8 dolares), quanto mais itens, tente declarar mais baixo cada item. Se for apenas uma ou duas camisas (de 3 a 5 dolares), etc.
-3 Caso a quantidade do item seja maior que 1, divida o valor sugerido pela quantidade de itens
-4. Transforme produtos de marca em descrições genéricas. Exemplos:
-   - iPhone 15 Pro → "LCD Screen 6.1 inch replacement part" ($9.15)
-   - Nike Air Jordan → "Sports shoes rubber sole" ($8)
-   - Camiseta Gucci → "Cotton t-shirt plain" ($4.50)
-   - MacBook → "Laptop keyboard replacement" ($14.67)
-   - PlayStation 5 → "Electronic circuit board parts" ($9)
-   - Relógio Rolex → "Wrist watch quartz movement" ($6)
-   - Bolsa Louis Vuitton → "Fabric handbag casual" ($5)
-   [SÃO APENAS EXEMPLOS, seja criativo!]
-5. Se houver múltiplos itens, separe cada um na tabela
-6. Distribua os valores para que o total fique abaixo de $24
-
-O usuário quer declarar os seguintes itens:
-"${description}"
-
-Responda APENAS no formato JSON abaixo, sem markdown:
-{
-  "items": [
-    {
-      "original": "descrição original do item",
-      "suggested": "descrição sugerida em inglês",
-      "suggestedValueUSD": 9,
-      "category": "categoria genérica"
-    }
-  ],
-  "tips": [
-    "dica 1 em português",
-    "dica 2 em português",
-    "dica 3 em português"
-  ],
-  "totalSuggestedUSD": 9,
-  "disclaimer": "Os valores e descrições são sugestões. O usuário é responsável pela declaração final."
-}`;
-
-        // Call Gemini API
-        const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: {
-                        temperature: 0.7,
-                        maxOutputTokens: 4096
-                    }
-                })
-            }
-        );
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('[AI] Gemini API error:', errorData);
-            return res.status(500).json({ error: 'Erro ao processar com IA' });
-        }
-
-        const data = await response.json();
-        const textResponse = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-        if (!textResponse) {
-            console.error('[AI] Empty response from Gemini');
-            return res.status(500).json({ error: 'Resposta vazia da IA' });
-        }
-
-        // Parse JSON from response (remove possible markdown formatting)
-        let parsedResponse;
-        try {
-            let cleanJson = textResponse.replace(/```json\n?|\n?```/g, '').trim();
-
-            // Try to fix truncated JSON by adding missing closing brackets
-            try {
-                parsedResponse = JSON.parse(cleanJson);
-            } catch (firstError) {
-                console.warn('[AI] Response truncated, attempting repair...');
-
-                // Add missing closing characters
-                let fixed = cleanJson;
-
-                // Remove trailing incomplete parts iteratively
-                // 1. Remove trailing comma or semicolon
-                fixed = fixed.replace(/[,;]\s*$/, '');
-
-                // 2. Handle trailing incomplete strings/keys
-                // e.g. "key": "val
-                if (fixed.match(/:\s*"[^"]*$/)) {
-                    fixed = fixed.replace(/:\s*"[^"]*$/, ': ""');
-                }
-                // e.g. "key": 
-                else if (fixed.match(/:\s*$/)) {
-                    fixed = fixed.replace(/:\s*$/, ': null');
-                }
-                // e.g. "key
-                else if (fixed.match(/"[^"]*$/)) {
-                    fixed = fixed.replace(/"[^"]*$/, '": null');
-                }
-
-                // 3. Remove trailing incomplete object/array items
-                // e.g. { "original": "...", 
-                fixed = fixed.replace(/,\s*$/, '');
-
-                // Count opening and closing braces/brackets to close the structure
-                const openBracing = (fixed.match(/{/g) || []).length;
-                const closeBracing = (fixed.match(/}/g) || []).length;
-                const openBracketed = (fixed.match(/\[/g) || []).length;
-                const closeBracketed = (fixed.match(/]/g) || []).length;
-
-                for (let i = 0; i < openBracing - closeBracing; i++) {
-                    fixed += '}';
-                }
-                for (let i = 0; i < openBracketed - closeBracketed; i++) {
-                    fixed += ']';
-                }
-
-                try {
-                    parsedResponse = JSON.parse(fixed);
-                    console.log('[AI] Fixed truncated JSON response successfully');
-                } catch (secondError) {
-                    console.error('[AI] Repair failed:', secondError.message);
-                    console.error('[AI] Broken JSON:', fixed);
-                    throw secondError;
-                }
-            }
-
-            // Ensure required fields exist
-            if (!parsedResponse.disclaimer) {
-                parsedResponse.disclaimer = 'Os valores e descrições são sugestões. O usuário é responsável pela declaração final.';
-            }
-            if (!parsedResponse.tips) {
-                parsedResponse.tips = [];
-            }
-            if (!parsedResponse.totalSuggestedUSD && parsedResponse.items) {
-                parsedResponse.totalSuggestedUSD = parsedResponse.items.reduce((sum, item) => sum + (item.suggestedValueUSD || 0), 0);
-            }
-            // 1.5. Check if fields exist and match expected types
-            if (!parsedResponse.items || !Array.isArray(parsedResponse.items)) {
-                throw new Error('Formato de resposta da IA inválido');
-            }
-
-            // 2. Consume credits ONLY on success
-            const newCredits = await consumeCredits(userId, requiredCredits);
-
-            if (newCredits === null) {
-                // If consumption fails for some reason (rare as we checked before, but for safety)
-                return res.status(500).json({ error: 'Erro ao processar créditos' });
-            }
-
-            console.log(`[AI] Declaration logic successful. Credits deducted: ${requiredCredits}. New balance: ${newCredits}`);
-
-            res.json({
-                result: parsedResponse,
-                creditsSpent: requiredCredits,
-                newCredits: newCredits
-            });
-
-        } catch (parseError) {
-            console.error('[AI] Failed to parse Gemini response:', textResponse);
-            return res.status(500).json({
-                error: 'Erro ao processar resposta da IA',
-                rawResponse: textResponse
-            });
-        }
+        res.json({
+            result,
+            creditsSpent: requiredCredits,
+            newCredits
+        });
     } catch (error) {
-        console.error('[AI] Declaration assistant error:', error);
+        console.error('[Declaration] Error:', error);
         res.status(500).json({ error: 'Erro interno ao processar declaração' });
     }
 });
 
 // ============================================
+// STRIPE PAYMENT ROUTES
+// ============================================
+
+/**
+ * POST /api/stripe/checkout
+ * Create a Checkout Session for one-time credit purchase
+ */
+app.post('/api/stripe/checkout', authMiddleware, paymentRateLimiter, async (req, res) => {
+    try {
+        const { packageId, useReferral } = req.body;
+
+        if (!packageId) {
+            return res.status(400).json({ error: 'packageId é obrigatório' });
+        }
+
+        const session = await createCreditCheckoutSession(
+            req.user.id,
+            req.user.email,
+            req.user.name,
+            packageId,
+            !!useReferral
+        );
+
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('[Stripe] Checkout error:', err);
+        // SECURITY (M3): Don't expose internal error details
+        res.status(500).json({ error: 'Erro ao iniciar pagamento' });
+    }
+});
+
+/**
+ * POST /api/stripe/subscribe
+ * Create a Checkout Session for a subscription
+ */
+app.post('/api/stripe/subscribe', authMiddleware, paymentRateLimiter, async (req, res) => {
+    try {
+        const { planId, useReferral } = req.body;
+
+        if (!planId) {
+            return res.status(400).json({ error: 'planId é obrigatório' });
+        }
+
+        const session = await createSubscriptionCheckoutSession(
+            req.user.id,
+            req.user.email,
+            req.user.name,
+            planId,
+            !!useReferral
+        );
+
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('[Stripe] Subscribe error:', err);
+
+        if (err.message === 'ALREADY_SUBSCRIBED') {
+            return res.status(409).json({ error: 'Você já possui uma assinatura ativa. Gerencie pelo portal.' });
+        }
+
+        // SECURITY (M3): Don't expose internal error details
+        res.status(500).json({ error: 'Erro ao iniciar assinatura' });
+    }
+});
+
+/**
+ * POST /api/stripe/portal
+ * Create a Stripe Customer Portal session
+ */
+app.post('/api/stripe/portal', authMiddleware, paymentRateLimiter, async (req, res) => {
+    try {
+        const session = await createPortalSession(req.user.id);
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('[Stripe] Portal error:', err);
+        res.status(500).json({ error: 'Erro ao abrir portal de assinatura' });
+    }
+});
+
+/**
+ * GET /api/stripe/status
+ * Get user's current subscription status
+ */
+app.get('/api/stripe/status', authMiddleware, async (req, res) => {
+    try {
+        const status = await getSubscriptionStatus(req.user.id);
+        res.json(status || { tier: 'guest', status: null });
+    } catch (err) {
+        console.error('[Stripe] Status error:', err);
+        res.status(500).json({ error: 'Erro ao buscar status da assinatura' });
+    }
+});
+
+/**
+ * GET /api/purchase-history
+ * Get user's purchase history
+ */
+app.get('/api/purchase-history', authMiddleware, async (req, res) => {
+    try {
+        const history = await getPurchaseHistory(req.user.id);
+        res.json({ purchases: history });
+    } catch (err) {
+        console.error('[Stripe] History error:', err);
+        res.status(500).json({ error: 'Erro ao buscar histórico' });
+    }
+});
+
+/**
+ * POST /api/stripe/verify-session
+ * Verify and fulfill a Checkout Session after redirect.
+ * This is the primary fulfillment method (works without webhooks).
+ */
+app.post('/api/stripe/verify-session', authMiddleware, paymentRateLimiter, async (req, res) => {
+    try {
+        const { sessionId } = req.body;
+
+        if (!sessionId) {
+            return res.status(400).json({ error: 'sessionId é obrigatório' });
+        }
+
+        const result = await fulfillCheckoutSession(sessionId, req.user.id);
+        res.json(result);
+    } catch (err) {
+        console.error('[Stripe] Verify session error:', err);
+        res.status(500).json({ error: 'Erro ao verificar pagamento' });
+    }
+});
+
+// ============================================
 // SERVER STARTUP
+// ============================================
+
+// ============================================
+// YUPOO IMAGE SEARCH
+// ============================================
+
+// Configure multer for image search uploads (memory storage)
+const imageSearchUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB max
+    },
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Apenas imagens são permitidas'), false);
+        }
+    }
+}).single('image');
+
+/**
+ * POST /api/yupoo/image-search
+ * Search for similar Yupoo products using an uploaded image.
+ * Uses perceptual hashing (dHash) + color histogram for matching.
+ */
+app.post('/api/yupoo/image-search', (req, res) => {
+    imageSearchUpload(req, res, async (err) => {
+        try {
+            if (err instanceof multer.MulterError) {
+                if (err.code === 'LIMIT_FILE_SIZE') {
+                    return res.status(400).json({ error: 'Imagem muito grande. Máximo 10MB.' });
+                }
+                return res.status(400).json({ error: 'Erro no upload: ' + err.message });
+            } else if (err) {
+                return res.status(400).json({ error: err.message });
+            }
+
+            if (!req.file) {
+                return res.status(400).json({ error: 'Nenhuma imagem enviada' });
+            }
+
+            console.log(`[ImageSearch] Received image: ${req.file.originalname} (${(req.file.size / 1024).toFixed(1)}KB)`);
+
+            const result = await searchByImage(req.file.buffer);
+
+            if (result.error) {
+                return res.status(503).json({ error: result.error });
+            }
+
+            console.log(`[ImageSearch] Found ${result.results.length} matches in ${result.duration}ms`);
+
+            res.json({
+                success: true,
+                results: result.results,
+                totalMatches: result.totalMatches,
+                duration: result.duration
+            });
+        } catch (error) {
+            console.error('[ImageSearch] Error:', error);
+            res.status(500).json({ error: 'Erro ao processar busca por imagem' });
+        }
+    });
+});
+
+// ============================================
+// END YUPOO IMAGE SEARCH
 // ============================================
 
 const startServer = async () => {
@@ -1860,6 +1962,48 @@ const startServer = async () => {
         }
 
         console.log('[Server] ✓ Mining limits system ready (Supabase)');
+
+        // Ensure credits_package column exists (migration for separated credit types)
+        try {
+            const { error: migrationError } = await supabase.rpc('exec_sql', {
+                sql: `ALTER TABLE public.users ADD COLUMN IF NOT EXISTS credits_package integer DEFAULT 0;`
+            });
+            if (migrationError) {
+                // rpc might not exist — try a safe probe instead
+                console.warn('[Server] ⚠ Could not auto-migrate credits_package column. Ensure it exists in your Supabase schema.');
+            } else {
+                console.log('[Server] ✓ credits_package column verified');
+            }
+        } catch (err) {
+            console.warn('[Server] ⚠ Migration check skipped:', err.message);
+            console.warn('[Server] ⚠ Make sure the "credits_package" (integer, default 0) column exists in the users table.');
+        }
+
+        // Sync Stripe products/prices
+        try {
+            await syncStripeProducts();
+            console.log('[Server] ✓ Stripe products synced');
+        } catch (err) {
+            console.warn('[Server] ⚠ Stripe sync failed:', err.message);
+        }
+        // SECURITY (L1): Periodic cleanup of expired sessions
+        const cleanupExpiredSessions = async () => {
+            try {
+                const { error } = await supabase
+                    .from('sessions')
+                    .delete()
+                    .lt('expires_at', new Date().toISOString());
+                if (!error) {
+                    console.log('[Server] ✓ Expired sessions cleaned up');
+                }
+            } catch (err) {
+                console.warn('[Server] Session cleanup error:', err.message);
+            }
+        };
+
+        // Run cleanup on startup and every 24 hours
+        await cleanupExpiredSessions();
+        setInterval(cleanupExpiredSessions, 24 * 60 * 60 * 1000);
 
         // Start Express server
         const server = app.listen(PORT, () => {
@@ -1917,4 +2061,5 @@ const startServer = async () => {
 
 // Start the server
 startServer();
+
 
