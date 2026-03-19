@@ -75,6 +75,9 @@ function App() {
     const [showLimitError, setShowLimitError] = useState(false);
     const [paymentFeedback, setPaymentFeedback] = useState(null); // Global payment feedback
 
+    // App readiness gate: blocks ALL interaction until critical data loads
+    const [appReady, setAppReady] = useState(false);
+
     // Virtual Paging
     const [activePage, setActivePage] = useState('home');
 
@@ -211,7 +214,7 @@ function App() {
     }, []);
 
     // Fetch mining status when user is authenticated
-    const fetchMiningStatus = useCallback(async () => {
+    const fetchMiningStatus = useCallback(async (isInitialLoad = false) => {
         if (!isAuthenticated) {
             setMiningInfo(null);
             return;
@@ -236,12 +239,21 @@ function App() {
             }
         } catch (err) {
             console.error('[App] Error fetching mining status:', err);
+        } finally {
+            // Mark app as ready once mining status finishes loading (success or fail)
+            if (isInitialLoad) {
+                setAppReady(true);
+            }
         }
     }, [isAuthenticated]);
 
     useEffect(() => {
-        fetchMiningStatus();
-    }, [fetchMiningStatus]);
+        if (isAuthenticated) {
+            fetchMiningStatus(true); // initial load — will setAppReady(true) when done
+        } else {
+            setAppReady(true); // Not authenticated, no data to load
+        }
+    }, [fetchMiningStatus, isAuthenticated]);
 
     // Listen for 'credits-updated' event (fired after payment verification)
     useEffect(() => {
@@ -893,6 +905,23 @@ function App() {
     // Not authenticated - show auth card
     if (!isAuthenticated) {
         return <AuthCard />;
+    }
+
+    // App loading gate: blocks ALL interaction until account data finishes loading
+    if (!appReady) {
+        return (
+            <div className="min-h-screen flex items-center justify-center" style={{ background: '#111827' }}>
+                <div className="grid-pattern-container">
+                    <div className="grid-pattern" />
+                </div>
+                <div className="flex flex-col items-center gap-4">
+                    <WifiLoader message="Carregando sua conta..." />
+                    <p style={{ color: '#6B7280', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                        Preparando tudo para você
+                    </p>
+                </div>
+            </div>
+        );
     }
 
     return (

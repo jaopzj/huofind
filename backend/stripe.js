@@ -179,7 +179,19 @@ export async function getOrCreateCustomer(userId, email, name) {
         .single();
 
     if (user?.stripe_customer_id) {
-        return user.stripe_customer_id;
+        // Validate that the customer still exists on Stripe
+        // (handles test→live key switch or manually deleted customers)
+        try {
+            await stripe.customers.retrieve(user.stripe_customer_id);
+            return user.stripe_customer_id;
+        } catch (err) {
+            if (err.code === 'resource_missing') {
+                console.warn(`[Stripe] Customer ${user.stripe_customer_id} no longer exists on Stripe. Creating a new one for user ${userId}.`);
+            } else {
+                // For other errors (network, auth, etc.), re-throw to avoid silent failures
+                throw err;
+            }
+        }
     }
 
     // Create new Stripe customer
