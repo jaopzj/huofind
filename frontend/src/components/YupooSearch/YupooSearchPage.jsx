@@ -29,7 +29,9 @@ export default function YupooSearchPage({
     exchangeRate = 0,
     savedProductUrls = [],
     onSaveToggle,
-    isGuest = false
+    isGuest = false,
+    isBronze = false,
+    onNavigate = () => { }
 }) {
     // State for data
     const [allProducts, setAllProducts] = useState([]);
@@ -461,12 +463,15 @@ export default function YupooSearchPage({
 
     return (
         <>
-            {/* Guest Upgrade Modal */}
-            {isGuest && showUpgradeModal && (
+            {/* Guest/Bronze Upgrade Modal */}
+            {(isGuest || isBronze) && showUpgradeModal && (
                 <UpgradeModal
                     isOpen={true}
-                    title="Acesso restrito"
-                    description="Esta seção está disponível apenas para usuários com plano ativo. Faça upgrade para acessar o catálogo completo da Yupoo."
+                    onUpgrade={() => onNavigate('store')}
+                    title={isBronze ? "Funcionalidade Premium" : "Acesso restrito"}
+                    description={isBronze 
+                        ? "A busca por imagem está disponível para usuários Prata e Ouro. Faça upgrade para usar esta inteligência."
+                        : "Esta seção está disponível apenas para usuários com plano ativo. Faça upgrade para acessar o catálogo completo da Yupoo."}
                     onClose={() => setShowUpgradeModal(false)}
                 />
             )}
@@ -624,7 +629,13 @@ export default function YupooSearchPage({
                                             </button>
                                         )}
                                         <button
-                                            onClick={() => setIsImageSearchOpen(true)}
+                                            onClick={() => {
+                                                if (isBronze) {
+                                                    setShowUpgradeModal(true);
+                                                } else {
+                                                    setIsImageSearchOpen(true);
+                                                }
+                                            }}
                                             className="p-1.5 rounded-lg text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200"
                                             title="Buscar por imagem"
                                         >

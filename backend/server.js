@@ -1,5 +1,5 @@
-import dotenv from 'dotenv';
-dotenv.config();
+// SEC-13: Centralized config — loads dotenv and validates all env vars
+import { config } from './config.js';
 
 import express from 'express';
 import cors from 'cors';
@@ -75,11 +75,11 @@ import {
 } from './stripe.js';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = config.port;
 
 // Middlewares
 // SECURITY (M2): Restrict CORS to frontend origin only
-const allowedOrigins = [process.env.CLIENT_URL || 'http://localhost:5173'];
+const allowedOrigins = [config.clientUrl];
 app.use(cors({
     origin: (origin, callback) => {
         // Allow requests with no origin (e.g., server-to-server, Stripe webhooks)
@@ -142,7 +142,12 @@ let exchangeRateCache = {
  * GET /api/exchange-rate
  * Retorna a taxa de câmbio CNY -> BRL
  * Usa cache de 1 hora para evitar muitas requisições
+ * Faixa de sanidade: 1 CNY deve valer entre 0.50 e 1.50 BRL
  */
+const CNY_BRL_MIN = 0.50;
+const CNY_BRL_MAX = 1.50;
+const CNY_BRL_FALLBACK = 0.80; // Fallback conservador (~R$0,80 por Yuan)
+
 app.get('/api/exchange-rate', async (req, res) => {
     try {
         const ONE_HOUR = 60 * 60 * 1000;
@@ -159,18 +164,54 @@ app.get('/api/exchange-rate', async (req, res) => {
 
         console.log('[Server] Buscando taxa de câmbio CNY -> BRL...');
 
-        // Usa API gratuita de câmbio
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/CNY');
+        let brlRate = null;
 
-        if (!response.ok) {
-            throw new Error('Falha ao buscar taxa de câmbio');
+        // --- Fonte 1: fawazahmed0/currency-api (mais confiável) ---
+        try {
+            const resp1 = await fetch(
+                'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/cny.json',
+                { signal: AbortSignal.timeout(5000) }
+            );
+            if (resp1.ok) {
+                const data1 = await resp1.json();
+                const rate1 = data1?.cny?.brl;
+                if (rate1 && rate1 >= CNY_BRL_MIN && rate1 <= CNY_BRL_MAX) {
+                    brlRate = rate1;
+                    console.log(`[Server] Fonte 1 (fawazahmed0): 1 CNY = ${rate1.toFixed(4)} BRL ✓`);
+                } else {
+                    console.warn(`[Server] Fonte 1 retornou valor fora da faixa de sanidade: ${rate1}`);
+                }
+            }
+        } catch (e) {
+            console.warn('[Server] Fonte 1 falhou:', e.message);
         }
 
-        const data = await response.json();
-        const brlRate = data.rates?.BRL;
-
+        // --- Fonte 2 (fallback): exchangerate-api.com ---
         if (!brlRate) {
-            throw new Error('Taxa BRL não encontrada');
+            try {
+                const resp2 = await fetch(
+                    'https://api.exchangerate-api.com/v4/latest/CNY',
+                    { signal: AbortSignal.timeout(5000) }
+                );
+                if (resp2.ok) {
+                    const data2 = await resp2.json();
+                    const rate2 = data2.rates?.BRL;
+                    if (rate2 && rate2 >= CNY_BRL_MIN && rate2 <= CNY_BRL_MAX) {
+                        brlRate = rate2;
+                        console.log(`[Server] Fonte 2 (exchangerate-api): 1 CNY = ${rate2.toFixed(4)} BRL ✓`);
+                    } else {
+                        console.warn(`[Server] Fonte 2 retornou valor fora da faixa de sanidade: ${rate2}`);
+                    }
+                }
+            } catch (e) {
+                console.warn('[Server] Fonte 2 falhou:', e.message);
+            }
+        }
+
+        // Se nenhuma fonte retornou valor válido, usa fallback fixo
+        if (!brlRate) {
+            console.warn(`[Server] Nenhuma fonte retornou taxa válida. Usando fallback: ${CNY_BRL_FALLBACK}`);
+            brlRate = CNY_BRL_FALLBACK;
         }
 
         // Atualiza cache
@@ -179,7 +220,7 @@ app.get('/api/exchange-rate', async (req, res) => {
             lastUpdate: now
         };
 
-        console.log(`[Server] Taxa de câmbio: 1 CNY = ${brlRate.toFixed(4)} BRL`);
+        console.log(`[Server] Taxa de câmbio final: 1 CNY = ${brlRate.toFixed(4)} BRL`);
 
         res.json({
             rate: brlRate,
@@ -190,14 +231,11 @@ app.get('/api/exchange-rate', async (req, res) => {
     } catch (error) {
         console.error('[Server] Erro ao buscar taxa de câmbio:', error.message);
 
-        // Fallback: taxa aproximada se a API falhar
-        const fallbackRate = 0.80; // ~0.80 BRL por Yuan (valor aproximado)
-
         res.json({
-            rate: exchangeRateCache.rate || fallbackRate,
+            rate: exchangeRateCache.rate || CNY_BRL_FALLBACK,
             fromCache: true,
             error: 'Usando taxa em cache ou aproximada',
-            lastUpdate: exchangeRateCache.lastUpdate || now
+            lastUpdate: exchangeRateCache.lastUpdate || Date.now()
         });
     }
 });

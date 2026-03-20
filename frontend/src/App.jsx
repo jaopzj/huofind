@@ -99,13 +99,23 @@ function App() {
         }
     };
 
-    // Compute isGuest - user is guest if not authenticated or tier is 'guest'/'convidado'
-    const isGuest = !isAuthenticated ||
-        !user?.tier ||
-        user.tier.toLowerCase() === 'guest' ||
-        user.tier.toLowerCase() === 'convidado';
+    // Compute user tier for feature access
+    const userTier = useMemo(() => {
+        let tier = (user?.tier || 'guest').toLowerCase().trim();
+        if (tier.includes('minerador') || tier.includes('gold') || tier.includes('ouro')) return 'ouro';
+        if (tier.includes('escavador') || tier.includes('silver') || tier.includes('prata')) return 'prata';
+        if (tier.includes('explorador') || tier.includes('bronze')) return 'bronze';
+        return 'guest';
+    }, [user]);
 
-    // Exchange rate logicURL atual (para salvar vendedor)
+    const isGuest = !isAuthenticated || userTier === 'guest';
+    const isBronze = userTier === 'bronze';
+
+    // Restricted features for Guest and Bronze users
+    // These users get an upgrade popup for Declaration Assistant and Image Search
+    const isRestrictedForPremiumFeatures = isGuest || isBronze;
+
+    // Exchange rate logic URL atual (para salvar vendedor)
     const [currentMiningUrl, setCurrentMiningUrl] = useState('');
 
     // Estado para produtos salvos
@@ -1216,6 +1226,8 @@ function App() {
                                     savedProductUrls={savedProductUrls}
                                     onSaveToggle={handleSaveProductToggle}
                                     isGuest={isGuest}
+                                    isBronze={isBronze}
+                                    onNavigate={setActivePage}
                                 />
                             </div>
                         )}
@@ -1274,6 +1286,7 @@ function App() {
                         {/* Declaration Assistant Page */}
                         {activePage === 'declaration-assistant' && (
                             <DeclarationAssistantPage
+                                isRestricted={isRestrictedForPremiumFeatures}
                                 onNavigate={(page, params) => {
                                     if (params?.initialValue) {
                                         window.__feeCalculatorInitialValue = params.initialValue;

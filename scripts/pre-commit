@@ -1,0 +1,82 @@
+#!/bin/bash
+# ===========================================
+# Pre-commit hook: Block commits containing secrets
+# ===========================================
+# This hook scans staged files for patterns that
+# indicate hardcoded secrets or credentials.
+#
+# Install: cp scripts/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+# Or run: npm run setup-hooks
+# ===========================================
+
+echo "Running secret detection pre-commit hook..."
+
+# Patterns that indicate secrets (regex)
+PATTERNS=(
+    'sk_live_[a-zA-Z0-9]+'
+    'sk_test_[a-zA-Z0-9]+'
+    'pk_live_[a-zA-Z0-9]+'
+    'pk_test_[a-zA-Z0-9]+'
+    'whsec_[a-zA-Z0-9]+'
+    'service_role'
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.'
+    'ADMIN_SECRET=[^G\$]'
+)
+
+# Human-readable descriptions
+DESCRIPTIONS=(
+    'Stripe live secret key'
+    'Stripe test secret key'
+    'Stripe live publishable key'
+    'Stripe test publishable key'
+    'Stripe webhook secret'
+    'Supabase service role key'
+    'Hardcoded JWT token'
+    'Hardcoded admin secret'
+)
+
+FOUND=0
+
+# Get list of staged files (excluding deleted files and .example files)
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep -v '\.example$' | grep -v '\.sample$')
+
+if [ -z "$STAGED_FILES" ]; then
+    exit 0
+fi
+
+for i in "${!PATTERNS[@]}"; do
+    PATTERN="${PATTERNS[$i]}"
+    DESC="${DESCRIPTIONS[$i]}"
+
+    # Search staged content (not working tree) for the pattern
+    MATCHES=$(echo "$STAGED_FILES" | xargs git diff --cached -U0 2>/dev/null | grep -E "^\+" | grep -v "^\+\+\+" | grep -iE "$PATTERN" || true)
+
+    if [ -n "$MATCHES" ]; then
+        echo ""
+        echo "  BLOCKED: Potential $DESC detected in staged changes!"
+        echo "  Pattern: $PATTERN"
+        echo "  Matches:"
+        echo "$MATCHES" | head -3 | sed 's/^/    /'
+        FOUND=1
+    fi
+done
+
+if [ "$FOUND" -eq 1 ]; then
+    echo ""
+    echo "============================================="
+    echo "  COMMIT BLOCKED: Secrets detected!"
+    echo "============================================="
+    echo ""
+    echo "  Secrets should NEVER be committed to git."
+    echo "  Use .env files (already in .gitignore) or"
+    echo "  environment variables instead."
+    echo ""
+    echo "  If this is a false positive, you can bypass"
+    echo "  this check with: git commit --no-verify"
+    echo "  (use with caution!)"
+    echo ""
+    exit 1
+fi
+
+echo "No secrets detected. Proceeding with commit."
+exit 0

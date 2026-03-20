@@ -13,10 +13,11 @@ import Stripe from 'stripe';
 import supabase from './supabase.js';
 import { TIER_CREDITS } from './tiers.js';
 import { applyReferralBenefits, REFERRAL_DISCOUNT_PERCENT } from './referrals.js';
+import { config } from './config.js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(config.stripeSecretKey);
 
-const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
+const CLIENT_URL = config.clientUrl;
 
 // ============================================
 // PRODUCT & PRICE DEFINITIONS
@@ -389,7 +390,7 @@ export async function createPortalSession(userId) {
  * Verify and construct Stripe webhook event.
  */
 export function constructWebhookEvent(rawBody, signature) {
-    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const webhookSecret = config.stripeWebhookSecret;
 
     if (!webhookSecret) {
         // SECURITY: Never process webhooks without signature verification

@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import UpgradeModal from '../UpgradeModal';
 
 // ... (icons remain the same)
 
@@ -210,13 +211,14 @@ const TipCard = ({ tip, index }) => (
 );
 
 // Main Component
-const DeclarationAssistantPage = ({ onNavigate }) => {
+const DeclarationAssistantPage = ({ onNavigate, isRestricted = false }) => {
     const [items, setItems] = useState([createEmptyItem()]);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState(null);
     const [error, setError] = useState(null);
     const [userCredits, setUserCredits] = useState(null);
     const [loadingCredits, setLoadingCredits] = useState(true);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(isRestricted);
 
     const MAX_ITEMS = 6;
     const requiredCredits = items.filter(item => item.name.trim()).length || 1;
@@ -331,7 +333,19 @@ const DeclarationAssistantPage = ({ onNavigate }) => {
     };
 
     return (
-        <div className="w-full max-w-5xl mx-auto px-4 md:px-8 py-8">
+        <div className={`w-full max-w-5xl mx-auto px-4 md:px-8 py-8 ${isRestricted ? 'opacity-50 pointer-events-none' : ''}`}>
+            {/* Upgrade Modal */}
+            <UpgradeModal
+                isOpen={showUpgradeModal && isRestricted}
+                onUpgrade={() => onNavigate('store')}
+                onClose={() => {
+                    setShowUpgradeModal(false);
+                    onNavigate('home');
+                }}
+                title="Acesso exclusivo"
+                description="O Assistente de Declaração está disponível apenas para membros Prata e Ouro. Faça upgrade para automatizar e otimizar suas declarações."
+            />
+
             {/* Header */}
             <motion.div
                 initial={{ opacity: 0, y: -20 }}

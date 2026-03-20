@@ -2,19 +2,13 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import supabase from './supabase.js';
 import { createClient } from '@supabase/supabase-js';
+import { config } from './config.js';
 
 // Create a Supabase client for auth operations (with anon key for user signup)
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
-const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey);
+const supabaseAuth = createClient(config.supabaseUrl, config.supabaseAnonKey);
 
-const JWT_SECRET = process.env.JWT_SECRET;
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
-
-if (!JWT_SECRET) {
-    console.error('[Auth] CRITICAL: JWT_SECRET environment variable is not set! Server cannot start securely.');
-    process.exit(1);
-}
+const JWT_SECRET = config.jwtSecret;
+const JWT_EXPIRES_IN = config.jwtExpiresIn;
 
 /**
  * Generate JWT token for user

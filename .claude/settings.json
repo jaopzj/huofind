@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(find /d/xiner/frontend -maxdepth 2 -name *.env* -o -name .env*)",
+      "Bash(grep -A 5 \"activePage === ''legal''\" /d/xiner/frontend/src/App.jsx)",
+      "Bash(grep -r \"dangerouslySetInnerHTML\\\\|eval\\\\|Function\\\\|$\\\\{.*\\\\}\\\\|innerHTML\" /d/xiner/frontend/src --include=*.jsx --include=*.js)",
+      "Bash(git log:*)",
+      "Bash(chmod +x d:/xiner/.git/hooks/pre-commit)",
+      "Bash(bash .git/hooks/pre-commit)",
+      "Bash(npm install:*)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\João Pedro\\.claude\\plans"
+    ]
+  }
+}
