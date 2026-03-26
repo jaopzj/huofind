@@ -17,7 +17,7 @@
  */
 import { chromium } from 'playwright';
 
-const POOL_SIZE = 3;
+const POOL_SIZE = parseInt(process.env.BROWSER_POOL_SIZE, 10) || (process.env.NODE_ENV === 'production' ? 1 : 3);
 const MAX_USES_PER_BROWSER = 50;
 const ACQUIRE_TIMEOUT_MS = 30000;
 const MAX_QUEUE_SIZE = 20;
