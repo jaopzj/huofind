@@ -47,11 +47,14 @@ if (config.sentryDsn) {
 // GLOBAL MIDDLEWARE
 // ============================================
 
+// Trust first proxy (Railway runs behind a reverse proxy)
+app.set('trust proxy', 1);
+
 // Request monitoring (must come before routes)
 app.use(monitorMiddleware);
 
 // CORS — restrict to frontend origin only
-const allowedOrigins = [config.clientUrl];
+const allowedOrigins = [config.clientUrl.replace(/\/+$/, '')];
 app.use(cors({
     origin: (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
