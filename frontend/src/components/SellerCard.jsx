@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, memo } from 'react';
 
 /**
  * SellerCard - Componente visual premium para exibir pontuação de confiança do vendedor
@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
  * - variant="full": Layout expandido para lista de resultados (3 colunas, glassmorphism)
  * - variant="compact": Layout condesado para Hero section (2 colunas, mais limpo)
  */
-function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isSaved = false }) {
+const SellerCard = memo(function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isSaved = false }) {
     const [view, setView] = useState('report'); // 'report' ou 'save'
     const [isTransitioning, setIsTransitioning] = useState(false);
 
@@ -297,6 +297,6 @@ function SellerCard({ sellerInfo, variant = 'full', sellerUrl, onSaveSeller, isS
             </div>
         </div>
     );
-}
+});
 
 export default SellerCard;

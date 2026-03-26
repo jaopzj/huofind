@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { LuSearch, LuPickaxe, LuPackage, LuUsers } from 'react-icons/lu';
+import { resolvePagePath } from '../../utils/routes';
 
 /**
  * QuickAccess - Grid of quick access buttons for main features
@@ -75,6 +77,16 @@ function QuickAccessCard({ item, onClick, index }) {
 }
 
 function QuickAccess({ onNavigate }) {
+    const navigate = useNavigate();
+
+    const handleClick = (pageId) => {
+        if (onNavigate) {
+            onNavigate(pageId);
+        } else {
+            navigate(resolvePagePath(pageId));
+        }
+    };
+
     return (
         <section className="py-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -82,7 +94,7 @@ function QuickAccess({ onNavigate }) {
                     <QuickAccessCard
                         key={item.id}
                         item={item}
-                        onClick={onNavigate}
+                        onClick={handleClick}
                         index={index}
                     />
                 ))}

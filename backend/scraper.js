@@ -19,10 +19,52 @@ class GoofishScraper {
     constructor() {
         this.browser = null;
         this.userAgents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:121.0) Gecko/20100101 Firefox/121.0'
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0'
         ];
+    }
+
+    /**
+     * Configura interceptação da API MTOP do Goofish para capturar dados do vendedor.
+     * Deve ser chamado ANTES de page.goto().
+     * @param {Page} page - Página Playwright
+     * @returns {{ getData: () => Object|null, cleanup: () => void }}
+     */
+    _setupApiCapture(page) {
+        let mtopHeadData = null;
+        let resolveCapture;
+        const capturedPromise = new Promise(resolve => { resolveCapture = resolve; });
+
+        const handler = async (response) => {
+            const url = response.url();
+            if (url.includes('user.page.head') || url.includes('idle.web.user.page')) {
+                try {
+                    const body = await response.text();
+                    let jsonStr = body;
+                    const m = body.match(/mtopjsonp\d*\((.+)\)$/s);
+                    if (m) jsonStr = m[1];
+                    const parsed = JSON.parse(jsonStr);
+                    if (parsed.ret?.some(r => r.includes('SUCCESS')) && parsed.data && Object.keys(parsed.data).length > 0) {
+                        mtopHeadData = parsed.data;
+                        console.log('[Scraper] API MTOP capturada: user.page.head');
+                    }
+                } catch (e) {
+                    // Ignora erros de parse
+                }
+                resolveCapture();
+            }
+        };
+        page.on('response', handler);
+        return {
+            getData: () => mtopHeadData,
+            /** Aguarda a resposta da API ser processada (com timeout) */
+            waitForData: (timeoutMs = 8000) => Promise.race([
+                capturedPromise,
+                new Promise(resolve => setTimeout(resolve, timeoutMs))
+            ]),
+            cleanup: () => page.removeListener('response', handler)
+        };
     }
 
     extractUserId(url) {
@@ -59,7 +101,8 @@ class GoofishScraper {
 
         try {
             this.browser = await chromium.launch({
-                headless: true
+                headless: true,
+                args: ['--disable-blink-features=AutomationControlled']
             });
 
             const context = await this.browser.newContext({
@@ -69,16 +112,24 @@ class GoofishScraper {
                 timezoneId: 'Asia/Shanghai'
             });
 
+            // Anti-detecção
+            await context.addInitScript(() => {
+                Object.defineProperty(navigator, 'webdriver', { get: () => false });
+            });
+
             const page = await context.newPage();
+
+            // Capturar dados da API MTOP antes da navegação
+            const apiCapture = this._setupApiCapture(page);
 
             emit('navigating', 'Navegando para página do vendedor...');
             await page.goto(url, {
-                waitUntil: 'domcontentloaded',
+                waitUntil: 'load',
                 timeout: 30000
             });
 
-            // Aguarda inicial REDUZIDO
-            await this.randomDelay(1000, 1500);
+            // Aguarda API MTOP ser capturada (com timeout de 8s)
+            await apiCapture.waitForData();
 
             // Se já temos info do vendedor, usamos ela e pulamos a extração
             let sellerInfo = null;
@@ -87,21 +138,21 @@ class GoofishScraper {
             if (existingSellerInfo) {
                 emit('verifying', 'Verificando vendedor (dados em cache)...');
                 sellerInfo = existingSellerInfo;
-                // Os dados do cache já estão formatados, então não precisamos recalcular score aqui
-                // Mas precisamos garantir que temos trustClassification e outros campos
                 emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: sellerInfo.trustScore });
             } else {
-                // Extrai informações do vendedor ANTES de scrollar (se não veio do cache)
                 emit('verifying', 'Verificando vendedor...');
                 try {
-                    const rawInfo = await extractSellerInfo(page);
+                    const rawInfo = await extractSellerInfo(page, apiCapture.getData());
                     trustResult = calculateTrustScore(rawInfo);
                     sellerInfo = formatSellerData(rawInfo, trustResult);
                     emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: trustResult.score });
                 } catch (sellerError) {
                     console.error('[Scraper] Erro ao extrair info do vendedor:', sellerError.message);
+                    if (sellerError.message === 'PAGE_BLOCKED') throw sellerError;
                 }
             }
+
+            apiCapture.cleanup();
 
             // Tenta aguardar cards específicos (timeout REDUZIDO)
             try {
@@ -415,10 +466,8 @@ class GoofishScraper {
             await this.browser.close();
             this.browser = null;
 
-            // Formata dados do vendedor se disponíveis
-            const formattedSellerInfo = sellerInfo && trustResult
-                ? formatSellerData(sellerInfo, trustResult)
-                : null;
+            // sellerInfo já está formatado (via formatSellerData ou existingSellerInfo)
+            const formattedSellerInfo = sellerInfo || null;
 
             return {
                 sellerId: userId,
@@ -464,13 +513,17 @@ class GoofishScraper {
         const { page, release } = await browserPool.acquire();
 
         try {
+            // Capturar dados da API MTOP antes da navegação
+            const apiCapture = this._setupApiCapture(page);
+
             emit('navigating', 'Navegando para página do vendedor...');
             await page.goto(url, {
-                waitUntil: 'domcontentloaded',
+                waitUntil: 'load',
                 timeout: 30000
             });
 
-            await this.randomDelay(1000, 1500);
+            // Aguarda API MTOP ser capturada (com timeout de 8s)
+            await apiCapture.waitForData();
 
             // Extract seller info if not cached
             let sellerInfo = null;
@@ -484,14 +537,17 @@ class GoofishScraper {
                 emit('verifying', 'Verificando vendedor...');
                 try {
                     const { extractSellerInfo, calculateTrustScore, formatSellerData } = await import('./sellerAnalyzer.js');
-                    const rawInfo = await extractSellerInfo(page);
+                    const rawInfo = await extractSellerInfo(page, apiCapture.getData());
                     trustResult = calculateTrustScore(rawInfo);
                     sellerInfo = formatSellerData(rawInfo, trustResult);
                     emit('seller_verified', `Vendedor: ${sellerInfo.nickname || userId}`, { score: trustResult.score });
                 } catch (sellerError) {
                     console.error('[Scraper] Erro ao extrair info do vendedor:', sellerError.message);
+                    if (sellerError.message === 'PAGE_BLOCKED') throw sellerError;
                 }
             }
+
+            apiCapture.cleanup();
 
             // Wait for cards
             try {
@@ -696,12 +752,8 @@ class GoofishScraper {
             const products = Array.from(allProducts.values());
             emit('products_found', `${products.length} produtos encontrados!`, { count: products.length });
 
-            // Release browser back to pool
-            await release();
-
-            const formattedSellerInfo = sellerInfo && trustResult
-                ? formatSellerData(sellerInfo, trustResult)
-                : sellerInfo;
+            // sellerInfo já está formatado (via formatSellerData ou existingSellerInfo)
+            const formattedSellerInfo = sellerInfo || null;
 
             return {
                 sellerId: userId,

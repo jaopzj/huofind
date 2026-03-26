@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, memo } from 'react';
 import { motion } from 'framer-motion';
 
 /**
  * SavedProductCard - Enhanced product card with platform tag and actions
  */
-function SavedProductCard({
+const SavedProductCard = memo(function SavedProductCard({
     product,
     onRemove,
     onOpenMoveModal
@@ -138,7 +138,7 @@ function SavedProductCard({
             </div>
         </motion.article>
     );
-}
+});
 
 /**
  * PlatformTag - Small tag showing the product platform

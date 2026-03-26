@@ -113,6 +113,9 @@ export const config = {
 
     // Admin
     adminSecret: process.env.ADMIN_SECRET || null,
+
+    // Observability (optional)
+    sentryDsn: process.env.SENTRY_DSN || null,
 };
 
 console.log(`[Config] Environment validated (${config.isProduction ? 'production' : 'development'})`);

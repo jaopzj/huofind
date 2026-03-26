@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 import SparkleButton from './SparkleButton';
 import { Slider } from './ui/slider';
+import { normalizeTier } from '../utils/tierUtils';
 
 // Available categories with their display info
 const CATEGORIES = [
@@ -45,13 +46,7 @@ function HeroSection({
         }
     }, [initialUrl]);
     const [limit, setLimit] = useState(() => {
-        // Default limit: 30 for guests (updated), 50+ for paid tiers
-        const isGuest = !miningInfo?.tier ||
-            miningInfo.tier.toLowerCase() === 'guest' ||
-            miningInfo.tier.toLowerCase() === 'convidado';
-
-        // Use maxProducts if available, otherwise fallback based on tier
-        return miningInfo?.maxProducts || (isGuest ? 30 : 50);
+        return miningInfo?.maxProducts || 30;
     });
     const [isInputFocused, setIsInputFocused] = useState(false);
     const lastEvaluatedUrl = useRef('');
@@ -83,11 +78,9 @@ function HeroSection({
     const isValidUrl = url.includes('goofish.com') || url.includes('xianyu.com') || url === '';
 
     // Check tier for UI logic
-    const isGuest = !miningInfo?.tier ||
-        miningInfo.tier.toLowerCase() === 'guest' ||
-        miningInfo.tier.toLowerCase() === 'convidado';
+    const isGuest = normalizeTier(miningInfo?.tier) === 'guest';
 
-    const maxLimit = miningInfo?.maxProducts || (isGuest ? 30 : 50);
+    const maxLimit = miningInfo?.maxProducts || 30;
 
     // Quando a URL muda e é válida, dispara avaliação do vendedor
     useEffect(() => {

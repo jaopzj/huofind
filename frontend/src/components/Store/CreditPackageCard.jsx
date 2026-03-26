@@ -1,10 +1,11 @@
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { LuZap, LuStar, LuFlame } from 'react-icons/lu';
 
 /**
  * CreditPackageCard - Single credit package card for one-time purchase
  */
-function CreditPackageCard({
+const CreditPackageCard = memo(function CreditPackageCard({
     credits,
     price,
     pricePerCredit,
@@ -125,6 +126,6 @@ function CreditPackageCard({
             </motion.button>
         </motion.div >
     );
-}
+});
 
 export default CreditPackageCard;

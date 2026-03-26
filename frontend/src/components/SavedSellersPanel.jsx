@@ -5,7 +5,7 @@ import SavedSellerCard from './SavedSellerCard';
 /**
  * SavedSellersPanel - Painel Refatorado de Vendedores Salvos
  */
-function SavedSellersPanel({ onSelectSeller, tier = 'guest' }) {
+function SavedSellersPanel({ onSelectSeller, tier = 'guest', tierLimits = null }) {
     const [sellers, setSellers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -14,14 +14,8 @@ function SavedSellersPanel({ onSelectSeller, tier = 'guest' }) {
     const contentRef = useRef(null);
     const [contentHeight, setContentHeight] = useState('auto');
 
-    const TIER_LIMITS = {
-        guest: 1,
-        bronze: 10,
-        silver: 20,
-        gold: 40
-    };
-
-    const currentLimit = TIER_LIMITS[tier] || TIER_LIMITS.guest;
+    // Use server-provided limits when available, fallback for loading state only
+    const currentLimit = tierLimits?.[tier]?.savedSellers ?? tierLimits?.guest?.savedSellers ?? 1;
 
     useEffect(() => {
         fetchSavedSellers();

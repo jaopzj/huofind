@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuCheck, LuChevronLeft, LuChevronRight, LuRocket } from 'react-icons/lu';
 import { ExploradorIcon, EscavadorIcon, MineradorIcon } from './TierIcons';
+import { TIER_TO_PLAN_ID } from '../../utils/tierUtils';
 
 // Plan configurations with features
 const PLANS_DATA = [
@@ -27,9 +28,9 @@ const PLANS_DATA = [
         ]
     },
     {
-        id: 'prata',
+        id: 'silver',
         name: 'Escavador',
-        tier: 'PRATA',
+        tier: 'SILVER',
         icon: EscavadorIcon,
         color: '#4B5563',
         bgGradient: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
@@ -49,9 +50,9 @@ const PLANS_DATA = [
         ]
     },
     {
-        id: 'ouro',
+        id: 'gold',
         name: 'Minerador',
-        tier: 'OURO',
+        tier: 'GOLD',
         icon: MineradorIcon,
         color: '#D97706',
         bgGradient: 'linear-gradient(135deg, #FEF3C7 0%, #FCD34D 100%)',
@@ -79,7 +80,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscr
     const [activeIndex, setActiveIndex] = useState(2); // Start with Ouro (best) plan
 
     // Tier hierarchy for comparison
-    const TIER_RANK = { guest: 0, bronze: 1, prata: 2, ouro: 3 };
+    const TIER_RANK = { guest: 0, bronze: 1, silver: 2, gold: 3 };
     const userTierRank = TIER_RANK[currentTier] || 0;
 
     const currentPlan = PLANS_DATA[activeIndex];
@@ -264,7 +265,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscr
                                             if (isCurrentUserPlan && onManageSubscription) {
                                                 onManageSubscription();
                                             } else {
-                                                onSubscribe?.(currentPlan.id);
+                                                onSubscribe?.(TIER_TO_PLAN_ID[currentPlan.id] || currentPlan.id);
                                             }
                                         }}
                                         disabled={isLoading || isLowerThanUserPlan}

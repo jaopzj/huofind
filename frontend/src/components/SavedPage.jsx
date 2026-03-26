@@ -20,6 +20,7 @@ function SavedPage({
     onRemoveProduct,
     // Sellers props
     tier,
+    tierLimits,
     onSelectSeller,
 }) {
     const [activeSection, setActiveSection] = useState('products'); // 'products' | 'sellers'
@@ -114,6 +115,7 @@ function SavedPage({
                         <section className="bg-[#1f2937] p-6 md:p-10 rounded-[2rem] shadow-xl border border-white/5">
                             <SavedSellersPanel
                                 tier={tier}
+                                tierLimits={tierLimits}
                                 onSelectSeller={onSelectSeller}
                             />
                         </section>

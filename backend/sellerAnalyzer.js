@@ -10,8 +10,228 @@
  * @param {Page} page - Página Playwright
  * @returns {Object} - Dados do vendedor
  */
-export async function extractSellerInfo(page) {
+/**
+ * Parseia número no formato chinês: "6.6万" -> 66000, "2419" -> 2419, "1.2w" -> 12000
+ */
+function parseChineseNum(str) {
+    if (!str && str !== 0) return 0;
+    str = String(str);
+    const match = str.match(/([\d.]+)\s*[万wW]?/);
+    if (!match) return parseInt(str, 10) || 0;
+    let num = parseFloat(match[1]);
+    if (str.includes('万') || str.toLowerCase().includes('w')) num *= 10000;
+    return Math.round(num);
+}
+
+/**
+ * Extrai dados do vendedor a partir da resposta da API MTOP.
+ * Estrutura real do Goofish (mtop.idle.web.user.page.head):
+ * {
+ *   baseInfo: { kcUserId, tags, ... },
+ *   module: {
+ *     social: { followers: "42", following: "0" },
+ *     base: { displayName: "...", avatar: { avatar: "url" }, ipLocation: "..." },
+ *     shop: { level: "L3", praiseRatio: 78, reviewNum: 33, score: 181 },
+ *     tabs: { item: { number: 85 }, rate: { number: "36" } }
+ *   }
+ * }
+ * @param {Object} apiData - Dados do campo 'data' da resposta MTOP
+ * @returns {Object|null} - Dados do vendedor ou null se não encontrar
+ */
+function parseMtopApiData(apiData) {
+    if (!apiData || Object.keys(apiData).length === 0) return null;
+
+    const info = {
+        avatar: null,
+        nickname: null,
+        level: 0,
+        followers: 0,
+        monthsActive: 0,
+        salesCount: 0,
+        positiveRating: 0,
+        sesameCreditScore: 0,
+        rawData: { extractionMethod: 'mtop_api' }
+    };
+
+    // ========================================
+    // MÉTODO 1: Acesso direto à estrutura conhecida do Goofish
+    // ========================================
+    const module = apiData.module || {};
+    const social = module.social || {};
+    const base = module.base || {};
+    const shop = module.shop || {};
+    const tabs = module.tabs || {};
+
+    // Seguidores
+    if (social.followers) {
+        info.followers = parseChineseNum(social.followers);
+        info.rawData.followersRaw = social.followers;
+    }
+
+    // Nickname
+    if (base.displayName) {
+        info.nickname = base.displayName;
+    }
+
+    // Avatar (estrutura aninhada: base.avatar.avatar)
+    if (base.avatar?.avatar) {
+        let avatarUrl = base.avatar.avatar;
+        if (avatarUrl.startsWith('//')) avatarUrl = 'https:' + avatarUrl;
+        info.avatar = avatarUrl;
+    }
+
+    // Level (formato "L3" ou número)
+    if (shop.level) {
+        const lvMatch = String(shop.level).match(/L?(\d)/i);
+        if (lvMatch) info.level = parseInt(lvMatch[1], 10);
+    }
+
+    // Taxa de avaliação positiva
+    if (shop.praiseRatio) {
+        info.positiveRating = parseInt(shop.praiseRatio, 10);
+    }
+
+    // Quantidade de itens à venda (tabs.item.number)
+    // Nota: este é o total de itens, não vendas. Vendas vêm do DOM.
+    if (tabs.item?.number && info.salesCount === 0) {
+        info.rawData.itemCount = tabs.item.number;
+    }
+
+    // ========================================
+    // MÉTODO 2: Fallback via regex no JSON para estruturas desconhecidas
+    // ========================================
+    const json = JSON.stringify(apiData);
+
+    if (info.followers === 0) {
+        const fansMatch = json.match(/"(?:fans?(?:Num|Count|Str)?|followers|followCount|fansCount|fanNum)"\s*:\s*"?([^",}\s]+)"?/i);
+        if (fansMatch) {
+            info.followers = parseChineseNum(fansMatch[1]);
+            info.rawData.followersRaw = fansMatch[1];
+        }
+    }
+
+    if (info.salesCount === 0) {
+        const soldMatch = json.match(/"(?:sold(?:Num|Count|Str|Total)?|tradeCount|dealCount)"\s*:\s*"?([^",}\s]+)"?/i);
+        if (soldMatch) {
+            info.salesCount = parseChineseNum(soldMatch[1]);
+            info.rawData.salesRaw = soldMatch[1];
+        }
+    }
+
+    if (!info.nickname) {
+        const nickMatch = json.match(/"(?:nick(?:Name)?|displayName|userName|sellerNick|showName)"\s*:\s*"([^"]{1,50})"/);
+        if (nickMatch) info.nickname = nickMatch[1];
+    }
+
+    if (!info.avatar) {
+        const avatarMatch = json.match(/"(?:avatar(?:Url)?|headIconUrl|headPic)"\s*:\s*"((?:https?:)?\/\/[^"]+)"/);
+        if (avatarMatch) {
+            info.avatar = avatarMatch[1].startsWith('//') ? 'https:' + avatarMatch[1] : avatarMatch[1];
+        }
+    }
+
+    if (info.sesameCreditScore === 0) {
+        const sesameMatch = json.match(/"(?:sesame(?:Credit)?(?:Score)?|zmScore|zhimaScore)"\s*:\s*"?(\d{3})"?/i);
+        if (sesameMatch) info.sesameCreditScore = parseInt(sesameMatch[1], 10);
+    }
+
+    // Considerar sucesso se encontrou ao menos followers OU nickname
+    const hasData = info.followers > 0 || info.salesCount > 0 || info.nickname;
+    if (hasData) {
+        console.log('[SellerAnalyzer] Dados extraídos via API MTOP:', {
+            nickname: info.nickname, followers: info.followers, salesCount: info.salesCount,
+            level: info.level, positiveRating: info.positiveRating
+        });
+        return info;
+    }
+
+    return null;
+}
+
+export async function extractSellerInfo(page, mtopApiData = null) {
     console.log('[SellerAnalyzer] Extraindo informações do vendedor...');
+
+    // 0. Se temos dados da API MTOP, usá-los diretamente (mais confiável que DOM)
+    if (mtopApiData) {
+        const apiInfo = parseMtopApiData(mtopApiData);
+        if (apiInfo) {
+            // A API MTOP não inclui salesCount - extrair do DOM (div.tabItem com "已售出")
+            if (apiInfo.salesCount === 0) {
+                try {
+                    // Aguardar as tabs renderizarem (React precisa de tempo após a API)
+                    await page.waitForSelector('[class*="tabItem"]', { timeout: 8000 }).catch(() => {});
+
+                    const salesFromDom = await page.evaluate(() => {
+                        // Método 1: Buscar diretamente nas divs tabItem
+                        const tabItems = document.querySelectorAll('[class*="tabItem"]');
+                        for (const tab of tabItems) {
+                            const text = tab.innerText?.trim() || '';
+                            const match = text.match(/已售出?\s*([\d,]+)/);
+                            if (match) return parseInt(match[1].replace(/,/g, ''), 10);
+                        }
+
+                        // Método 2: Fallback no texto completo da página
+                        const pageText = document.body.innerText || '';
+                        const patterns = [
+                            /已售出\s*([\d,]+)/,
+                            /已售\s*([\d,]+)/,
+                            /([\d,]+)\s*件?\s*已售/,
+                            /成交\s*([\d,]+)/,
+                            /([\d,]+)\s*笔交易/,
+                        ];
+                        for (const p of patterns) {
+                            const m = pageText.match(p);
+                            if (m) return parseInt(m[1].replace(/,/g, ''), 10);
+                        }
+                        return 0;
+                    });
+                    if (salesFromDom > 0) {
+                        apiInfo.salesCount = salesFromDom;
+                        apiInfo.rawData.salesSource = 'dom_tabItem';
+                    }
+                } catch (e) {
+                    // Ignora se DOM não estiver acessível
+                }
+            }
+            return apiInfo;
+        }
+        console.log('[SellerAnalyzer] API MTOP não retornou dados úteis, tentando extração via página...');
+    }
+
+    // 1. Verificar se a página foi bloqueada (Oops/Captcha)
+    const isBlocked = await page.evaluate(() => {
+        const bodyText = document.body.innerText || '';
+        const blockedKeywords = [
+            '哎呀', '连错线', '验证码', 'nc-lang-cnt', 
+            'verify', 'captcha', 'security check', 'robot'
+        ];
+        return blockedKeywords.some(kw => 
+            bodyText.includes(kw) || 
+            (document.title && document.title.includes(kw)) ||
+            !!document.querySelector('#nc_1_wrapper') ||
+            !!document.querySelector('[id*="captcha"]')
+        );
+    });
+
+    if (isBlocked) {
+        console.warn('[SellerAnalyzer] Detetado bloqueio ou Captcha na página!');
+        throw new Error('PAGE_BLOCKED');
+    }
+
+    // 2. Aguardar conteúdo renderizado (SPA precisa de tempo para renderizar)
+    try {
+        await page.waitForFunction(
+            () => {
+                const text = document.body.innerText || '';
+                return text.includes('粉丝') || text.includes('在售') ||
+                       text.includes('关注') || text.includes('卖家') ||
+                       text.includes('已售') || text.length > 500;
+            },
+            { timeout: 10000 }
+        );
+    } catch (e) {
+        console.log('[SellerAnalyzer] Aviso: Timeout aguardando conteúdo renderizado. Tentando extração direta.');
+    }
 
     const sellerInfo = await page.evaluate(() => {
         const info = {
@@ -26,6 +246,121 @@ export async function extractSellerInfo(page) {
             rawData: {}
         };
 
+        // ========================================
+        // MÉTODO PRIMÁRIO: Extração de dados SSR/hidratação
+        // Goofish injeta dados em window globals antes do DOM renderizar
+        // ========================================
+        const dataKeys = ['__INITIAL_DATA__', '__INITIAL_STATE__', '__FL_DATA__', 'g_config', '__NEXT_DATA__'];
+        for (const key of dataKeys) {
+            try {
+                const data = window[key];
+                if (!data) continue;
+                const json = typeof data === 'string' ? data : JSON.stringify(data);
+
+                // Seguidores/Fãs
+                if (info.followers === 0) {
+                    const fansPatterns = [
+                        /"(?:fans?(?:Num|Count|_count|_num)?|fansCount|fanNum|fansStr)"\s*:\s*"?(\d+)"?/i,
+                        /"(?:follow(?:er)?(?:s|Count|Num|_count)?)"\s*:\s*"?(\d+)"?/i
+                    ];
+                    for (const pattern of fansPatterns) {
+                        const m = json.match(pattern);
+                        if (m) {
+                            info.followers = parseInt(m[1], 10);
+                            info.rawData.followersSource = key;
+                            break;
+                        }
+                    }
+                }
+
+                // Vendas
+                if (info.salesCount === 0) {
+                    const soldPatterns = [
+                        /"(?:sold(?:Num|Count|_count|_num)?|soldCount|tradeCount|dealCount)"\s*:\s*"?(\d+)"?/i,
+                    ];
+                    for (const pattern of soldPatterns) {
+                        const m = json.match(pattern);
+                        if (m) {
+                            info.salesCount = parseInt(m[1], 10);
+                            info.rawData.salesSource = key;
+                            break;
+                        }
+                    }
+                }
+
+                // Nickname
+                if (!info.nickname) {
+                    const nickMatch = json.match(/"(?:nick(?:Name)?|userName|sellerNick|showName)"\s*:\s*"([^"]{1,50})"/);
+                    if (nickMatch) {
+                        info.nickname = nickMatch[1];
+                        info.rawData.nicknameSource = key;
+                    }
+                }
+
+                // Avatar
+                if (!info.avatar) {
+                    const avatarMatch = json.match(/"(?:avatar(?:Url)?|headIconUrl|headPic)"\s*:\s*"(https?:[^"]+)"/);
+                    if (avatarMatch) {
+                        info.avatar = avatarMatch[1];
+                    }
+                }
+
+                // Crédito Sesame
+                if (info.sesameCreditScore === 0) {
+                    const sesameMatch = json.match(/"(?:sesame(?:Credit)?(?:Score)?|zmScore|zhimaScore)"\s*:\s*"?(\d{3})"?/i);
+                    if (sesameMatch) {
+                        info.sesameCreditScore = parseInt(sesameMatch[1], 10);
+                        info.rawData.sesameSource = key;
+                    }
+                }
+            } catch (e) {
+                // Ignora erros de parse (referências circulares, etc.)
+            }
+        }
+
+        // Também buscar em script tags com JSON inline
+        if (info.followers === 0 || info.salesCount === 0) {
+            const scriptTags = document.querySelectorAll('script:not([src])');
+            for (const script of scriptTags) {
+                const content = script.textContent || '';
+                if (content.length < 100 || !content.includes('{')) continue;
+
+                try {
+                    if (info.followers === 0) {
+                        const fansMatch = content.match(/"(?:fans?(?:Num|Count)?|fansCount|fanNum)"\s*:\s*"?(\d+)"?/i);
+                        if (fansMatch) {
+                            info.followers = parseInt(fansMatch[1], 10);
+                            info.rawData.followersSource = 'script_tag';
+                        }
+                    }
+                    if (info.salesCount === 0) {
+                        const soldMatch = content.match(/"(?:sold(?:Num|Count)?|tradeCount|dealCount)"\s*:\s*"?(\d+)"?/i);
+                        if (soldMatch) {
+                            info.salesCount = parseInt(soldMatch[1], 10);
+                            info.rawData.salesSource = 'script_tag';
+                        }
+                    }
+                    if (!info.nickname) {
+                        const nickMatch = content.match(/"(?:nick(?:Name)?|userName|sellerNick|showName)"\s*:\s*"([^"]{1,50})"/);
+                        if (nickMatch) {
+                            info.nickname = nickMatch[1];
+                            info.rawData.nicknameSource = 'script_tag';
+                        }
+                    }
+                } catch (e) {
+                    // Ignora erros de parse
+                }
+            }
+        }
+
+        if (info.followers > 0 || info.salesCount > 0 || info.nickname) {
+            info.rawData.extractionMethod = 'ssr_data';
+        }
+
+        // ========================================
+        // MÉTODO FALLBACK: Extração via DOM (seletores CSS + regex no texto)
+        // ========================================
+
         const pageText = document.body.innerText;
 
         // ========================================
@@ -39,17 +374,19 @@ export async function extractSellerInfo(page) {
         // ========================================
         // NICKNAME - span.nick--sP8UifWP ou similar
         // ========================================
-        const nickSelectors = [
-            'span[class*="nick--"]',
-            '[class*="nick"]',
-            '[class*="userName"]'
-        ];
-        for (const sel of nickSelectors) {
-            const nickEl = document.querySelector(sel);
-            if (nickEl && nickEl.innerText?.trim()) {
-                info.nickname = nickEl.innerText.trim();
-                info.rawData.nicknameSelector = sel;
-                break;
+        if (!info.nickname) {
+            const nickSelectors = [
+                'span[class*="nick--"]',
+                '[class*="nick"]',
+                '[class*="userName"]'
+            ];
+            for (const sel of nickSelectors) {
+                const nickEl = document.querySelector(sel);
+                if (nickEl && nickEl.innerText?.trim()) {
+                    info.nickname = nickEl.innerText.trim();
+                    info.rawData.nicknameSelector = sel;
+                    break;
+                }
             }
         }
 
@@ -94,7 +431,8 @@ export async function extractSellerInfo(page) {
         // ========================================
 
         // Método 1: Buscar elemento específico com class infoCenterText
-        const infoCenterSpans = document.querySelectorAll('span[class*="infoCenterText"]');
+        if (info.followers === 0) {
+        const infoCenterSpans = document.querySelectorAll('span[class*="infoCenterText"], div[class*="infoCenterText"], span[class*="value"]');
         for (const span of infoCenterSpans) {
             const text = span.innerText || '';
             if (text.includes('粉丝')) {
@@ -108,6 +446,28 @@ export async function extractSellerInfo(page) {
                     info.followers = Math.round(count);
                     info.rawData.followersText = text;
                     break;
+                }
+            }
+        }
+
+        // Método 1.5: Buscar pela label (irmão ou pai)
+        if (info.followers === 0) {
+            const allElements = document.querySelectorAll('span, div, p');
+            for (const el of allElements) {
+                if (el.innerText === '粉丝' || el.innerText === '粉丝数') {
+                    // Tenta ver se o número está no elemento anterior ou seguinte
+                    const parent = el.parentElement;
+                    if (parent) {
+                        const parentText = parent.innerText;
+                        const match = parentText.match(/([\d.]+)\s*[wW万]?/);
+                        if (match) {
+                            let count = parseFloat(match[1]);
+                            if (parentText.includes('w') || parentText.includes('万')) count *= 10000;
+                            info.followers = Math.round(count);
+                            info.rawData.followersText = parentText;
+                            break;
+                        }
+                    }
                 }
             }
         }
@@ -132,18 +492,20 @@ export async function extractSellerInfo(page) {
                 }
             }
         }
+        } // fim do guard info.followers === 0
 
         // ========================================
         // SALES COUNT - via tabs ou texto "已售出 XXXX"
         // ========================================
-
+        if (info.salesCount === 0) {
         // Método 1: Buscar no texto da página "已售出 2419"
         const salesPatterns = [
             /已售出\s*([\d,]+)/,          // 已售出 2419
             /已售\s*([\d,]+)/,            // 已售2419
             /([\d,]+)\s*件?\s*已售/,      // 2419件已售
             /成交\s*([\d,]+)/,            // 成交2419
-            /([\d,]+)\s*笔交易/           // 2419笔交易
+            /([\d,]+)\s*笔交易/,          // 2419笔交易
+            /([\d,]+)w?\+?\s*人付款/      // 2419人付款 (novo padrão)
         ];
 
         for (const pattern of salesPatterns) {
@@ -174,6 +536,7 @@ export async function extractSellerInfo(page) {
                 }
             }
         }
+        } // fim do guard info.salesCount === 0
 
         // ========================================
         // TEMPO NA PLATAFORMA

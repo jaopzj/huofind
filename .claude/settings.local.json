@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --check server.js)",
+      "Bash(for f:*)",
+      "Bash(do echo:*)",
+      "Bash(node --check \"$f\")",
+      "Bash(done)",
+      "Bash(timeout 10 node server.js)",
+      "Bash(node -e \"try{require.resolve\\(''react-router-dom''\\);console.log\\(''installed''\\)}catch{console.log\\(''not installed''\\)}\")",
+      "Bash(npx vite:*)",
+      "Bash(node --check browserPool.js)",
+      "Bash(node --check routes/mining.routes.js)",
+      "Bash(node --check metrics.js)",
+      "Bash(node --check middleware/monitor.js)",
+      "Bash(node --check routes/misc.routes.js)",
+      "Bash(node -c sellerAnalyzer.js)",
+      "Bash(node -c scraper.js)",
+      "Bash(node -c routes/mining.routes.js)",
+      "Bash(node -e \":*)",
+      "Bash(node -c browserPool.js)",
+      "WebSearch",
+      "Bash(node -c translator.js)",
+      "Bash(node -c routes/misc.routes.js)",
+      "Bash(node debug_scraper.js \"https://www.goofish.com/personal?spm=a21ybx.item.itemHeader.1.4bd93da6hVLrmj&userId=391299371\")",
+      "Bash(node -e \"import\\(''./routes/misc.routes.js''\\).then\\(\\(\\) => console.log\\(''OK''\\)\\).catch\\(e => console.error\\(''FAIL:'', e.message\\)\\)\")",
+      "Bash(xargs grep:*)"
+    ]
+  }
+}

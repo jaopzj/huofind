@@ -13,6 +13,7 @@ import Stripe from 'stripe';
 import supabase from './supabase.js';
 import { TIER_CREDITS } from './tiers.js';
 import { applyReferralBenefits, REFERRAL_DISCOUNT_PERCENT } from './referrals.js';
+import { notifyPurchaseComplete, notifySubscriptionActivated, notifySubscriptionCanceled } from './notificationService.js';
 import { config } from './config.js';
 
 const stripe = new Stripe(config.stripeSecretKey);
@@ -267,8 +268,8 @@ export async function createCreditCheckoutSession(userId, email, name, packageId
             credits: String(pkg.credits),
             referralDiscount: discountApplied ? 'true' : 'false',
         },
-        success_url: `${CLIENT_URL}/loja?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${CLIENT_URL}/loja?canceled=true`,
+        success_url: `${CLIENT_URL}/store?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${CLIENT_URL}/store?canceled=true`,
     });
 
     return session;
@@ -322,8 +323,8 @@ export async function createSubscriptionCheckoutSession(userId, email, name, pla
                 tier: plan.tier,
             }
         },
-        success_url: `${CLIENT_URL}/loja?success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${CLIENT_URL}/loja?canceled=true`,
+        success_url: `${CLIENT_URL}/store?success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${CLIENT_URL}/store?canceled=true`,
     };
 
     // Apply referral discount as Stripe coupon (15% off first month)
@@ -376,7 +377,7 @@ export async function createPortalSession(userId) {
 
     const session = await stripe.billingPortal.sessions.create({
         customer: user.stripe_customer_id,
-        return_url: `${CLIENT_URL}/loja`,
+        return_url: `${CLIENT_URL}/store`,
     });
 
     return session;
@@ -402,8 +403,36 @@ export function constructWebhookEvent(rawBody, signature) {
 
 /**
  * Handle a Stripe webhook event.
+ * LOG-02: Idempotency — skips already-processed events to prevent duplicate side effects.
  */
 export async function handleWebhookEvent(event) {
+    // --- Idempotency check ---
+    const { data: existing } = await supabase
+        .from('processed_stripe_events')
+        .select('event_id')
+        .eq('event_id', event.id)
+        .maybeSingle();
+
+    if (existing) {
+        console.log(`[Stripe] Event ${event.id} (${event.type}) already processed, skipping`);
+        return;
+    }
+
+    // Mark event as processing before handling
+    const { error: insertError } = await supabase
+        .from('processed_stripe_events')
+        .insert({ event_id: event.id, event_type: event.type });
+
+    if (insertError) {
+        // Unique constraint violation = another instance is processing this event concurrently
+        if (insertError.code === '23505') {
+            console.log(`[Stripe] Event ${event.id} being processed by another instance, skipping`);
+            return;
+        }
+        console.error(`[Stripe] Failed to record event ${event.id}:`, insertError.message);
+        // Continue processing — better to risk a duplicate than to drop an event
+    }
+
     switch (event.type) {
         case 'checkout.session.completed':
             await handleCheckoutCompleted(event.data.object);
@@ -483,6 +512,9 @@ async function handleCheckoutCompleted(session) {
 
         console.log(`[Stripe] ✅ Added ${creditsToAdd} package credits to user ${userId}: ${currentCredits} → ${newBalance} (package: ${currentPackage} → ${newPackage})`);
 
+        // FEAT-01: Notify user about purchase
+        notifyPurchaseComplete(userId, creditsToAdd, session.amount_total / 100).catch(() => {});
+
         // Record purchase
         await recordPurchase({
             userId,
@@ -529,6 +561,9 @@ async function handleCheckoutCompleted(session) {
             .eq('id', userId);
 
         console.log(`[Stripe] ✅ Subscription activated: user=${userId}, tier=${tier}, credits=${currentCredits} + ${monthlyCredits} = ${newBalance}`);
+
+        // FEAT-01: Notify user about subscription
+        notifySubscriptionActivated(userId, tier, monthlyCredits).catch(() => {});
 
         // Record purchase
         await recordPurchase({
@@ -686,6 +721,9 @@ async function downgradeUser(userId) {
         .eq('id', userId);
 
     console.log(`[Stripe] ✅ User ${userId} downgraded to guest (preserved ${packageCredits} package credits, final: ${finalCredits})`);
+
+    // FEAT-01: Notify user about cancellation
+    notifySubscriptionCanceled(userId).catch(() => {});
 }
 
 // ============================================

@@ -142,6 +142,44 @@ export async function consumeCredit(userId) {
 }
 
 /**
+ * LOG-03: Refund a single credit back to the user.
+ * Used when a mining operation consumed a credit but failed to deliver results.
+ */
+export async function refundCredit(userId) {
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('credits, email')
+            .eq('id', userId)
+            .single();
+
+        if (error || !user) {
+            console.error('[Credits] Error fetching user for refund:', error);
+            return null;
+        }
+
+        const { data: updated, error: updateError } = await supabase
+            .from('users')
+            .update({ credits: user.credits + 1 })
+            .eq('id', userId)
+            .eq('credits', user.credits)
+            .select('credits')
+            .single();
+
+        if (updateError || !updated) {
+            console.error(`[Credits] Refund failed for ${user.email}`);
+            return null;
+        }
+
+        console.log(`[Credits] 🔄 Refund: ${user.email}: ${user.credits} → ${updated.credits}`);
+        return updated.credits;
+    } catch (err) {
+        console.error('[Credits] Unexpected error in refundCredit:', err);
+        return null;
+    }
+}
+
+/**
  * Consome múltiplos créditos do usuário.
  * SECURITY: Uses optimistic locking to prevent race conditions.
  * The UPDATE only succeeds if credits haven't changed since we read them.
@@ -243,17 +281,28 @@ export async function miningLimitMiddleware(req, res, next) {
 
     const userId = req.user.id;
     if (isUserMining(userId)) {
-        return res.status(429).json({ error: 'Mineração em andamento' });
+        return res.status(429).json({ error: 'Mineração em andamento', code: 'MINING_IN_PROGRESS' });
     }
 
     const creditsCheck = await checkCredits(userId);
     if (!creditsCheck.allowed) {
         return res.status(429).json({
             error: 'Sem créditos',
+            code: 'NO_CREDITS',
             message: creditsCheck.reason,
-            credits: creditsCheck.credits
+            credits: creditsCheck.credits,
+            maxCredits: creditsCheck.maxCredits,
+            tier: creditsCheck.tier
         });
     }
+
+    // Attach mining info to request for route handlers
+    req.miningInfo = {
+        credits: creditsCheck.credits,
+        maxCredits: creditsCheck.maxCredits,
+        tier: creditsCheck.tier,
+        nextRenewal: creditsCheck.nextRenewal
+    };
 
     next();
 }
@@ -273,6 +322,7 @@ export default {
     checkCredits,
     consumeCredit,
     consumeCredits,
+    refundCredit,
     isUserMining,
     startMiningSession,
     endMiningSession,

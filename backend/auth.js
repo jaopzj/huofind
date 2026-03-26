@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import supabase from './supabase.js';
 import { createClient } from '@supabase/supabase-js';
 import { config } from './config.js';
+import { notifyWelcome } from './notificationService.js';
 
 // Create a Supabase client for auth operations (with anon key for user signup)
 const supabaseAuth = createClient(config.supabaseUrl, config.supabaseAnonKey);
@@ -93,6 +94,15 @@ export async function registerUser(email, password, name, refCode = null) {
 
         const userId = authData.user.id;
 
+        // SECURITY (LOG-08): Block self-referral — the refCode was validated before
+        // userId existed, so the self-referral check in validateRefCode couldn't fire.
+        // Now that we have userId, verify the referrer is not the same user.
+        if (referrerId && referrerId === userId) {
+            console.warn(`[Auth] Self-referral blocked for user ${userId}`);
+            referrerId = null;
+            referrerCode = null;
+        }
+
         // Generate unique ref_id for new user
         const generateRefId = () => {
             const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -129,6 +139,27 @@ export async function registerUser(email, password, name, refCode = null) {
             console.error('[Auth] Error upserting user:', upsertError);
         } else {
             console.log(`[Auth] User created with ref_id: ${newRefId}`);
+            // FEAT-01: Welcome notification
+            notifyWelcome(userId, name || null).catch(() => {});
+        }
+
+        // SECURITY (LOG-08): Post-insert safety net — if somehow referred_by_id === id, clean it
+        if (referrerId && referrerCode) {
+            const { data: insertedUser } = await supabase
+                .from('users')
+                .select('id, referred_by_id')
+                .eq('id', userId)
+                .single();
+
+            if (insertedUser && insertedUser.referred_by_id === insertedUser.id) {
+                console.warn(`[Auth] Post-insert self-referral detected for ${userId}, cleaning up`);
+                await supabase.from('users').update({
+                    referred_by_id: null,
+                    referred_by_code: null
+                }).eq('id', userId);
+                referrerId = null;
+                referrerCode = null;
+            }
         }
 
         // Log referral in history if applicable

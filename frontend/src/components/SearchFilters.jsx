@@ -1,8 +1,10 @@
+import { memo } from 'react';
+
 /**
  * SearchFilters - Dropdown style filters with status filter buttons and currency toggle
  * Supports category-based filter rendering (iPhone, Apple Watch, Generic)
  */
-function SearchFilters({
+const SearchFilters = memo(function SearchFilters({
     filters,
     onFilterChange,
     availableModels = [],
@@ -349,6 +351,6 @@ function SearchFilters({
             )}
         </div>
     )
-}
+});
 
 export default SearchFilters;

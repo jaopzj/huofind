@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { normalizeTier, TIER_ROLE_NAME } from '../../utils/tierUtils';
 
 /**
  * AccordionSection - Seção colapsável do accordion
@@ -231,17 +232,14 @@ function ProfileSettings({
 
     // Get tier info
     const getTierInfo = (tier) => {
-        const tierLower = (tier || 'guest').toLowerCase();
-        if (tierLower.includes('minerador') || tierLower.includes('ouro') || tierLower.includes('gold')) {
-            return { name: 'Minerador', benefits: ['300 créditos mensais', 'Até 500 produtos por mineração', 'Suporte prioritário'] };
-        }
-        if (tierLower.includes('escavador') || tierLower.includes('prata') || tierLower.includes('silver')) {
-            return { name: 'Escavador', benefits: ['150 créditos mensais', 'Até 200 produtos por mineração', 'Suporte por email'] };
-        }
-        if (tierLower.includes('explorador') || tierLower.includes('bronze')) {
-            return { name: 'Explorador', benefits: ['50 créditos mensais', 'Até 100 produtos por mineração', 'Acesso ao suporte'] };
-        }
-        return { name: 'Convidado', benefits: ['3 créditos (não renova)', 'Até 30 produtos por mineração', 'Funcionalidades básicas'] };
+        const normalized = normalizeTier(tier);
+        const benefits = {
+            gold: ['300 créditos mensais', 'Até 500 produtos por mineração', 'Suporte prioritário'],
+            silver: ['150 créditos mensais', 'Até 200 produtos por mineração', 'Suporte por email'],
+            bronze: ['50 créditos mensais', 'Até 100 produtos por mineração', 'Acesso ao suporte'],
+            guest: ['3 créditos (não renova)', 'Até 30 produtos por mineração', 'Funcionalidades básicas'],
+        };
+        return { name: TIER_ROLE_NAME[normalized], benefits: benefits[normalized] };
     };
 
     const tierInfo = getTierInfo(miningInfo?.tier || user?.tier);

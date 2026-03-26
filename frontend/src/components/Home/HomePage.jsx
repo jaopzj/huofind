@@ -1,58 +1,36 @@
 import { motion } from 'framer-motion';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import HeroHome from './HeroHome';
 import QuickAccess from './QuickAccess';
 import ForYouSection from './ForYouSection';
 import ExploreSection from './ExploreSection';
 import InstitutionalSection from './InstitutionalSection';
 import CategoryProductSection from './CategoryProductSection';
+import { resolvePagePath } from '../../utils/routes';
 
 /**
  * HomePage - Main container for the Home page
  * Combines all sections into a cohesive landing experience
  */
-function HomePage({
-    savedProducts = [],
-    onNavigate,
-    onSearch,
-    onCategoryClick,
-    isLoading = false,
-    isGuest = false
-}) {
-    // Handle search from hero
+function HomePage() {
+    const ctx = useOutletContext();
+    const navigate = useNavigate();
+    const savedProducts = ctx?.savedProducts || [];
+    const isGuest = ctx?.isGuest || false;
+
     const handleSearch = (query) => {
-        if (onSearch) {
-            onSearch(query);
-        }
+        sessionStorage.setItem('yupoo_search_query', query);
+        navigate('/yupoo');
     };
 
-    // Handle navigation from quick access
     const handleNavigate = (pageId) => {
-        if (onNavigate) {
-            onNavigate(pageId);
-        }
+        navigate(resolvePagePath(pageId));
     };
 
-    // Handle category click from explore section
     const handleCategoryClick = (categoryId) => {
-        if (onCategoryClick) {
-            onCategoryClick(categoryId);
-        } else if (onNavigate) {
-            // Default: navigate to yupoo-search with category filter
-            onNavigate('yupoo-search', { category: categoryId });
-        }
+        sessionStorage.setItem('yupoo_category_filter', categoryId);
+        navigate('/yupoo');
     };
-
-    // Loading state
-    if (isLoading) {
-        return (
-            <div className="min-h-[60vh] flex items-center justify-center">
-                <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-500 rounded-full animate-spin mx-auto mb-4" />
-                    <p className="text-gray-300 font-medium">Carregando...</p>
-                </div>
-            </div>
-        );
-    }
 
     return (
         <motion.div

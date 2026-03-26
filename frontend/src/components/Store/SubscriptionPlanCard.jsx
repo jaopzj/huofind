@@ -15,7 +15,7 @@ const PLAN_CONFIG = {
             'Suporte por email'
         ]
     },
-    prata: {
+    silver: {
         name: 'Escavador',
         icon: LuSparkles,
         color: '#4B5563',
@@ -27,7 +27,7 @@ const PLAN_CONFIG = {
             'Suporte prioritário'
         ]
     },
-    ouro: {
+    gold: {
         name: 'Minerador',
         icon: LuCrown,
         color: '#D97706',
@@ -45,7 +45,7 @@ const PLAN_CONFIG = {
  * SubscriptionPlanCard - Subscription plan card with benefits list
  */
 function SubscriptionPlanCard({
-    planId, // 'bronze' | 'prata' | 'ouro'
+    planId, // 'bronze' | 'silver' | 'gold'
     credits,
     price,
     isCurrentPlan = false,

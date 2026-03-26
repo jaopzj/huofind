@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { normalizeTier, TIER_ROLE_NAME } from '../../utils/tierUtils';
 
 /**
  * ProfileHeader - Header do perfil com avatar, nome e informações principais
@@ -81,17 +82,14 @@ function ProfileHeader({
 
     // Get tier display name and color
     const getTierInfo = (tier) => {
-        const tierLower = (tier || 'guest').toLowerCase();
-        if (tierLower.includes('minerador') || tierLower.includes('ouro') || tierLower.includes('gold')) {
-            return { name: 'Minerador', color: 'from-blue-400 to-blue-600', bgColor: 'bg-blue-500/10', textColor: 'text-blue-400' };
-        }
-        if (tierLower.includes('escavador') || tierLower.includes('prata') || tierLower.includes('silver')) {
-            return { name: 'Escavador', color: 'from-gray-400 to-gray-600', bgColor: 'bg-white/10', textColor: 'text-gray-300' };
-        }
-        if (tierLower.includes('explorador') || tierLower.includes('bronze')) {
-            return { name: 'Explorador', color: 'from-blue-300 to-blue-500', bgColor: 'bg-blue-500/5', textColor: 'text-blue-300' };
-        }
-        return { name: 'Convidado', color: 'from-gray-500 to-gray-700', bgColor: 'bg-white/5', textColor: 'text-gray-400' };
+        const normalized = normalizeTier(tier);
+        const styles = {
+            gold: { color: 'from-blue-400 to-blue-600', bgColor: 'bg-blue-500/10', textColor: 'text-blue-400' },
+            silver: { color: 'from-gray-400 to-gray-600', bgColor: 'bg-white/10', textColor: 'text-gray-300' },
+            bronze: { color: 'from-blue-300 to-blue-500', bgColor: 'bg-blue-500/5', textColor: 'text-blue-300' },
+            guest: { color: 'from-gray-500 to-gray-700', bgColor: 'bg-white/5', textColor: 'text-gray-400' },
+        };
+        return { name: TIER_ROLE_NAME[normalized], ...styles[normalized] };
     };
 
     const tierInfo = getTierInfo(user?.tier);

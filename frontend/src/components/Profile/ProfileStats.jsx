@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { normalizeTier, TIER_DISPLAY_NAME } from '../../utils/tierUtils';
 
 /**
  * AnimatedNumber - Número com animação de contagem
@@ -230,7 +231,7 @@ function ProfileStats({
         : null;
 
     // Check if user has an active subscription (non-guest tier)
-    const isSubscriber = miningInfo.tier && miningInfo.tier !== 'guest' && miningInfo.tier !== 'convidado';
+    const isSubscriber = normalizeTier(miningInfo.tier) !== 'guest';
     const hasSubscriptionEnd = isSubscriber && miningInfo.subscriptionEnd;
 
     return (
@@ -322,7 +323,7 @@ function ProfileStats({
                                 <div className="text-left">
                                     <p className="text-xs font-black text-gray-500 uppercase tracking-widest">Tempo de Assinatura</p>
                                     <p className="text-sm font-bold text-gray-300">
-                                        Sua assinatura {miningInfo.tier === 'gold' ? 'Ouro' : miningInfo.tier === 'silver' ? 'Prata' : 'Bronze'} expira em:
+                                        Sua assinatura {TIER_DISPLAY_NAME[normalizeTier(miningInfo.tier)] || 'Bronze'} expira em:
                                     </p>
                                 </div>
                             </div>

@@ -4,9 +4,9 @@ import { LuSparkles, LuCalendar, LuTrendingUp } from 'react-icons/lu';
 /**
  * CreditBalanceCard - Displays current credit balance with progress bar
  */
-function CreditBalanceCard({ credits = 0, maxCredits = 50, nextRenewal = null, tier = 'guest' }) {
-    const percentage = Math.min(100, (credits / maxCredits) * 100);
-    const isLowBalance = credits <= maxCredits * 0.2;
+function CreditBalanceCard({ credits = 0, maxCredits, nextRenewal = null, tier = 'guest' }) {
+    const percentage = maxCredits ? Math.min(100, (credits / maxCredits) * 100) : 0;
+    const isLowBalance = maxCredits ? credits <= maxCredits * 0.2 : false;
     const isOutOfCredits = credits <= 0;
 
     // Calculate days until renewal

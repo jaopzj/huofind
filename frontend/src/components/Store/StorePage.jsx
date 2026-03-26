@@ -6,6 +6,7 @@ import CreditPackageCard from './CreditPackageCard';
 import SubscriptionSlider from './SubscriptionSlider';
 import PurchaseHistorySection from './PurchaseHistorySection';
 import ReferralCodeInput from './ReferralCodeInput';
+import { normalizeTier } from '../../utils/tierUtils';
 
 const CREDIT_PACKAGES = [
     { id: 'basic', credits: 50, price: 9.90, pricePerCredit: 0.20 },
@@ -23,22 +24,13 @@ function StorePage({ user, miningInfo = {} }) {
 
     const token = localStorage.getItem('accessToken');
 
-    // Extract user info
+    // Extract user info — values come from server, null while loading
     const credits = miningInfo.credits || 0;
-    const maxCredits = miningInfo.maxCredits || 50;
+    const maxCredits = miningInfo.maxCredits;
     const nextRenewal = miningInfo.nextRenewal || null;
 
-    // Determine current tier
-    let currentTier = (user?.tier || 'guest').toLowerCase().trim();
-    if (currentTier.includes('minerador') || currentTier.includes('gold') || currentTier.includes('ouro')) {
-        currentTier = 'ouro';
-    } else if (currentTier.includes('escavador') || currentTier.includes('silver') || currentTier.includes('prata')) {
-        currentTier = 'prata';
-    } else if (currentTier.includes('explorador') || currentTier.includes('bronze')) {
-        currentTier = 'bronze';
-    } else {
-        currentTier = 'guest';
-    }
+    // Determine current tier (canonical English name)
+    const currentTier = normalizeTier(user?.tier);
 
     // Fetch stored referral code on mount
     useEffect(() => {

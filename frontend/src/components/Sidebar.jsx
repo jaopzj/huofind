@@ -1,8 +1,12 @@
 "use client";
 
 import { useState, forwardRef, useCallback, useImperativeHandle, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import { LuPickaxe } from "react-icons/lu";
+import { resolvePagePath } from "../utils/routes";
+import { normalizeTier } from "../utils/tierUtils";
+import NotificationBell from "./NotificationBell";
 
 // Animated hamburger menu toggle for mobile
 const AnimatedMenuToggle = ({ toggle, isOpen }) => (
@@ -892,6 +896,106 @@ const CalculatorIcon = forwardRef(({ onMouseEnter, onMouseLeave, isActive, class
 });
 CalculatorIcon.displayName = "CalculatorIcon";
 
+// Profit Dashboard Icon — Animated trend line
+const ProfitIcon = forwardRef(({ onMouseEnter, onMouseLeave, isActive, className, size = 20, ...props }, ref) => {
+    const controls = useAnimation();
+    const isControlledRef = useRef(false);
+
+    useImperativeHandle(ref, () => {
+        isControlledRef.current = true;
+        return {
+            startAnimation: () => {
+                if (!isActive) controls.start("animate");
+            },
+            stopAnimation: () => controls.start("normal"),
+        };
+    }, [controls, isActive]);
+
+    const handleMouseEnter = useCallback(
+        (e) => {
+            if (isActive) return;
+            if (isControlledRef.current) {
+                onMouseEnter?.(e);
+            } else {
+                controls.start("animate");
+            }
+        },
+        [controls, onMouseEnter, isActive]
+    );
+
+    const handleMouseLeave = useCallback(
+        (e) => {
+            if (isControlledRef.current) {
+                onMouseLeave?.(e);
+            } else {
+                controls.start("normal");
+            }
+        },
+        [controls, onMouseLeave]
+    );
+
+    const lineVariants = {
+        normal: { pathLength: 1, opacity: 1 },
+        animate: {
+            pathLength: [0, 1],
+            opacity: [0, 1],
+            transition: { duration: 0.6, ease: "easeInOut" },
+        },
+    };
+
+    const arrowVariants = {
+        normal: { pathLength: 1, opacity: 1 },
+        animate: {
+            pathLength: [0, 1],
+            opacity: [0, 1],
+            transition: { duration: 0.4, ease: "easeInOut", delay: 0.3 },
+        },
+    };
+
+    return (
+        <div
+            className={className}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            {...props}
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: size,
+                height: size,
+                cursor: 'pointer'
+            }}
+        >
+            <svg
+                fill="none"
+                height={size}
+                stroke="currentColor"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                viewBox="0 0 24 24"
+                width={size}
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <motion.polyline
+                    points="22 7 13.5 15.5 8.5 10.5 2 17"
+                    variants={lineVariants}
+                    initial="normal"
+                    animate={controls}
+                />
+                <motion.polyline
+                    points="16 7 22 7 22 13"
+                    variants={arrowVariants}
+                    initial="normal"
+                    animate={controls}
+                />
+            </svg>
+        </div>
+    );
+});
+ProfitIcon.displayName = "ProfitIcon";
+
 // AI Assistant Icon - Animated Bot
 const botVariants = {
     path1: {
@@ -1037,7 +1141,7 @@ const TIER_CONFIG = {
             </svg>
         )
     },
-    prata: {
+    silver: {
         name: 'Escavador',
         color: '#504b63ff',
         bg: 'rgba(75, 85, 99, 0.1)',
@@ -1047,7 +1151,7 @@ const TIER_CONFIG = {
             </svg>
         )
     },
-    ouro: {
+    gold: {
         name: 'Minerador',
         color: '#0696d9ff',
         bg: 'rgba(6, 69, 217, 0.1)',
@@ -1175,7 +1279,7 @@ const SidebarContent = ({
     toggleSidebar,
     refs
 }) => {
-    const { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef, calculatorIconRef, botIconRef: aiIconRef } = refs;
+    const { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef, calculatorIconRef, botIconRef: aiIconRef, profitIconRef } = refs;
 
     return (
         <div className="flex flex-col h-full">
@@ -1210,11 +1314,7 @@ const SidebarContent = ({
                             </p>
                             {/* Tier Badge integrated next to name */}
                             {miningInfo && (() => {
-                                let tierKey = (user?.tier || 'guest').toLowerCase().trim();
-                                if (tierKey.includes('minerador') || tierKey.includes('gold') || tierKey.includes('ouro')) tierKey = 'ouro';
-                                else if (tierKey.includes('escavador') || tierKey.includes('silver') || tierKey.includes('prata')) tierKey = 'prata';
-                                else if (tierKey.includes('explorador') || tierKey.includes('bronze')) tierKey = 'bronze';
-                                else tierKey = 'guest';
+                                const tierKey = normalizeTier(user?.tier);
                                 const config = TIER_CONFIG[tierKey] || TIER_CONFIG['guest'];
                                 return (
                                     <div
@@ -1233,6 +1333,10 @@ const SidebarContent = ({
                         <p className="text-[11px] text-white/60 truncate">
                             {user?.email || ''}
                         </p>
+                    </div>
+                    {/* Notification Bell */}
+                    <div className="shrink-0">
+                        <NotificationBell />
                     </div>
                 </div>
 
@@ -1395,6 +1499,16 @@ const SidebarContent = ({
                                 onMouseLeave={() => aiIconRef.current?.stopAnimation()}
                             />
                         </li>
+                        <li>
+                            <NavItem
+                                icon={<ProfitIcon ref={profitIconRef} isActive={activePage === 'profitability'} />}
+                                label="Rentabilidade"
+                                isActive={activePage === 'profitability'}
+                                onClick={() => onNavClick('profitability')}
+                                onMouseEnter={() => profitIconRef.current?.startAnimation()}
+                                onMouseLeave={() => profitIconRef.current?.stopAnimation()}
+                            />
+                        </li>
                     </ul>
                 </div>
             </nav>
@@ -1416,8 +1530,10 @@ const SidebarContent = ({
 };
 
 // Main Sidebar component
-const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL, onToggleCurrency, hasResults }) => {
+const Sidebar = ({ user, miningInfo, onLogout, showBRL, onToggleCurrency, hasResults }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const navigate = useNavigate();
+    const location = useLocation();
     const productsIconRef = useRef(null);
     const profileIconRef = useRef(null);
     const sellersIconRef = useRef(null);
@@ -1425,13 +1541,29 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL
     const storeIconRef = useRef(null);
     const calculatorIconRef = useRef(null);
     const botIconRef = useRef(null);
+    const profitIconRef = useRef(null);
 
     const toggleSidebar = () => setIsOpen(!isOpen);
 
+    // Convert legacy page IDs to paths and navigate
     const handleNavClick = (pageId) => {
-        onPageChange(pageId);
-        setIsOpen(false); // Close mobile menu after navigation
+        navigate(resolvePagePath(pageId));
+        setIsOpen(false);
     };
+
+    // Derive activePage from current URL path for backward compat with SidebarContent
+    const pathToPage = {
+        '/': 'home',
+        '/mining': 'xianyu-mining',
+        '/yupoo': 'yupoo-search',
+        '/saved': 'saved',
+        '/profile': 'profile',
+        '/store': 'store',
+        '/calculator': 'fee-calculator',
+        '/declaration': 'declaration-assistant',
+        '/profitability': 'profitability',
+    };
+    const activePage = pathToPage[location.pathname] || 'home';
 
     const sidebarProps = {
         user,
@@ -1441,7 +1573,7 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL
         onLogout,
         isOpen,
         toggleSidebar,
-        refs: { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef, calculatorIconRef, botIconRef }
+        refs: { productsIconRef, profileIconRef, sellersIconRef, homeIconRef, storeIconRef, calculatorIconRef, botIconRef, profitIconRef }
     };
 
     return (
@@ -1453,7 +1585,7 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL
 
                     <div className="flex items-center gap-4">
                         {/* Mobile Currency Toggle - only on mining page with results */}
-                        {activePage === 'xianyu-mining' && hasResults && (
+                        {location.pathname === '/mining' && hasResults && (
                             <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-white/5 border border-white/10">
                                 <span className="text-[10px] font-bold" style={{ color: showBRL ? '#6B7280' : 'white' }}>
                                     ¥
@@ -1477,6 +1609,7 @@ const Sidebar = ({ user, activePage, miningInfo, onPageChange, onLogout, showBRL
                                 </span>
                             </div>
                         )}
+                        <NotificationBell />
                         <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
                     </div>
                 </div>

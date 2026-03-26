@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import {
     detectStorage,
     extractUniqueStorages,
@@ -13,7 +14,7 @@ import SaveBookmarkButton from './SaveBookmarkButton';
 /**
  * ProductCard - Estilo e-commerce minimalista com salvamento
  */
-function ProductCard({
+const ProductCard = memo(function ProductCard({
     product,
     showBRL = false,
     exchangeRate = 0,
@@ -167,12 +168,12 @@ function ProductCard({
             </div>
         </article>
     );
-}
+});
 
 /**
  * ProductGrid - Grid responsivo de produtos com suporte a salvamento
  */
-function ProductGrid({
+const ProductGrid = memo(function ProductGrid({
     products,
     showBRL = false,
     exchangeRate = 0,
@@ -209,7 +210,7 @@ function ProductGrid({
             ))}
         </div>
     );
-}
+});
 
 export { extractUniqueProductModels, detectProductModel, detectStorage, extractUniqueStorages };
 export default ProductGrid;

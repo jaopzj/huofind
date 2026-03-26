@@ -213,10 +213,16 @@ export async function storeRefCodeForUser(userId, refCode) {
         return { success: false, error: 'Você já possui um código de referência', locked: true };
     }
 
-    // Validate the code
+    // Validate the code (passes userId for self-referral check inside validateRefCode)
     const validation = await validateRefCode(refCode, userId);
     if (!validation.valid) {
         return { success: false, error: validation.error };
+    }
+
+    // SECURITY (LOG-08): Explicit self-referral guard — mandatory, independent of validateRefCode
+    if (validation.referrer.id === userId) {
+        console.warn(`[Referral] Self-referral blocked in storeRefCodeForUser for user ${userId}`);
+        return { success: false, error: 'Você não pode usar seu próprio código' };
     }
 
     // Store the code

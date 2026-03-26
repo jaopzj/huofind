@@ -10,7 +10,7 @@ import { useState, useEffect } from 'react';
  * - onLimitReached: callback quando limite é atingido (para reset)
  * - showLimitError: indica se deve mostrar erro de limite
  */
-function MiningLimitCard({ credits = 0, maxCredits = 3, tier = 'guest', showLimitError = false, onDismissError }) {
+function MiningLimitCard({ credits = 0, maxCredits, tier = 'guest', showLimitError = false, onDismissError }) {
     const [isError, setIsError] = useState(false);
     const [isAnimating, setIsAnimating] = useState(false);
 
@@ -32,8 +32,8 @@ function MiningLimitCard({ credits = 0, maxCredits = 3, tier = 'guest', showLimi
     }, [showLimitError, onDismissError]);
 
     const isOutOfCredits = credits <= 0;
-    const percentage = Math.min(100, (credits / maxCredits) * 100);
-    const isLowCredits = credits <= (maxCredits * 0.2); // 20% ou menos
+    const percentage = maxCredits ? Math.min(100, (credits / maxCredits) * 100) : 0;
+    const isLowCredits = maxCredits ? credits <= (maxCredits * 0.2) : false; // 20% ou menos
 
     // Tier display info
     const tierInfo = {
