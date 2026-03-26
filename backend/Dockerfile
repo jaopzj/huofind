@@ -1,12 +1,13 @@
-FROM mcr.microsoft.com/playwright:v1.40.0-jammy
+FROM node:20-slim
 
 WORKDIR /app
 
 COPY package*.json ./
 RUN npm ci --production
 
-COPY . .
+# Install Playwright Chromium and all its system dependencies
+RUN npx playwright install --with-deps chromium
 
-EXPOSE 3001
+COPY . .
 
 CMD ["node", "server.js"]
