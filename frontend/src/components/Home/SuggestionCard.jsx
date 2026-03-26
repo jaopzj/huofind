@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { proxyImage } from '../../utils/imageProxy';
 
 /**
  * SuggestionCard - Compact product card for horizontal carousel
@@ -25,7 +26,7 @@ function SuggestionCard({ product, onClick }) {
     };
 
     // Get image URL - handle multiple field names
-    const imageUrl = product.image || product.imagem || product.product_image || product.images?.[0];
+    const imageUrl = proxyImage(product.image || product.imagem || product.product_image || product.images?.[0]);
 
     // Get title - handle multiple field names
     const title = product.titulo || product.title || product.product_title || product.name || 'Produto';

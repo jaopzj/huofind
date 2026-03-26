@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ProductCarousel from './ProductCarousel';
+import { proxyImage } from '../../utils/imageProxy';
 
 /**
  * ForYouSection - Personalized suggestions section
@@ -12,7 +13,7 @@ function ForYouSection({ savedProducts = [] }) {
 
     // Helper to get product image URL
     const getProductImage = (p) => {
-        return p.image || p.imagem || p.product_image || null;
+        return proxyImage(p.image || p.imagem || p.product_image || null);
     };
 
     // Fetch suggestions from local Yupoo data

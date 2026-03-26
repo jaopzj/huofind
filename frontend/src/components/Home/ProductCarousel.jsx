@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { LuChevronLeft, LuChevronRight, LuExternalLink } from 'react-icons/lu';
+import { proxyImage } from '../../utils/imageProxy';
 
 /**
  * ProductCarousel - Reusable product carousel component
@@ -66,7 +67,7 @@ function ProductCarousel({
 
     // Helper to get product image URL
     const getProductImage = (p) => {
-        return p.image || p.imagem || p.product_image || null;
+        return proxyImage(p.image || p.imagem || p.product_image || null);
     };
 
     // Format price

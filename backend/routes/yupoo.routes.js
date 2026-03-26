@@ -63,4 +63,46 @@ router.post('/image-search', (req, res) => {
     });
 });
 
+/**
+ * GET /api/yupoo/image-proxy?url=...
+ * Proxy Yupoo images to avoid ORB/CORS blocking.
+ */
+router.get('/image-proxy', async (req, res) => {
+    const { url } = req.query;
+
+    if (!url || !/^https:\/\/photo\.yupoo\.com\//.test(url)) {
+        return res.status(400).json({ error: 'URL inválida' });
+    }
+
+    try {
+        let referer = '';
+        try {
+            referer = new URL(url).origin + '/';
+        } catch (_) { /* ignore */ }
+
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Referer': referer,
+                'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8'
+            },
+            signal: AbortSignal.timeout(10000)
+        });
+
+        if (!response.ok) {
+            return res.status(response.status).end();
+        }
+
+        const contentType = response.headers.get('content-type') || 'image/jpeg';
+        res.set('Content-Type', contentType);
+        res.set('Cache-Control', 'public, max-age=86400');
+
+        const buffer = Buffer.from(await response.arrayBuffer());
+        res.send(buffer);
+    } catch (error) {
+        console.error('[ImageProxy] Error:', error.message);
+        res.status(502).end();
+    }
+});
+
 export default router;

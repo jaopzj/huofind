@@ -1,4 +1,5 @@
 import { memo } from 'react';
+import { proxyImage } from '../utils/imageProxy';
 import {
     detectStorage,
     extractUniqueStorages,
@@ -57,7 +58,7 @@ const ProductCard = memo(function ProductCard({
             >
                 {product.images?.[0] ? (
                     <img
-                        src={product.images[0]}
+                        src={proxyImage(product.images[0])}
                         alt={product.nameTranslated || product.name}
                         className="w-full h-full object-cover"
                         loading="lazy"

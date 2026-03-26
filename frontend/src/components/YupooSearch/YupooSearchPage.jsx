@@ -8,6 +8,7 @@ import UpgradeModal from '../UpgradeModal';
 import { isRecommendedBatch, normalizeBatchMap } from '../../utils/batchValidator';
 import batchValidatorData from '../../data/batch-validator.json';
 import './BatchBadge.css';
+import { proxyImage } from '../../utils/imageProxy';
 
 
 const SORT_OPTIONS = [
@@ -1171,7 +1172,7 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
             {/* Image Aspect Ratio Container */}
             <div className="relative aspect-square overflow-hidden bg-gray-900">
                 <img
-                    src={product.image}
+                    src={proxyImage(product.image)}
                     alt={product.titulo}
                     loading="lazy"
                     decoding="async"

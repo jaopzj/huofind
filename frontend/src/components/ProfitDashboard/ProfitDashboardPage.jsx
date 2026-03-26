@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { proxyImage } from '../../utils/imageProxy';
 
 // ───────────────── Icons ─────────────────
 
@@ -305,7 +306,7 @@ const ProductSelectCard = ({ product, isSelected, onToggle }) => {
                 </div>
                 <div className="shrink-0 w-10 h-10 rounded-lg bg-gray-800 overflow-hidden">
                     {product.product_image ? (
-                        <img src={product.product_image} alt="" className="w-full h-full object-cover" loading="lazy"
+                        <img src={proxyImage(product.product_image)} alt="" className="w-full h-full object-cover" loading="lazy"
                             onError={(e) => { e.target.style.display = 'none'; }} />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-white/20">
@@ -340,7 +341,7 @@ const ProductResultRow = ({ result, product, index, onWeightChange, onSellPriceC
             >
                 <div className="shrink-0 w-8 h-8 rounded-lg bg-gray-800 overflow-hidden">
                     {product.product_image ? (
-                        <img src={product.product_image} alt="" className="w-full h-full object-cover" loading="lazy"
+                        <img src={proxyImage(product.product_image)} alt="" className="w-full h-full object-cover" loading="lazy"
                             onError={(e) => { e.target.style.display = 'none'; }} />
                     ) : null}
                 </div>

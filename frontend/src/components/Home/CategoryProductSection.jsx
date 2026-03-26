@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import ProductCarousel from './ProductCarousel';
+import { proxyImage } from '../../utils/imageProxy';
 
 /**
  * CategoryProductSection - Shows random products from a specific category
@@ -16,7 +17,7 @@ function CategoryProductSection({
 
     // Helper to get product image URL
     const getProductImage = (p) => {
-        return p.image || p.imagem || p.product_image || null;
+        return proxyImage(p.image || p.imagem || p.product_image || null);
     };
 
     // Category name mapping (ID to Portuguese name in data)

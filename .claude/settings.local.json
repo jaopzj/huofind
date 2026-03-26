@@ -30,7 +30,8 @@
       "Bash(dir:*)",
       "Bash(python -c \"from is_prime import is_prime; print\\(is_prime\\(7\\)\\); print\\(is_prime\\(10\\)\\); print\\(is_prime\\(97\\)\\)\")",
       "Bash(gh auth:*)",
-      "Bash(gh pr:*)"
+      "Bash(gh pr:*)",
+      "Bash(find /d/xiner -type f -name manifest.json -o -name *.json -path *data/yupoo*)"
     ]
   }
 }

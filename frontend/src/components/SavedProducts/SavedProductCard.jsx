@@ -1,5 +1,6 @@
 import { useState, memo } from 'react';
 import { motion } from 'framer-motion';
+import { proxyImage } from '../../utils/imageProxy';
 
 /**
  * SavedProductCard - Enhanced product card with platform tag and actions
@@ -53,7 +54,7 @@ const SavedProductCard = memo(function SavedProductCard({
             <div className="relative aspect-square bg-gray-900/50 overflow-hidden">
                 {product.product_image ? (
                     <img
-                        src={product.product_image}
+                        src={proxyImage(product.product_image)}
                         alt={product.product_title || 'Produto'}
                         className="w-full h-full object-cover"
                         loading="lazy"

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuSearch, LuClock, LuX, LuExternalLink, LuSparkles } from 'react-icons/lu';
+import { proxyImage } from '../../utils/imageProxy';
 
 // Local storage key for search history
 const SEARCH_HISTORY_KEY = 'huofind_search_history';
@@ -122,7 +123,7 @@ function HeroHome({ onSearch, initialQuery = '', isGuest = false }) {
 
     // Helper to get product image URL (handles multiple field names)
     const getProductImage = (p) => {
-        return p.image || p.imagem || p.product_image || null;
+        return proxyImage(p.image || p.imagem || p.product_image || null);
     };
 
     // Get filtered product suggestions based on query
