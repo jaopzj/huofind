@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 /**
@@ -19,6 +20,8 @@ function AuthCard() {
 
     // Mode: 'login' or 'register'
     const [mode, setMode] = useState('login');
+    const navigate = useNavigate();
+    const redirectionTimeoutRef = useRef(null);
 
     // Login form data
     const [loginEmail, setLoginEmail] = useState('');
@@ -38,6 +41,15 @@ function AuthCard() {
     const [resending, setResending] = useState(false);
     const [resendSuccess, setResendSuccess] = useState(false);
     const pollingRef = useRef(null);
+
+    // Clear timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (redirectionTimeoutRef.current) {
+                clearTimeout(redirectionTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Content height animation
     const contentRef = useRef(null);
@@ -157,15 +169,12 @@ function AuthCard() {
                 if (result.confirmed) {
                     clearInterval(pollingRef.current);
                     setEmailConfirmed(true);
-                    // Clear pending status as it's now confirmed
+                    
                     if (setPendingEmailConfirmation) {
                         setPendingEmailConfirmation(null);
                         localStorage.removeItem('pendingEmailConfirmation');
                     }
-                    // Wait for animation, then redirect
-                    setTimeout(() => {
-                        window.location.pathname = '/';
-                    }, 2500);
+                    // No need for manual redirect; ProtectedRoute will show App since isAuthenticated is now true
                 }
             }, 3000);
 
