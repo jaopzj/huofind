@@ -89,6 +89,10 @@ export async function registerUser(email, password, name, refCode = null) {
             if (authError.message.includes('already registered')) {
                 return { error: 'Email já cadastrado', code: 'EMAIL_EXISTS' };
             }
+            if (authError.message.includes('Database error saving new user')) {
+                console.error('[Auth] Database trigger error - check for broken triggers on auth.users table in Supabase Dashboard');
+                return { error: 'Erro temporário no cadastro. Tente novamente em instantes.', code: 'DB_ERROR' };
+            }
             return { error: authError.message, code: 'AUTH_ERROR' };
         }
 
