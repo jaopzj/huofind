@@ -12,7 +12,15 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [pendingEmailConfirmation, setPendingEmailConfirmation] = useState(() => {
-        return localStorage.getItem('pendingEmailConfirmation') || null;
+        const saved = localStorage.getItem('pendingEmailConfirmation');
+        if (saved) {
+            try {
+                return JSON.parse(saved);
+            } catch (e) {
+                return saved;
+            }
+        }
+        return null;
     }); // { email, name }
 
     // Check for existing session on mount
@@ -139,6 +147,7 @@ export function AuthProvider({ children }) {
                     localStorage.setItem('refreshToken', data.refreshToken);
                     setUser(data.user);
                     setPendingEmailConfirmation(null);
+                    localStorage.removeItem('pendingEmailConfirmation');
                 }
                 return { confirmed: true, user: data.user };
             }
@@ -236,13 +245,17 @@ export function AuthProvider({ children }) {
         error,
         isAuthenticated: !!user,
         pendingEmailConfirmation,
+        setPendingEmailConfirmation,
         register,
         login,
         logout,
         checkEmailConfirmation,
         resendConfirmationEmail,
         clearError: () => setError(null),
-        clearPendingEmail: () => setPendingEmailConfirmation(null)
+        clearPendingEmail: () => {
+            setPendingEmailConfirmation(null);
+            localStorage.removeItem('pendingEmailConfirmation');
+        }
     };
 
     return (
