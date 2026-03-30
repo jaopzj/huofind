@@ -96,7 +96,7 @@ export async function applyReferralBenefits(userId, planPrice, planId = null) {
     // Check if user has a stored referral code that hasn't been used
     const { data: user, error: userError } = await supabase
         .from('users')
-        .select('referred_by_code, referred_by_id, referral_used_at, bonus_credits_received')
+        .select('referred_by_code, referred_by_id, referral_used_at')
         .eq('id', userId)
         .single();
 
@@ -132,8 +132,7 @@ export async function applyReferralBenefits(userId, planPrice, planId = null) {
         .update({
             referral_used_at: now,
             credits: newReferredCredits,
-            credits_package: newReferredPackage,
-            bonus_credits_received: true
+            credits_package: newReferredPackage
         })
         .eq('id', userId)
         .is('referral_used_at', null) // Double-guard: atomic claim

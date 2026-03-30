@@ -69,7 +69,7 @@ app.use(cors({
 // IMPORTANT: Stripe webhook needs raw body — must come BEFORE express.json()
 mountWebhookRoute(app);
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 
 // ============================================
 // MOUNT ROUTES

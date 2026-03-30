@@ -25,23 +25,28 @@ export function AuthProvider({ children }) {
 
     // Check for existing session on mount
     useEffect(() => {
-        const token = localStorage.getItem('accessToken');
-        const refreshToken = localStorage.getItem('refreshToken');
+        const initAuth = async () => {
+            const token = localStorage.getItem('accessToken');
+            const storedRefreshToken = localStorage.getItem('refreshToken');
 
-        if (token) {
-            // Verify token and get user info
-            fetchUser(token).then(userData => {
+            if (token) {
+                // Verify token and get user info
+                const userData = await fetchUser(token);
                 if (userData) {
                     setUser(userData);
-                } else if (refreshToken) {
-                    // Try to refresh if access token expired
-                    refreshAccessToken(refreshToken);
+                } else if (storedRefreshToken) {
+                    // Access token expired/invalid, try to refresh
+                    await refreshAccessToken(storedRefreshToken);
                 }
-                setLoading(false);
-            });
-        } else {
+            } else if (storedRefreshToken) {
+                // No access token but refresh token exists, try to refresh
+                await refreshAccessToken(storedRefreshToken);
+            }
+
             setLoading(false);
-        }
+        };
+
+        initAuth();
     }, []);
 
     const fetchUser = async (token) => {

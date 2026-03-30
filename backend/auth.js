@@ -96,6 +96,16 @@ export async function registerUser(email, password, name, refCode = null) {
             return { error: authError.message, code: 'AUTH_ERROR' };
         }
 
+        // Supabase returns a fake user with empty identities when the email is already registered
+        // (instead of throwing an error). Detect this and block duplicate registration.
+        if (
+            authData.user &&
+            (!authData.user.identities || authData.user.identities.length === 0)
+        ) {
+            console.warn(`[Auth] Duplicate signup attempt blocked for: ${emailLower}`);
+            return { error: 'Email já cadastrado', code: 'EMAIL_EXISTS' };
+        }
+
         const userId = authData.user.id;
 
         // SECURITY (LOG-08): Block self-referral — the refCode was validated before
@@ -106,6 +116,9 @@ export async function registerUser(email, password, name, refCode = null) {
             referrerId = null;
             referrerCode = null;
         }
+
+        // Hash password for public.users table (used for email/password changes)
+        const passwordHash = await bcrypt.hash(password, 10);
 
         // Generate unique ref_id for new user
         const generateRefId = () => {
@@ -127,7 +140,8 @@ export async function registerUser(email, password, name, refCode = null) {
             tier: 'guest',
             credits: 3,
             mining_count: 0,
-            ref_id: newRefId
+            ref_id: newRefId,
+            password_hash: passwordHash
         };
 
         // Add referral data if valid
@@ -229,13 +243,39 @@ export async function checkEmailConfirmed(email) {
         const emailLower = user.email.toLowerCase();
         const userName = user.user_metadata?.name || null;
 
-        // Ensure user is in public.users with email_verified flag
-        await supabase.from('users').upsert({
-            id: user.id,
-            email: emailLower,
-            name: userName,
-            email_verified: true
-        }, { onConflict: 'id' });
+        // Check if user already exists in public.users
+        const { data: existingUser } = await supabase
+            .from('users')
+            .select('id, credits')
+            .eq('id', user.id)
+            .single();
+
+        if (existingUser) {
+            // User exists — only update email_verified flag, preserve all other data
+            await supabase.from('users')
+                .update({ email_verified: true })
+                .eq('id', user.id);
+        } else {
+            // User doesn't exist (initial upsert in registerUser must have failed) — create with proper defaults
+            const generateRefId = () => {
+                const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+                let result = '';
+                for (let i = 0; i < 7; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                return result;
+            };
+            await supabase.from('users').insert({
+                id: user.id,
+                email: emailLower,
+                name: userName,
+                email_verified: true,
+                tier: 'guest',
+                credits: 3,
+                mining_count: 0,
+                ref_id: generateRefId()
+            });
+        }
 
         // Ensure user_settings exists
         await supabase.from('user_settings').upsert({ user_id: user.id }, { onConflict: 'user_id' });
@@ -310,20 +350,28 @@ export async function loginUser(email, password) {
         // Sync to public.users to ensure data consistency
         const { data: publicUser } = await supabase
             .from('users')
-            .select('name, avatar_url, tier, mining_count')
+            .select('name, avatar_url, tier, mining_count, password_hash')
             .eq('id', user.id)
             .single();
 
         // If not in public.users, sync it now
         if (!publicUser) {
+            const passwordHash = await bcrypt.hash(password, 10);
             await supabase.from('users').upsert({
                 id: user.id,
                 email: emailLower,
                 name: user.user_metadata?.name || null,
                 tier: 'guest',
                 credits: 3,
-                mining_count: 0
+                mining_count: 0,
+                password_hash: passwordHash
             });
+        } else if (!publicUser.password_hash) {
+            // Backfill password_hash for users who registered before this fix
+            const passwordHash = await bcrypt.hash(password, 10);
+            await supabase.from('users')
+                .update({ password_hash: passwordHash })
+                .eq('id', user.id);
         }
 
         // Generate tokens for app session

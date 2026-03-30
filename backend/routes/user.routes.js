@@ -107,7 +107,7 @@ router.put('/email', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Este email já está em uso' });
         }
 
-        // Update email
+        // Update email in public.users
         const { error: updateError } = await supabase
             .from('users')
             .update({ email: newEmail.toLowerCase() })
@@ -116,6 +116,14 @@ router.put('/email', authMiddleware, async (req, res) => {
         if (updateError) {
             console.error('[Profile] Error updating email:', updateError);
             return res.status(500).json({ error: 'Erro ao atualizar email' });
+        }
+
+        // Also update in Supabase Auth to keep both in sync
+        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(userId, {
+            email: newEmail.toLowerCase()
+        });
+        if (authUpdateError) {
+            console.error('[Profile] Error updating auth email:', authUpdateError);
         }
 
         console.log(`[Profile] Email updated for user ${userId}: ${newEmail}`);
@@ -164,7 +172,7 @@ router.put('/password', authMiddleware, async (req, res) => {
         const salt = await bcrypt.genSalt(10);
         const newPasswordHash = await bcrypt.hash(newPassword, salt);
 
-        // Update password
+        // Update password in public.users
         const { error: updateError } = await supabase
             .from('users')
             .update({ password_hash: newPasswordHash })
@@ -173,6 +181,14 @@ router.put('/password', authMiddleware, async (req, res) => {
         if (updateError) {
             console.error('[Profile] Error updating password:', updateError);
             return res.status(500).json({ error: 'Erro ao atualizar senha' });
+        }
+
+        // Also update in Supabase Auth to keep both in sync
+        const { error: authUpdateError } = await supabase.auth.admin.updateUserById(userId, {
+            password: newPassword
+        });
+        if (authUpdateError) {
+            console.error('[Profile] Error updating auth password:', authUpdateError);
         }
 
         console.log(`[Profile] Password updated for user ${userId}`);
@@ -272,6 +288,8 @@ router.delete('/account', authMiddleware, async (req, res) => {
         await supabase.from('saved_sellers').delete().eq('user_id', userId);
         await supabase.from('collections').delete().eq('user_id', userId);
         await supabase.from('user_settings').delete().eq('user_id', userId);
+        await supabase.from('referral_history').delete().or(`referrer_id.eq.${userId},referred_id.eq.${userId}`);
+        await supabase.from('notifications').delete().eq('user_id', userId);
 
         const { error: deleteError } = await supabase
             .from('users')
@@ -283,7 +301,14 @@ router.delete('/account', authMiddleware, async (req, res) => {
             return res.status(500).json({ error: 'Erro ao deletar conta' });
         }
 
-        console.log(`[Profile] Account deleted for user ${user.email}`);
+        // Delete from Supabase Auth (auth.users) to fully remove the account
+        const { error: authDeleteError } = await supabase.auth.admin.deleteUser(userId);
+        if (authDeleteError) {
+            console.error('[Profile] Error deleting auth user:', authDeleteError);
+            // User data is already deleted from public tables, log but don't fail
+        }
+
+        console.log(`[Profile] Account fully deleted for user ${user.email}`);
         res.json({ success: true, message: 'Conta deletada com sucesso' });
     } catch (err) {
         console.error('[Profile] Error:', err);

@@ -12,6 +12,18 @@ export function detectIPhoneModel(product) {
 
     // Padrões para detectar modelos de iPhone
     const patterns = [
+        // iPhone 17 series
+        { regex: /iphone\s*17\s*(?:pro\s*max|promax)/i, model: 'iPhone 17 Pro Max' },
+        { regex: /iphone\s*17\s*pro/i, model: 'iPhone 17 Pro' },
+        { regex: /iphone\s*17\s*(?:plus|\+)/i, model: 'iPhone 17 Plus' },
+        { regex: /iphone\s*17\s*air/i, model: 'iPhone 17 Air' },
+        { regex: /iphone\s*17(?!\d)/i, model: 'iPhone 17' },
+        { regex: /苹果\s*17\s*(?:pro\s*max|promax)/i, model: 'iPhone 17 Pro Max' },
+        { regex: /苹果\s*17\s*pro/i, model: 'iPhone 17 Pro' },
+        { regex: /苹果\s*17\s*(?:plus|\+)/i, model: 'iPhone 17 Plus' },
+        { regex: /苹果\s*17\s*air/i, model: 'iPhone 17 Air' },
+        { regex: /苹果\s*17(?!\d)/i, model: 'iPhone 17' },
+
         // iPhone 16 series
         { regex: /iphone\s*16\s*pro\s*max/i, model: 'iPhone 16 Pro Max' },
         { regex: /iphone\s*16\s*pro/i, model: 'iPhone 16 Pro' },
@@ -77,6 +89,7 @@ export function detectIPhoneModel(product) {
         { regex: /苹果\s*x(?![sr\d])/i, model: 'iPhone X' },
 
         // iPhone SE
+        { regex: /iphone\s*se\s*4|iphone\s*se\s*2025/i, model: 'iPhone SE 4' },
         { regex: /iphone\s*se\s*3|iphone\s*se\s*2022/i, model: 'iPhone SE 3' },
         { regex: /iphone\s*se\s*2|iphone\s*se\s*2020/i, model: 'iPhone SE 2' },
         { regex: /iphone\s*se(?!\s*\d)/i, model: 'iPhone SE' },
@@ -91,6 +104,22 @@ export function detectIPhoneModel(product) {
     for (const pattern of patterns) {
         if (pattern.regex.test(fullText)) {
             return pattern.model;
+        }
+    }
+
+    // Catch-all dinâmico para modelos futuros (iPhone 18, 19, 20, etc.)
+    const futureMatch = fullText.match(/(?:iphone|苹果)\s*(\d{2,})\s*(pro\s*max|promax|pro|plus|\+|air)?/i);
+    if (futureMatch) {
+        const num = parseInt(futureMatch[1], 10);
+        if (num > 17) {
+            const variant = futureMatch[2] ? ` ${futureMatch[2].replace(/\s+/g, ' ').trim()}` : '';
+            const normalizedVariant = variant
+                .replace(/promax/i, 'Pro Max')
+                .replace(/pro max/i, 'Pro Max')
+                .replace(/pro/i, 'Pro')
+                .replace(/plus|\+/i, 'Plus')
+                .replace(/air/i, 'Air');
+            return `iPhone ${num}${normalizedVariant}`;
         }
     }
 
@@ -117,6 +146,7 @@ export function extractUniqueModels(products) {
 
     // Ordena os modelos de forma lógica (mais recentes primeiro)
     const sortOrder = [
+        'iPhone 17 Pro Max', 'iPhone 17 Pro', 'iPhone 17 Plus', 'iPhone 17 Air', 'iPhone 17',
         'iPhone 16 Pro Max', 'iPhone 16 Pro', 'iPhone 16 Plus', 'iPhone 16',
         'iPhone 15 Pro Max', 'iPhone 15 Pro', 'iPhone 15 Plus', 'iPhone 15',
         'iPhone 14 Pro Max', 'iPhone 14 Pro', 'iPhone 14 Plus', 'iPhone 14',
@@ -124,7 +154,7 @@ export function extractUniqueModels(products) {
         'iPhone 12 Pro Max', 'iPhone 12 Pro', 'iPhone 12 Mini', 'iPhone 12',
         'iPhone 11 Pro Max', 'iPhone 11 Pro', 'iPhone 11',
         'iPhone XS Max', 'iPhone XS', 'iPhone XR', 'iPhone X',
-        'iPhone SE 3', 'iPhone SE 2', 'iPhone SE',
+        'iPhone SE 4', 'iPhone SE 3', 'iPhone SE 2', 'iPhone SE',
         'iPhone 8 Plus', 'iPhone 8', 'iPhone 7 Plus', 'iPhone 7',
         'iPhone (Outro)'
     ];
