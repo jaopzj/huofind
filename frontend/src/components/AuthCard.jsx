@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import AnimatedLogo from './AnimatedLogo';
 
 /**
  * AuthCard - Unified authentication card with smooth transitions between Login and Register
@@ -309,7 +310,7 @@ function AuthCard() {
                         <div ref={contentRef}>
                             {/* Logo */}
                             <div className="mb-12 flex justify-center">
-                                <video src="/evo-logo.webm" autoPlay loop muted alt="EvoLogo" className="h-28" />
+                                <AnimatedLogo className="h-28" />
                             </div>
 
                             {/* Header Group - Left aligned */}

@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuSearch, LuClock, LuX, LuExternalLink, LuSparkles } from 'react-icons/lu';
 import { proxyImage } from '../../utils/imageProxy';
+import AnimatedLogo from '../AnimatedLogo';
 
 // Local storage key for search history
 const SEARCH_HISTORY_KEY = 'huofind_search_history';
@@ -204,13 +205,7 @@ function HeroHome({ onSearch, initialQuery = '', isGuest = false }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
             >
-                <video
-                    src="/evo-logo.webm"
-                    autoPlay
-                    loop
-                    muted
-                    className="h-24 md:h-54 w-auto object-contain"
-                />
+                <AnimatedLogo className="h-24 md:h-54 w-auto object-contain" />
             </motion.div>
 
             {/* Search Container - Google Style */}

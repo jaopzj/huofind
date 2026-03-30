@@ -3,6 +3,7 @@ import { motion, useSpring, useTransform } from 'framer-motion';
 import SparkleButton from './SparkleButton';
 import { Slider } from './ui/slider';
 import { normalizeTier } from '../utils/tierUtils';
+import AnimatedLogo from './AnimatedLogo';
 
 // Available categories with their display info
 const CATEGORIES = [
@@ -109,13 +110,7 @@ function HeroSection({
         <div className="h-[calc(100vh-7rem)] md:h-full flex flex-col items-center justify-center px-4 md:px-6 py-2 md:py-8 overflow-y-auto">
             {/* Logo Customizada */}
             <div className="mb-2 mt-0 md:mt-[5px]">
-                <video
-                    src="/evo-logo.webm"
-                    autoPlay
-                    loop
-                    muted
-                    className="h-20 md:h-48 w-auto object-contain drop-shadow-2xl"
-                />
+                <AnimatedLogo className="h-20 md:h-48 w-auto object-contain drop-shadow-2xl" />
             </div>
 
             {/* Headline */}

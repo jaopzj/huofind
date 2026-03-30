@@ -149,7 +149,7 @@ function ProfileHeader({
                     <input
                         ref={fileInputRef}
                         type="file"
-                        accept="image/*"
+                        accept="image/png,image/jpeg,image/jpg,image/gif,image/webp,image/*"
                         onChange={handleFileChange}
                         className="hidden"
                     />

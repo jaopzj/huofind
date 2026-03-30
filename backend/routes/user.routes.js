@@ -3,6 +3,7 @@ import { authMiddleware } from '../authMiddleware.js';
 import supabase from '../supabase.js';
 import bcrypt from 'bcryptjs';
 import multer from 'multer';
+import sharp from 'sharp';
 import {
     getUserCreditsData,
     checkAndRenewCredits,
@@ -18,7 +19,7 @@ const router = Router();
 const avatarUpload = multer({
     storage: multer.memoryStorage(),
     limits: {
-        fileSize: 2 * 1024 * 1024, // 2MB max
+        fileSize: 10 * 1024 * 1024, // 10MB max (phone photos can be 5-8MB)
     },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
@@ -28,6 +29,31 @@ const avatarUpload = multer({
         }
     }
 }).single('avatar');
+
+/**
+ * Compress/resize an avatar image using Sharp.
+ * GIFs are converted to animated WebP to keep animation.
+ * Other formats are resized to 512x512 max and output as WebP.
+ */
+async function processAvatarImage(buffer, mimetype) {
+    const isGif = mimetype === 'image/gif';
+
+    if (isGif) {
+        // For GIFs: convert to animated WebP (keeps animation, much smaller)
+        const processed = await sharp(buffer, { animated: true })
+            .resize(512, 512, { fit: 'cover', withoutEnlargement: true })
+            .webp({ quality: 80 })
+            .toBuffer();
+        return { buffer: processed, mimetype: 'image/webp' };
+    }
+
+    // For all other images: resize and compress as WebP
+    const processed = await sharp(buffer)
+        .resize(512, 512, { fit: 'cover', withoutEnlargement: true })
+        .webp({ quality: 85 })
+        .toBuffer();
+    return { buffer: processed, mimetype: 'image/webp' };
+}
 
 /**
  * PUT /api/user/profile
@@ -210,7 +236,7 @@ router.post('/avatar', authMiddleware, (req, res) => {
 
             if (err instanceof multer.MulterError) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
-                    return res.status(400).json({ error: 'Arquivo muito grande. Máximo 2MB.' });
+                    return res.status(400).json({ error: 'Arquivo muito grande. Máximo 10MB.' });
                 }
                 return res.status(400).json({ error: 'Erro no upload: ' + err.message });
             } else if (err) {
@@ -221,10 +247,14 @@ router.post('/avatar', authMiddleware, (req, res) => {
 
             // Check if file was uploaded
             if (req.file) {
-                // Convert file buffer to base64 data URL
-                const base64 = req.file.buffer.toString('base64');
-                avatarUrl = `data:${req.file.mimetype};base64,${base64}`;
-                console.log(`[Profile] Avatar file received: ${req.file.originalname} (${req.file.size} bytes)`);
+                console.log(`[Profile] Avatar file received: ${req.file.originalname} (${req.file.size} bytes, ${req.file.mimetype})`);
+
+                // Compress/resize the image before storing
+                const { buffer: processedBuffer, mimetype: processedMime } = await processAvatarImage(req.file.buffer, req.file.mimetype);
+                console.log(`[Profile] Avatar compressed: ${req.file.size} -> ${processedBuffer.length} bytes`);
+
+                const base64 = processedBuffer.toString('base64');
+                avatarUrl = `data:${processedMime};base64,${base64}`;
             } else if (req.body && req.body.avatarUrl) {
                 // Handle URL-based avatar update
                 avatarUrl = req.body.avatarUrl;

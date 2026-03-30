@@ -20,6 +20,7 @@ function ProfilePage({
     onUserUpdate
 }) {
     const [isUpdating, setIsUpdating] = useState(false);
+    const [saveError, setSaveError] = useState(null);
     const [localUser, setLocalUser] = useState(user);
 
     // Draft state for unsaved changes
@@ -54,6 +55,7 @@ function ProfilePage({
     // Save all changes
     const handleSaveChanges = async () => {
         setIsUpdating(true);
+        setSaveError(null);
         let success = true;
 
         try {
@@ -76,7 +78,7 @@ function ProfilePage({
                     setDraftName(null);
                 } else {
                     const data = await response.json();
-                    console.error('Error updating name:', data.error);
+                    setSaveError(data.error || 'Erro ao atualizar nome');
                     success = false;
                 }
             }
@@ -102,7 +104,7 @@ function ProfilePage({
                     setDraftAvatarFile(null);
                     setDraftAvatarUrl(null);
                 } else {
-                    console.error('Error uploading avatar:', data.error);
+                    setSaveError(data.error || 'Erro ao enviar foto');
                     success = false;
                 }
             }
@@ -110,6 +112,7 @@ function ProfilePage({
             return success;
         } catch (err) {
             console.error('Error saving changes:', err);
+            setSaveError('Erro de conexão. Tente novamente.');
             return false;
         } finally {
             setIsUpdating(false);
@@ -125,6 +128,7 @@ function ProfilePage({
         setDraftName(null);
         setDraftAvatarFile(null);
         setDraftAvatarUrl(null);
+        setSaveError(null);
     };
 
     // Update email
@@ -242,13 +246,18 @@ function ProfilePage({
                     >
                         <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl">
                             <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-                                <div className="flex items-center gap-2 text-blue-400">
-                                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                    </svg>
-                                    <span className="text-sm font-medium">
-                                        Você tem alterações não salvas
-                                    </span>
+                                <div className="flex flex-col gap-1">
+                                    <div className="flex items-center gap-2 text-blue-400">
+                                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                                        </svg>
+                                        <span className="text-sm font-medium">
+                                            Você tem alterações não salvas
+                                        </span>
+                                    </div>
+                                    {saveError && (
+                                        <span className="text-xs text-red-400 font-medium ml-7">{saveError}</span>
+                                    )}
                                 </div>
 
                                 <div className="flex items-center gap-2">
