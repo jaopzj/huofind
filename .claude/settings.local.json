@@ -39,7 +39,8 @@
       "Bash(node -c routes/user.routes.js)",
       "Bash(xargs cat:*)",
       "Bash(grep -r \"multer\\\\|upload\\\\|avatar\" /d/xiner/backend/*.js)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(find /d/xiner/frontend -type d -name *backend* -o -name *server*)"
     ]
   }
 }

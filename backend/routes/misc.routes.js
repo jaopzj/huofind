@@ -22,7 +22,7 @@ let exchangeRateCache = {
 
 const CNY_BRL_MIN = 0.50;
 const CNY_BRL_MAX = 1.50;
-const CNY_BRL_FALLBACK = 0.80;
+const CNY_BRL_FALLBACK = 1.15;
 
 /**
  * GET /api/exchange-rate
@@ -46,46 +46,26 @@ router.get('/exchange-rate', async (req, res) => {
 
         let brlRate = null;
 
-        // Source 1: fawazahmed0/currency-api
+        // Source: newrecargas API
         try {
-            const resp1 = await fetch(
-                'https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/cny.json',
+            const resp = await fetch(
+                'https://api.newrecargas.com/api/exchange-rate',
                 { signal: AbortSignal.timeout(5000) }
             );
-            if (resp1.ok) {
-                const data1 = await resp1.json();
-                const rate1 = data1?.cny?.brl;
-                if (rate1 && rate1 >= CNY_BRL_MIN && rate1 <= CNY_BRL_MAX) {
-                    brlRate = rate1;
-                    console.log(`[Server] Fonte 1 (fawazahmed0): 1 CNY = ${rate1.toFixed(4)} BRL`);
-                } else {
-                    console.warn(`[Server] Fonte 1 retornou valor fora da faixa de sanidade: ${rate1}`);
+            if (resp.ok) {
+                const data = await resp.json();
+                const rate = data?.cotation;
+                if (rate) {
+                    if (rate >= CNY_BRL_MIN && rate <= 2.0) {
+                        brlRate = rate;
+                        console.log(`[Server] Fonte (newrecargas): taxa = ${rate.toFixed(4)}`);
+                    } else {
+                        console.warn(`[Server] Fonte retornou valor fora da faixa de sanidade: ${rate}`);
+                    }
                 }
             }
         } catch (e) {
-            console.warn('[Server] Fonte 1 falhou:', e.message);
-        }
-
-        // Source 2 (fallback): exchangerate-api.com
-        if (!brlRate) {
-            try {
-                const resp2 = await fetch(
-                    'https://api.exchangerate-api.com/v4/latest/CNY',
-                    { signal: AbortSignal.timeout(5000) }
-                );
-                if (resp2.ok) {
-                    const data2 = await resp2.json();
-                    const rate2 = data2.rates?.BRL;
-                    if (rate2 && rate2 >= CNY_BRL_MIN && rate2 <= CNY_BRL_MAX) {
-                        brlRate = rate2;
-                        console.log(`[Server] Fonte 2 (exchangerate-api): 1 CNY = ${rate2.toFixed(4)} BRL`);
-                    } else {
-                        console.warn(`[Server] Fonte 2 retornou valor fora da faixa de sanidade: ${rate2}`);
-                    }
-                }
-            } catch (e) {
-                console.warn('[Server] Fonte 2 falhou:', e.message);
-            }
+            console.warn('[Server] Fonte falhou:', e.message);
         }
 
         // Fallback if no source returned valid value

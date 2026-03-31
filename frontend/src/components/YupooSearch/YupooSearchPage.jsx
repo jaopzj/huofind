@@ -1234,7 +1234,7 @@ const ProductCard = memo(({ product, showBRL, exchangeRate, isSaved, onSaveToggl
                     <span className="text-base sm:text-xl font-bold text-blue-400 whitespace-nowrap">
                         {product.preco > 0
                             ? (showBRL && exchangeRate
-                                ? `R$ ${(product.preco * exchangeRate).toFixed(2).replace('.', ',')}`
+                                ? `R$ ${(product.preco / exchangeRate).toFixed(2).replace('.', ',')}`
                                 : `¥ ${product.preco}`)
                             : 'Consulte'}
                     </span>

@@ -38,7 +38,7 @@ const ProductCard = memo(function ProductCard({
     const formatPrice = () => {
         const yuanPrice = parseFloat(product.price) || 0;
         if (showBRL && exchangeRate > 0) {
-            const brlPrice = yuanPrice * exchangeRate;
+            const brlPrice = yuanPrice / exchangeRate;
             return `R$ ${brlPrice.toFixed(2).replace('.', ',')}`;
         }
         return product.priceFormatted || `¥ ${yuanPrice}`;

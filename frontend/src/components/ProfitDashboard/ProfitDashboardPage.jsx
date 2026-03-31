@@ -196,7 +196,7 @@ function calculateProfit(product, settings, cnyBrlRate, usdBrlRate) {
     const declaredBRL = declaredUSD * usdBrlRate;
 
     // Actual product cost in BRL (real price paid to the seller)
-    const costBRL = priceCNY * cnyBrlRate;
+    const costBRL = priceCNY / cnyBrlRate;
 
     // Freight
     const freightCost = weightKg * settings.freightPerKg;
