@@ -24,7 +24,13 @@
       "Bash(node -c routes/misc.routes.js)",
       "Bash(node debug_scraper.js \"https://www.goofish.com/personal?spm=a21ybx.item.itemHeader.1.4bd93da6hVLrmj&userId=391299371\")",
       "Bash(node -e \"import\\(''./routes/misc.routes.js''\\).then\\(\\(\\) => console.log\\(''OK''\\)\\).catch\\(e => console.error\\(''FAIL:'', e.message\\)\\)\")",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Read(//c/Users/Pedro/**)",
+      "Bash(python is_prime.py)",
+      "Bash(dir:*)",
+      "Bash(python -c \"from is_prime import is_prime; print\\(is_prime\\(7\\)\\); print\\(is_prime\\(10\\)\\); print\\(is_prime\\(97\\)\\)\")",
+      "Bash(gh auth:*)",
+      "Bash(gh pr:*)"
     ]
   }
 }
