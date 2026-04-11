@@ -199,7 +199,7 @@ const startServer = async () => {
         const server = app.listen(PORT, () => {
             console.log(`
 ╔════════════════════════════════════════════════════════╗
-║   Huofind Backend                                      ║
+║   Evo Society Backend                                  ║
 ║   Server running on http://localhost:${PORT}              ║
 ║                                                        ║
 ║   Account Tiers:                                       ║

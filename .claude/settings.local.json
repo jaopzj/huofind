@@ -40,7 +40,13 @@
       "Bash(xargs cat:*)",
       "Bash(grep -r \"multer\\\\|upload\\\\|avatar\" /d/xiner/backend/*.js)",
       "Bash(xargs ls:*)",
-      "Bash(find /d/xiner/frontend -type d -name *backend* -o -name *server*)"
+      "Bash(find /d/xiner/frontend -type d -name *backend* -o -name *server*)",
+      "Bash(node --check backend/sellerAnalyzer.js)",
+      "Bash(node -e \"const p=require\\(''./package.json''\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\);\")",
+      "Bash(node -e \"const p=require\\(''D:/xiner/frontend/package.json''\\); console.log\\(JSON.stringify\\(p.scripts, null, 2\\)\\);\")",
+      "Bash(node --check auth.js)",
+      "Bash(node --check routes/auth.routes.js)",
+      "Bash(node --check config.js)"
     ]
   }
 }

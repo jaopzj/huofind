@@ -1,79 +1,86 @@
 import { motion } from 'framer-motion';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import HeroHome from './HeroHome';
-import QuickAccess from './QuickAccess';
+import BannerCarousel from './BannerCarousel';
 import ForYouSection from './ForYouSection';
 import ExploreSection from './ExploreSection';
-import InstitutionalSection from './InstitutionalSection';
 import CategoryProductSection from './CategoryProductSection';
-import { resolvePagePath } from '../../utils/routes';
+import ResourcesRow from './ResourcesRow';
+import InstitutionalSection from './InstitutionalSection';
 
 /**
- * HomePage - Main container for the Home page
- * Combines all sections into a cohesive landing experience
+ * HomePage — Main container for the Evo Society Console home.
+ *
+ * Layout order (top → bottom):
+ *   1. Welcome header + command-bar search  (HeroHome)
+ *   2. Editorial banner carousel            (BannerCarousel — admin-managed)
+ *   3. Explore categories                   (ExploreSection)
+ *   4. Personalized "Para você"            (ForYouSection)
+ *   5. Trending by category                 (CategoryProductSection × 2)
+ *   6. Platform resources                   (ResourcesRow)
+ *   7. Institutional value props            (InstitutionalSection)
+ *
+ * Redundant sidebar shortcuts (QuickAccess) have been intentionally removed.
  */
 function HomePage() {
     const ctx = useOutletContext();
     const navigate = useNavigate();
     const savedProducts = ctx?.savedProducts || [];
     const isGuest = ctx?.isGuest || false;
+    const user = ctx?.user || null;
 
     const handleSearch = (query) => {
         sessionStorage.setItem('yupoo_search_query', query);
-        navigate('/yupoo');
-    };
-
-    const handleNavigate = (pageId) => {
-        navigate(resolvePagePath(pageId));
+        navigate(`/yupoo?q=${encodeURIComponent(query)}`);
     };
 
     const handleCategoryClick = (categoryId) => {
+        // Pass filter via URL query string — survives reloads and is linkable.
+        // We also keep sessionStorage as a defensive fallback for older code paths.
         sessionStorage.setItem('yupoo_category_filter', categoryId);
-        navigate('/yupoo');
+        navigate(`/yupoo?category=${encodeURIComponent(categoryId)}`);
     };
 
     return (
         <motion.div
-            className="w-full"
+            className="home-shell"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.3 }}
         >
-            {/* Hero Section - Logo + Search */}
-            <HeroHome onSearch={handleSearch} isGuest={isGuest} />
+            {/* 1. Welcome + search */}
+            <HeroHome onSearch={handleSearch} isGuest={isGuest} user={user} />
 
-            {/* Content Container */}
-            <div className="max-w-5xl mx-auto px-4 md:px-6">
-                {/* Quick Access Buttons */}
-                <QuickAccess onNavigate={handleNavigate} />
+            {/* Main content container */}
+            <div className="home-container">
+                {/* 2. Banner carousel — admin-managed */}
+                <BannerCarousel />
 
-                {/* For You Section - Personalized Suggestions */}
-                <ForYouSection savedProducts={savedProducts} />
-
-                {/* Calçados Section - 10 random shoe products */}
-                <CategoryProductSection
-                    categoryId="calcados"
-                    title="Calçados"
-                    subtitle="Confira os tênis e sapatos mais populares"
-                    icon="👟"
-                />
-
-                {/* Camisetas Section - 10 random t-shirt products */}
-                <CategoryProductSection
-                    categoryId="camisetas"
-                    title="Camisetas"
-                    subtitle="As melhores camisetas para você"
-                    icon="👕"
-                />
-
-                {/* Explore Section - Categories */}
+                {/* 3. Explore by category */}
                 <ExploreSection onCategoryClick={handleCategoryClick} />
 
-                {/* Institutional Section - Value Props */}
+                {/* 4. Personalized suggestions */}
+                <ForYouSection savedProducts={savedProducts} />
+
+                {/* 5. Trending carousels */}
+                <CategoryProductSection
+                    categoryId="calcados"
+                    title="Tendências em Calçados"
+                    subtitle="Os tênis e sapatos mais populares do catálogo"
+                />
+                <CategoryProductSection
+                    categoryId="camisetas"
+                    title="Tendências em Camisetas"
+                    subtitle="Destaques da semana selecionados para você"
+                />
+
+                {/* 6. Platform resources */}
+                <ResourcesRow />
+
+                {/* 7. Institutional */}
                 <InstitutionalSection />
 
-                {/* Bottom Spacing */}
-                <div className="h-8" />
+                <div className="h-12" />
             </div>
         </motion.div>
     );

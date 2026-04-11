@@ -103,9 +103,14 @@ function ProfileHeader({
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
-            className="bg-[#1f2937] rounded-[2rem] p-6 md:p-8 shadow-xl border border-white/5"
+            className="bg-[#1f2937] rounded-[2rem] p-6 md:p-8 shadow-xl border border-white/5 relative overflow-hidden"
         >
-            <div className="flex flex-col md:flex-row items-center gap-6">
+            <img 
+                src="https://i.imgur.com/k6n0C2h.png" 
+                alt="Profile Header BG" 
+                className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-80 z-0" 
+            />
+            <div className="flex flex-col md:flex-row items-center gap-6 relative z-10">
                 {/* Avatar */}
                 <div
                     className="relative group cursor-pointer"
@@ -114,7 +119,7 @@ function ProfileHeader({
                     onClick={handleAvatarClick}
                 >
                     <motion.div
-                        className={`w-24 h-24 md:w-28 md:h-28 rounded-2xl bg-gradient-to-br ${tierInfo.color} flex items-center justify-center text-white text-3xl md:text-4xl font-bold shadow-lg overflow-hidden`}
+                        className={`w-24 h-24 md:w-28 md:h-28 flex items-center justify-center text-white text-3xl md:text-4xl font-bold shadow-lg shrink-0 ${normalizeTier(user?.tier) === 'gold' ? 'evo-gold-avatar ring-offset-[#1f2937]' : `rounded-2xl overflow-hidden bg-gradient-to-br ${tierInfo.color}`}`}
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                     >
@@ -225,12 +230,33 @@ function ProfileHeader({
                     {/* Badges */}
                     <div className="flex items-center justify-center md:justify-start gap-2 flex-wrap">
                         {/* Tier Badge */}
-                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${tierInfo.bgColor} ${tierInfo.textColor}`}>
-                            <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            {tierInfo.name}
-                        </span>
+                        {normalizeTier(user?.tier) === 'gold' ? (
+                            <span
+                                className="evo-minerador-brilho inline-flex items-center gap-1.5 rounded border px-3 py-1.5 text-[10px] font-black uppercase tracking-widest"
+                                style={{ color: 'rgb(255, 191, 0)', borderColor: 'rgb(255, 191, 0)' }}
+                            >
+                                <span className="evo-shine-clipper" />
+                                <img
+                                    src="https://i.imgur.com/UFgpPC1.png"
+                                    alt="Minerador"
+                                    className="evo-gold-badge-icon relative z-10"
+                                    style={{ width: '12px', height: '12px', objectFit: 'contain' }}
+                                />
+                                <span className="relative z-10">{tierInfo.name}</span>
+                                <span className="evo-glitter-star" style={{ top: '-4px', left: '10%', animationDelay: '0s' }} />
+                                <span className="evo-glitter-star" style={{ top: '5px', left: '40%', animationDelay: '0.5s' }} />
+                                <span className="evo-glitter-star" style={{ top: '-2px', left: '80%', animationDelay: '1s' }} />
+                                <span className="evo-glitter-star" style={{ bottom: '-4px', right: '20%', animationDelay: '1.5s' }} />
+                                <span className="evo-glitter-star" style={{ top: '2px', right: '45%', animationDelay: '2s' }} />
+                            </span>
+                        ) : (
+                            <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold ${tierInfo.bgColor} ${tierInfo.textColor}`}>
+                                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                                </svg>
+                                {tierInfo.name}
+                            </span>
+                        )}
 
                         {/* Member Since */}
                         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-white/5 text-gray-400 border border-white/5">

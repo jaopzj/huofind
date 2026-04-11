@@ -95,6 +95,10 @@ export const config = {
     // Server
     port: parseInt(process.env.PORT, 10) || 3001,
     clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
+    // Public URL used in transactional emails (email confirmation, password reset).
+    // This is NOT the same as clientUrl, which is used for CORS and can point to localhost during dev.
+    // publicAppUrl must always be a URL that users can reach from their email client.
+    publicAppUrl: (process.env.PUBLIC_APP_URL || 'https://huofind.vercel.app').replace(/\/+$/, ''),
     nodeEnv: process.env.NODE_ENV || 'development',
     isProduction: process.env.NODE_ENV === 'production',
 

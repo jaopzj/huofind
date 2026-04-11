@@ -1284,9 +1284,14 @@ const SidebarContent = ({
     return (
         <div className="flex flex-col h-full">
             {/* Logo / Brand Section */}
-            <div className="p-4 border-b border-white/10">
-                <div className="flex items-center justify-center">
-                    <img src="/evo-logo-horizontal.png" alt="Huofind Logo" className="h-20 w-auto object-contain" />
+            <div className="p-4 border-b border-white/10 relative overflow-hidden">
+                <img 
+                    src="https://i.imgur.com/l7UcInb.png" 
+                    alt="Logo Header BG" 
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-80 z-0" 
+                />
+                <div className="flex items-center justify-center relative z-10">
+                    <img src="/evo-logo-horizontal.png" alt="Evo Society Logo" className="h-20 w-auto object-contain" />
                     {isMobile && (
                         <AnimatedMenuToggle toggle={toggleSidebar} isOpen={isOpen} />
                     )}
@@ -1294,9 +1299,14 @@ const SidebarContent = ({
             </div>
 
             {/* Profile Section */}
-            <div className="px-4 py-3 border-b border-white/10">
-                <div className="flex items-center gap-3">
-                    <div className="sidebar-profile-avatar overflow-hidden ring-2 ring-white/30 ring-offset-2 ring-offset-[#1f2937]">
+            <div className="px-4 py-3 border-b border-white/10 relative overflow-hidden">
+                <img 
+                    src="https://i.imgur.com/k6n0C2h.png" 
+                    alt="Profile Header BG" 
+                    className="absolute inset-0 w-full h-full object-cover pointer-events-none opacity-80 z-0" 
+                />
+                <div className="flex items-center gap-3 relative z-10">
+                    <div className={`sidebar-profile-avatar w-10 h-10 shrink-0 ring-2 ring-white/30 ring-offset-2 ring-offset-[#1f2937] ${normalizeTier(user?.tier) === 'gold' ? 'evo-gold-avatar' : 'overflow-hidden rounded-xl'}`}>
                         {user?.avatarUrl ? (
                             <img
                                 src={user.avatarUrl}
@@ -1304,21 +1314,40 @@ const SidebarContent = ({
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            user?.name?.[0] || user?.email?.[0]?.toUpperCase() || '?'
+                            <div className="w-full h-full flex items-center justify-center text-sm font-bold bg-gray-800 text-white">
+                                {user?.name?.[0] || user?.email?.[0]?.toUpperCase() || '?'}
+                            </div>
                         )}
                     </div>
                     <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-0.5">
                             <p className="font-bold text-white text-sm truncate">
                                 {user?.name || 'Usuário'}
                             </p>
                             {/* Tier Badge integrated next to name */}
                             {miningInfo && (() => {
                                 const tierKey = normalizeTier(user?.tier);
+                                const isGold = tierKey === 'gold';
                                 const config = TIER_CONFIG[tierKey] || TIER_CONFIG['guest'];
+                                
+                                if (isGold) {
+                                    return (
+                                        <div className="evo-minerador-brilho w-fit px-1.5 py-0.5 rounded text-[7.5px] leading-none font-black uppercase tracking-widest border inline-flex items-center gap-1"
+                                             style={{ color: 'rgb(255, 191, 0)', borderColor: 'rgb(255, 191, 0)' }}>
+                                            <div className="evo-shine-clipper" />
+                                            <img src="https://i.imgur.com/UFgpPC1.png" className="evo-gold-badge-icon relative z-10" style={{ width: '10px', height: '10px', objectFit: 'contain' }} alt="Gold" />
+                                            {config.name}
+                                            <div className="evo-glitter-star" style={{ top: '-3px', left: '10%', animationDelay: '0s' }} />
+                                            <div className="evo-glitter-star" style={{ top: '3px', left: '40%', animationDelay: '0.5s' }} />
+                                            <div className="evo-glitter-star" style={{ top: '-1px', left: '80%', animationDelay: '1s' }} />
+                                            <div className="evo-glitter-star" style={{ bottom: '-3px', right: '20%', animationDelay: '1.5s' }} />
+                                        </div>
+                                    );
+                                }
+
                                 return (
                                     <div
-                                        className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border"
+                                        className="w-fit px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-widest border"
                                         style={{
                                             backgroundColor: `${config.color}10`,
                                             color: config.color,
@@ -1330,12 +1359,9 @@ const SidebarContent = ({
                                 );
                             })()}
                         </div>
-                        <p className="text-[11px] text-white/60 truncate">
-                            {user?.email || ''}
-                        </p>
                     </div>
                     {/* Notification Bell */}
-                    <div className="shrink-0">
+                    <div className="shrink-0 relative z-10">
                         <NotificationBell />
                     </div>
                 </div>
@@ -1348,7 +1374,7 @@ const SidebarContent = ({
                         : null;
 
                     return (
-                        <div className="mt-4 p-3 bg-white/10 rounded-xl border border-white/10 flex items-center justify-between group">
+                        <div className="mt-4 p-3 bg-white/10 rounded-xl border border-white/10 flex items-center justify-between group relative z-10">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2 rounded-lg ${isLowBalance ? 'bg-red-500/20 text-red-300' : 'bg-white/20 text-white'}`}>
                                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1581,7 +1607,7 @@ const Sidebar = ({ user, miningInfo, onLogout, showBRL, onToggleCurrency, hasRes
             {/* Mobile Top Bar */}
             <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-[#1f2937]/30 backdrop-blur-xl border-b border-white/10">
                 <div className="flex items-center justify-between px-4 py-3">
-                    <img src="/evo-logo-horizontal.png" alt="Huofind Logo" className="h-7 w-auto object-contain" />
+                    <img src="/evo-logo-horizontal.png" alt="Evo Society Logo" className="h-7 w-auto object-contain" />
 
                     <div className="flex items-center gap-4">
                         {/* Mobile Currency Toggle - only on mining page with results */}

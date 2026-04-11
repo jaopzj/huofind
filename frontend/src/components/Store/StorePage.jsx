@@ -9,9 +9,9 @@ import ReferralCodeInput from './ReferralCodeInput';
 import { normalizeTier } from '../../utils/tierUtils';
 
 const CREDIT_PACKAGES = [
-    { id: 'basic', credits: 50, price: 9.90, pricePerCredit: 0.20 },
-    { id: 'standard', credits: 150, price: 24.90, pricePerCredit: 0.17, badge: 'popular' },
-    { id: 'premium', credits: 300, price: 39.90, pricePerCredit: 0.13, badge: 'best' }
+    { id: 'basic', credits: 50, price: 9.90, pricePerCredit: 0.20, iconUrl: 'https://i.imgur.com/aebN4UW.png', iconScale: 1 },
+    { id: 'standard', credits: 150, price: 24.90, pricePerCredit: 0.17, badge: 'popular', iconUrl: 'https://i.imgur.com/qU3oNn3.png', iconScale: 1.4 },
+    { id: 'premium', credits: 300, price: 39.90, pricePerCredit: 0.13, badge: 'best', iconUrl: 'https://i.imgur.com/t42qnks.png', iconScale: 1.4 }
 ];
 
 function StorePage({ user, miningInfo = {} }) {
@@ -272,6 +272,8 @@ function StorePage({ user, miningInfo = {} }) {
                             pricePerCredit={pkg.pricePerCredit}
                             badge={pkg.badge}
                             badgeType={pkg.badge}
+                            iconUrl={pkg.iconUrl}
+                            iconScale={pkg.iconScale}
                             onPurchase={() => handlePurchasePackage(pkg.id)}
                             isLoading={loadingPackage === pkg.id}
                             delay={0.1 + index * 0.1}

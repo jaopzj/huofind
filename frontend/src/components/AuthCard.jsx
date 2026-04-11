@@ -16,11 +16,17 @@ function AuthCard() {
         pendingEmailConfirmation,
         setPendingEmailConfirmation,
         checkEmailConfirmation,
-        resendConfirmationEmail
+        resendConfirmationEmail,
+        forgotPassword
     } = useAuth();
 
-    // Mode: 'login' or 'register'
+    // Mode: 'login' | 'register' | 'forgot'
     const [mode, setMode] = useState('login');
+
+    // Forgot-password state
+    const [forgotEmail, setForgotEmail] = useState('');
+    const [forgotLoading, setForgotLoading] = useState(false);
+    const [forgotSuccess, setForgotSuccess] = useState(false);
     const navigate = useNavigate();
     const redirectionTimeoutRef = useRef(null);
 
@@ -62,7 +68,7 @@ function AuthCard() {
             const height = contentRef.current.scrollHeight;
             setContentHeight(`${height}px`);
         }
-    }, [mode, registerStep, error, localError]);
+    }, [mode, registerStep, error, localError, forgotSuccess]);
 
     // Slider state and autoplay
     const [currentSlide, setCurrentSlide] = useState(0);
@@ -212,6 +218,34 @@ function AuthCard() {
         setMode('login');
     };
 
+    const switchToForgot = () => {
+        clearError();
+        setLocalError('');
+        setForgotEmail(loginEmail || '');
+        setForgotSuccess(false);
+        setMode('forgot');
+    };
+
+    const handleForgotSubmit = async (e) => {
+        e.preventDefault();
+        clearError();
+        setLocalError('');
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(forgotEmail.trim())) {
+            setLocalError('Insira um e-mail válido');
+            return;
+        }
+
+        setForgotLoading(true);
+        const result = await forgotPassword(forgotEmail.trim());
+        setForgotLoading(false);
+
+        if (result.success) {
+            setForgotSuccess(true);
+        }
+    };
+
     return (
         <div className="min-h-screen w-full flex items-center justify-center p-6 md:p-12 relative overflow-hidden" style={{ background: '#0f172a' }}>
             {/* Animated diagonal pattern background */}
@@ -319,16 +353,22 @@ function AuthCard() {
                                     className="text-4xl font-bold mb-1 tracking-tight"
                                     style={{ color: '#ffffff' }}
                                 >
-                                    {mode === 'login' ? 'Entrar' : 'Criar conta'}
+                                    {mode === 'login'
+                                        ? 'Entrar'
+                                        : mode === 'forgot'
+                                            ? 'Esqueci a senha'
+                                            : 'Criar conta'}
                                 </h2>
                                 <p className="text-base text-gray-400">
                                     {mode === 'login'
                                         ? 'Faça login para continuar'
-                                        : registerStep === 1
-                                            ? 'Etapa 1 de 3: Seus dados'
-                                            : registerStep === 2
-                                                ? 'Etapa 2 de 3: Crie sua senha'
-                                                : 'Etapa 3 de 3: Confirme seu e-mail'
+                                        : mode === 'forgot'
+                                            ? 'Informe seu e-mail para receber um link de redefinição'
+                                            : registerStep === 1
+                                                ? 'Etapa 1 de 3: Seus dados'
+                                                : registerStep === 2
+                                                    ? 'Etapa 2 de 3: Crie sua senha'
+                                                    : 'Etapa 3 de 3: Confirme seu e-mail'
                                     }
                                 </p>
                             </div>
@@ -442,6 +482,17 @@ function AuthCard() {
                                         </div>
                                     </div>
 
+                                    <div className="flex justify-end -mt-2">
+                                        <button
+                                            type="button"
+                                            onClick={switchToForgot}
+                                            className="text-sm font-semibold hover:underline"
+                                            style={{ color: '#3b82f6' }}
+                                        >
+                                            Esqueci a senha
+                                        </button>
+                                    </div>
+
                                     <button
                                         type="submit"
                                         disabled={loading}
@@ -454,6 +505,113 @@ function AuthCard() {
                                         {loading ? 'Entrando...' : 'Entrar'}
                                     </button>
                                 </form>
+                            )}
+
+                            {/* FORGOT PASSWORD FORM */}
+                            {mode === 'forgot' && (
+                                forgotSuccess ? (
+                                    <div className="text-center space-y-6 py-4 animate-fade-in-up">
+                                        <div className="flex justify-center">
+                                            <div
+                                                className="w-24 h-24 rounded-full flex items-center justify-center"
+                                                style={{
+                                                    background: 'rgba(16, 185, 129, 0.1)',
+                                                    border: '1px solid rgba(16, 185, 129, 0.2)'
+                                                }}
+                                            >
+                                                <svg
+                                                    className="w-12 h-12 text-green-500"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth={2}
+                                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                                    />
+                                                </svg>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <h3 className="text-xl font-bold text-white mb-2">
+                                                Verifique seu e-mail
+                                            </h3>
+                                            <p className="text-gray-400 text-sm">
+                                                Se existir uma conta associada a
+                                            </p>
+                                            <p className="text-white font-semibold mt-1 break-all">
+                                                {forgotEmail}
+                                            </p>
+                                            <p className="text-gray-400 text-sm mt-2">
+                                                enviamos um link para redefinir sua senha.
+                                            </p>
+                                        </div>
+
+                                        <p className="text-xs text-gray-400">
+                                            Não recebeu? Verifique sua caixa de spam.
+                                        </p>
+
+                                        <button
+                                            type="button"
+                                            onClick={switchToLogin}
+                                            className="w-full py-4 rounded-xl font-bold text-white text-base transition-all duration-200 mt-2 block hover:scale-[1.01] active:scale-[0.99]"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                                boxShadow: '0 8px 25px rgba(59, 130, 246, 0.25)'
+                                            }}
+                                        >
+                                            Voltar ao login
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handleForgotSubmit} className="space-y-6">
+                                        <div>
+                                            <label className="block text-sm font-semibold mb-2.5 text-gray-400">
+                                                E-mail
+                                            </label>
+                                            <input
+                                                type="email"
+                                                value={forgotEmail}
+                                                onChange={(e) => setForgotEmail(e.target.value)}
+                                                className="w-full px-5 py-4 rounded-xl text-base transition-all duration-200"
+                                                style={{
+                                                    background: 'rgba(255, 255, 255, 0.03)',
+                                                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                                                    outline: 'none',
+                                                    color: '#ffffff'
+                                                }}
+                                                onFocus={(e) => {
+                                                    e.target.style.borderColor = '#3b82f6';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.05)';
+                                                    e.target.style.boxShadow = '0 0 0 3px rgba(59, 130, 246, 0.1)';
+                                                }}
+                                                onBlur={(e) => {
+                                                    e.target.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                                                    e.target.style.background = 'rgba(255, 255, 255, 0.03)';
+                                                    e.target.style.boxShadow = 'none';
+                                                }}
+                                                placeholder="seu@email.com"
+                                                required
+                                                autoFocus
+                                            />
+                                        </div>
+
+                                        <button
+                                            type="submit"
+                                            disabled={forgotLoading}
+                                            className="w-full py-4 rounded-xl font-bold text-white text-base transition-all duration-200 mt-4 block hover:scale-[1.01] active:scale-[0.99]"
+                                            style={{
+                                                background: forgotLoading ? '#374151' : 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)',
+                                                boxShadow: forgotLoading ? 'none' : '0 8px 25px rgba(59, 130, 246, 0.25)'
+                                            }}
+                                        >
+                                            {forgotLoading ? 'Enviando...' : 'Enviar link de redefinição'}
+                                        </button>
+                                    </form>
+                                )
                             )}
 
                             {/* REGISTER FORM - STEP 1 */}
@@ -834,6 +992,18 @@ function AuthCard() {
                                                 Criar conta
                                             </button>
                                         </>
+                                    ) : mode === 'forgot' ? (
+                                        <>
+                                            Lembrou sua senha?{' '}
+                                            <button
+                                                type="button"
+                                                onClick={switchToLogin}
+                                                className="font-bold hover:underline"
+                                                style={{ color: '#3b82f6' }}
+                                            >
+                                                Voltar ao login
+                                            </button>
+                                        </>
                                     ) : (
                                         <>
                                             Já tem uma conta?{' '}
@@ -863,7 +1033,7 @@ function AuthCard() {
                                         Política de Privacidade
                                     </button>
                                     <button
-                                        onClick={() => window.open('https://t.me/huofind_suporte', '_blank')}
+                                        onClick={() => window.open('https://t.me/evosociety_suporte', '_blank')}
                                         className="text-sm text-gray-400 hover:text-[#3b82f6] transition-colors"
                                     >
                                         Suporte

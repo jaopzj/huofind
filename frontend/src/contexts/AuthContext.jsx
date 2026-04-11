@@ -221,6 +221,58 @@ export function AuthProvider({ children }) {
         }
     }, []);
 
+    // Send password-reset email
+    const forgotPassword = useCallback(async (email) => {
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || 'Erro ao enviar e-mail de redefinição');
+                return { success: false };
+            }
+
+            return { success: true };
+        } catch (err) {
+            console.error('[Auth] Forgot password error:', err);
+            setError('Erro de conexão. Tente novamente.');
+            return { success: false };
+        }
+    }, []);
+
+    // Complete password reset using the access_token from the recovery email
+    const resetPassword = useCallback(async (accessToken, newPassword) => {
+        setError(null);
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ accessToken, newPassword })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || 'Erro ao redefinir senha');
+                return { success: false };
+            }
+
+            return { success: true };
+        } catch (err) {
+            console.error('[Auth] Reset password error:', err);
+            setError('Erro de conexão. Tente novamente.');
+            return { success: false };
+        }
+    }, []);
+
     const logout = useCallback(async () => {
         const refreshToken = localStorage.getItem('refreshToken');
 
@@ -256,6 +308,8 @@ export function AuthProvider({ children }) {
         logout,
         checkEmailConfirmation,
         resendConfirmationEmail,
+        forgotPassword,
+        resetPassword,
         clearError: () => setError(null),
         clearPendingEmail: () => {
             setPendingEmailConfirmation(null);

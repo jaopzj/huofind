@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Configurações</title>
+  <style>
+    body {
+      width: 180px;
+      padding: 20px;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f9f9f9;
+      margin: 0;
+    }
+    h4 {
+      margin-top: 0;
+      margin-bottom: 20px;
+      color: #333;
+    }
+    /* Estilo do toggle switch */
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 60px;
+      height: 34px;
+    }
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      transition: .4s;
+      border-radius: 34px;
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 26px;
+      width: 26px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+    input:checked + .slider {
+      background-color: #0696d9; /* Cor parecida com a que você usou no CSS original */
+    }
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+    /* Texto do status */
+    .label-text {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+  </style>
+</head>
+<body>
+  <h4>Correções EVO</h4>
+  
+  <label class="switch">
+    <input type="checkbox" id="toggleSwitch" checked>
+    <span class="slider"></span>
+  </label>
+  
+  <span class="label-text" id="statusText">Ativado</span>
+
+  <script src="popup.js"></script>
+</body>
+</html>

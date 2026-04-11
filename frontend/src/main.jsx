@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
 import ErrorBoundary from './components/ErrorBoundary.jsx'
 import LegalPage from './pages/LegalPage.jsx'
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx'
 import './index.css'
 
 // Page components
@@ -29,6 +30,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
                         {/* Public legal pages */}
                         <Route path="/terms" element={<LegalPage initialType="terms" />} />
                         <Route path="/privacy" element={<LegalPage initialType="privacy" />} />
+
+                        {/* Public password reset page (Supabase recovery link target) */}
+                        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
                         {/* Protected routes — require authentication */}
                         <Route element={<ProtectedRoute />}>

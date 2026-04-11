@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "Correções EVO",
+  "version": "1.3",
+  "description": "Modifica elementos visuais no site huofind.vercel.app",
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://huofind.vercel.app/*",
+    "*://*.goofish.com/*",
+    "*://*.alicdn.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Configurações da Extensão",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://huofind.vercel.app/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}

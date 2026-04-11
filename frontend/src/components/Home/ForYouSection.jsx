@@ -90,7 +90,7 @@ function ForYouSection({ savedProducts = [] }) {
     }, [savedProducts]);
 
     return (
-        <section className="py-6">
+        <section className="home-section">
             <ProductCarousel
                 title={hasPersonalized ? 'Para você' : 'Sugestões para você'}
                 subtitle={!hasPersonalized && savedProducts.length === 0

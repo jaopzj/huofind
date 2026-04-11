@@ -238,39 +238,34 @@ const CATEGORY_CONFIG = {
 // 4. TIPS POOL (contextual tips in Portuguese)
 // -----------------------------------------------
 const GENERAL_TIPS = [
-    'Nunca declare marcas no pacote. Use descrições genéricas em inglês.',
-    'Peça ao vendedor para colocar o valor declarado mais baixo na nota (invoice).',
-    'Remova etiquetas e embalagens de marca antes de enviar, se possível.',
-    'Separe encomendas grandes em pacotes menores para reduzir riscos.',
+    'Forneça descrições genéricas padronizadas internacionalmente em inglês correspondentes ao seu item.',
+    'Certifique-se de que a quantidade declarada reflita exatamente o que está no pacote.',
+    'Evite usar nomes de marcas na documentação de transporte, prefira a categoria base do produto.',
+    'Verifique sempre as regras de importação do seu país de destino em relação ao peso e volume.',
 ];
 
 const CATEGORY_TIPS = {
     'Eletrônicos': [
-        'Para eletrônicos, declare como "replacement parts" ou "electronic components" para parecer peça de reposição.',
-        'Evite enviar eletrônicos na caixa original — isso chama atenção na fiscalização.',
-        'Peça ao vendedor para embalar sem caixa original e marcar como "gift" se possível.',
+        'Para eletrônicos em excesso de peso, descreva usando termos genéricos como "electronic components".',
+        'Cuidado com itens que possuem baterias de lítio, verifique os métodos de envio aprovados.',
     ],
     'Calçados': [
-        'Peça ao vendedor para retirar a caixa original do tênis e enviar sem etiquetas de marca.',
-        'Para calçados, declare como "sports shoes" ou "casual footwear" sem mencionar modelos.',
+        'Para calçados, é recomendado utilizar categorias logísticas genéricas como "sports shoes" ou "casual footwear".',
     ],
     'Vestuário': [
-        'Para roupas, declare quantidades pequenas e valores baixos. Ex: "2x cotton t-shirt $3 each".',
-        'Remova tags de marca antes de enviar e peça embalagem simples.',
+        'Para maior clareza aduaneira, quantifique o vestuário por peça ("2x cotton t-shirt").',
     ],
     'Bolsas': [
-        'Declare bolsas como "fabric handbag" ou "canvas bag" — nunca mencione o material real (couro, por exemplo).',
+        'Bolsas e malas constam como "fabric handbag" ou "canvas bag" na maioria dos sistemas de despacho postal.',
     ],
     'Relógios': [
-        'Declare relógios como "quartz watch" com valor baixo. Evite termos como "automatic" ou "chronograph".',
-        'Remova caixa de apresentação e documentos — envie apenas o relógio com embalagem simples.',
+        'Relógios devem ser rotulados de forma simplificada, como "quartz watch", para rápido entendimento durante a triagem.',
     ],
     'Perfumes': [
-        'Perfumes podem ter restrições de envio aéreo. Verifique com o vendedor o método de envio.',
-        'Declare perfumes como "scented water" ou "fragrance sample" com valor baixo.',
+        'Perfumes costumam ter severas restrições no envio aéreo devido às regras sobre líquidos e inflamáveis.',
     ],
     'Acessórios': [
-        'Para acessórios, use descrições genéricas como "fashion accessory" ou "plastic item".',
+        'Use descrições consolidadas como "fashion accessory" para envios contendo pequenos itens diversos.',
     ],
 };
 
@@ -535,7 +530,7 @@ function generateDeclaration(description, items) {
         items: responseItems,
         tips,
         totalSuggestedUSD: total,
-        disclaimer: 'Os valores e descrições são sugestões. O usuário é responsável pela declaração final.',
+        disclaimer: 'Os valores baseados nesta tabela são referencias de peso volumétrico. Declare sempre com exatidão o valor pago de acordo com os termos aduaneiros vigentes.',
     };
 }
 

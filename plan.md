@@ -1,6 +1,6 @@
 # Plano de Evolucao Estrutural - Evo Society: Mining & Logistics
 
-> Documento mestre de evolucao tecnica da plataforma **Evo Society (Huofind)**.
+> Documento mestre de evolucao tecnica da plataforma **Evo Society (Evo Society)**.
 > Baseado em auditoria profunda de todo o ecossistema: backend (2.103 linhas em `server.js`), frontend (1.369 linhas em `App.jsx`), modulos de scraping, pagamentos Stripe, sistema de creditos, referral e integracao Supabase.
 >
 > **Prioridades:** P0 = Critico/Imediato | P1 = Alta | P2 = Media | P3 = Baixa

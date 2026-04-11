@@ -1,29 +1,41 @@
 import { motion } from 'framer-motion';
+import { LuArrowUpRight } from 'react-icons/lu';
 
 /**
- * CategoryCard - Explore category card for navigation
+ * CategoryCard — professional category tile used in ExploreSection.
+ * Expects category = { id, name, description, Icon, tint }.
  */
 function CategoryCard({ category, onClick }) {
+    const Icon = category.Icon;
+
     const handleClick = () => {
-        if (onClick) {
-            onClick(category);
-        }
+        if (onClick) onClick(category);
     };
 
     return (
         <motion.button
+            type="button"
             onClick={handleClick}
-            className="feature-card flex flex-col items-center justify-center gap-3 p-6 w-full"
-            whileHover={{ y: -4, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
+            className="category-card"
+            style={{ '--tint': category.tint }}
+            whileHover={{ y: -3 }}
             whileTap={{ scale: 0.98 }}
         >
-            {/* Icon */}
-            <span className="text-4xl">{category.icon}</span>
+            <div className="category-card-top">
+                <div className="category-card-icon">
+                    {Icon ? <Icon /> : null}
+                </div>
+                <LuArrowUpRight size={16} className="category-card-arrow" />
+            </div>
 
-            {/* Name */}
-            <span className="font-semibold text-white text-sm">
-                {category.name}
-            </span>
+            <div className="category-card-body">
+                <h3 className="category-card-name">{category.name}</h3>
+                {category.description && (
+                    <p className="category-card-description">
+                        {category.description}
+                    </p>
+                )}
+            </div>
         </motion.button>
     );
 }

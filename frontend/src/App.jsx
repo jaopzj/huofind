@@ -111,7 +111,7 @@ function App() {
     // ===== MINING SESSION PERSISTENCE =====
     useEffect(() => {
         try {
-            const savedSession = localStorage.getItem('huofind_mining_session');
+            const savedSession = localStorage.getItem('evo_society_mining_session');
             if (savedSession) {
                 const session = JSON.parse(savedSession);
                 const sessionAge = Date.now() - (session.timestamp || 0);
@@ -125,7 +125,7 @@ function App() {
                     if (session.filters) setFilters(prev => ({ ...prev, ...session.filters }));
                     console.log(`[App] Sessão restaurada: ${session.products?.length || 0} produtos`);
                 } else {
-                    localStorage.removeItem('huofind_mining_session');
+                    localStorage.removeItem('evo_society_mining_session');
                 }
             }
         } catch (err) {
@@ -147,12 +147,12 @@ function App() {
                 },
                 timestamp: Date.now()
             };
-            localStorage.setItem('huofind_mining_session', JSON.stringify(session));
+            localStorage.setItem('evo_society_mining_session', JSON.stringify(session));
         }
     }, [products, sellerInfo, selectedCategory, filters.iphoneModel, filters.storage, filters.watchModel, filters.watchSize]);
 
     const clearMiningSession = useCallback(() => {
-        localStorage.removeItem('huofind_mining_session');
+        localStorage.removeItem('evo_society_mining_session');
         setProducts([]);
         setSellerInfo(null);
         setFilters({

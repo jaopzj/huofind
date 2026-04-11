@@ -1,7 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { LuChevronLeft, LuChevronRight, LuExternalLink } from 'react-icons/lu';
+import {
+    LuChevronLeft,
+    LuChevronRight,
+    LuExternalLink,
+    LuImage,
+} from 'react-icons/lu';
 import { proxyImage } from '../../utils/imageProxy';
+import { formatAffiliateUrl } from '../../utils/affiliateLinks';
 
 /**
  * ProductCarousel - Reusable product carousel component
@@ -61,7 +67,7 @@ function ProductCarousel({
     const handleProductClick = (product) => {
         const url = product.product_url || product.url;
         if (url) {
-            window.open(url, '_blank');
+            window.open(formatAffiliateUrl(url), '_blank');
         }
     };
 
@@ -83,17 +89,18 @@ function ProductCarousel({
             <div className="product-carousel-card">
                 <div className="product-carousel-header">
                     <div>
-                        <div className="h-6 w-40 bg-gray-700 rounded animate-pulse" />
-                        <div className="h-4 w-64 bg-gray-700 rounded animate-pulse mt-2" />
+                        <div className="h-5 w-20 bg-white/5 rounded animate-pulse" />
+                        <div className="h-7 w-52 bg-white/10 rounded animate-pulse mt-3" />
+                        <div className="h-4 w-72 bg-white/5 rounded animate-pulse mt-2" />
                     </div>
                 </div>
                 <div className="product-carousel-content">
                     <div className="flex gap-4">
                         {[...Array(3)].map((_, i) => (
                             <div key={i} className="product-carousel-item animate-pulse">
-                                <div className="aspect-square bg-gray-700 rounded-lg" />
-                                <div className="h-4 bg-gray-700 rounded mt-3 w-3/4" />
-                                <div className="h-5 bg-gray-700 rounded mt-2 w-1/2" />
+                                <div className="aspect-square bg-white/5 rounded-lg" />
+                                <div className="h-4 bg-white/5 rounded mt-3 w-3/4" />
+                                <div className="h-5 bg-white/5 rounded mt-2 w-1/2" />
                             </div>
                         ))}
                     </div>
@@ -118,30 +125,31 @@ function ProductCarousel({
         >
             {/* Header */}
             <div className="product-carousel-header">
-                <div>
-                    <h2 className="text-xl font-bold text-white">{title}</h2>
+                <div className="product-carousel-heading">
+                    <span className="section-eyebrow">Seleção</span>
+                    <h2 className="product-carousel-title">{title}</h2>
                     {subtitle && (
-                        <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+                        <p className="product-carousel-subtitle">{subtitle}</p>
                     )}
                 </div>
 
                 {/* Navigation buttons */}
-                <div className="flex items-center gap-2">
+                <div className="product-carousel-nav-group">
                     <button
                         onClick={handlePrev}
                         disabled={!canGoPrev}
-                        className={`product-carousel-nav ${!canGoPrev ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        className={`product-carousel-nav ${!canGoPrev ? 'is-disabled' : ''}`}
                         aria-label="Anterior"
                     >
-                        <LuChevronLeft size={18} />
+                        <LuChevronLeft size={16} strokeWidth={2.2} />
                     </button>
                     <button
                         onClick={handleNext}
                         disabled={!canGoNext}
-                        className={`product-carousel-nav ${!canGoNext ? 'opacity-40 cursor-not-allowed' : ''}`}
+                        className={`product-carousel-nav ${!canGoNext ? 'is-disabled' : ''}`}
                         aria-label="Próximo"
                     >
-                        <LuChevronRight size={18} />
+                        <LuChevronRight size={16} strokeWidth={2.2} />
                     </button>
                 </div>
             </div>
@@ -174,38 +182,37 @@ function ProductCarousel({
                                             className="w-full h-full object-cover"
                                             loading="lazy"
                                             onError={(e) => {
-                                                e.target.onerror = null;
-                                                e.target.src = '';
-                                                e.target.parentNode.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gray-100"><span class="text-4xl opacity-30">📦</span></div>';
+                                                e.target.style.display = 'none';
                                             }}
                                         />
                                     ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-gray-700">
-                                            <span className="text-4xl opacity-30">📦</span>
+                                        <div className="product-carousel-image-fallback">
+                                            <LuImage size={28} strokeWidth={1.4} />
                                         </div>
                                     )}
 
                                     {/* Hover overlay */}
                                     <div className="product-carousel-overlay">
-                                        <div className="p-2 bg-white/90 backdrop-blur-sm rounded-lg">
-                                            <LuExternalLink size={18} className="text-gray-700" />
+                                        <div className="product-carousel-overlay-pill">
+                                            <LuExternalLink size={15} />
+                                            <span>Ver produto</span>
                                         </div>
                                     </div>
                                 </div>
 
                                 {/* Product info */}
-                                <div className="mt-3">
-                                    <h3 className="font-semibold text-white text-sm line-clamp-2" title={productTitle}>
+                                <div className="product-carousel-info">
+                                    {product.marca && (
+                                        <p className="product-carousel-brand">
+                                            {product.marca}
+                                        </p>
+                                    )}
+                                    <h3 className="product-carousel-name" title={productTitle}>
                                         {productTitle}
                                     </h3>
                                     {price && (
-                                        <p className="text-blue-400 font-bold mt-1">
+                                        <p className="product-carousel-price">
                                             {price}
-                                        </p>
-                                    )}
-                                    {product.marca && (
-                                        <p className="text-xs text-gray-400 mt-0.5">
-                                            {product.marca}
                                         </p>
                                     )}
                                 </div>

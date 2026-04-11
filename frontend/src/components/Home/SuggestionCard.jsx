@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { proxyImage } from '../../utils/imageProxy';
+import { formatAffiliateUrl } from '../../utils/affiliateLinks';
 
 /**
  * SuggestionCard - Compact product card for horizontal carousel
@@ -13,7 +14,7 @@ function SuggestionCard({ product, onClick }) {
         } else {
             const url = product.product_url || product.url;
             if (url) {
-                window.open(url, '_blank');
+                window.open(formatAffiliateUrl(url), '_blank');
             }
         }
     };

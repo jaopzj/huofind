@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuCheck, LuChevronLeft, LuChevronRight, LuRocket } from 'react-icons/lu';
-import { ExploradorIcon, EscavadorIcon, MineradorIcon } from './TierIcons';
 import { TIER_TO_PLAN_ID } from '../../utils/tierUtils';
 
 // Plan configurations with features
@@ -10,7 +9,8 @@ const PLANS_DATA = [
         id: 'bronze',
         name: 'Explorador',
         tier: 'BRONZE',
-        icon: ExploradorIcon,
+        iconUrl: 'https://i.imgur.com/J790Vgc.png',
+        tierColor: '#cd7f32',
         color: '#B45309',
         bgGradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
         credits: 50,
@@ -31,7 +31,8 @@ const PLANS_DATA = [
         id: 'silver',
         name: 'Escavador',
         tier: 'SILVER',
-        icon: EscavadorIcon,
+        iconUrl: 'https://i.imgur.com/ibHs66L.png',
+        tierColor: '#C0C0C0',
         color: '#4B5563',
         bgGradient: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
         credits: 150,
@@ -53,7 +54,8 @@ const PLANS_DATA = [
         id: 'gold',
         name: 'Minerador',
         tier: 'GOLD',
-        icon: MineradorIcon,
+        iconUrl: 'https://i.imgur.com/UFgpPC1.png',
+        tierColor: 'rgb(255, 191, 0)',
         color: '#D97706',
         bgGradient: 'linear-gradient(135deg, #FEF3C7 0%, #FCD34D 100%)',
         credits: 300,
@@ -84,7 +86,6 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscr
     const userTierRank = TIER_RANK[currentTier] || 0;
 
     const currentPlan = PLANS_DATA[activeIndex];
-    const Icon = currentPlan.icon;
     const planTierRank = TIER_RANK[currentPlan.id] || 0;
     const isCurrentUserPlan = currentTier === currentPlan.id;
     const isLowerThanUserPlan = planTierRank < userTierRank;
@@ -150,13 +151,19 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscr
                         transition={{ duration: 0.3, ease: "easeInOut" }}
                         className="relative mx-auto w-full overflow-hidden rounded-3xl bg-[#1f2937] border border-white/10 shadow-xl"
                     >
+                        {currentPlan.id === 'bronze' && (
+                            <img src="https://imgur.com/0ZJ7t4a.png" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" alt="Bronze BG" />
+                        )}
+                        {currentPlan.id === 'silver' && (
+                            <img src="https://imgur.com/Y3YR7AA.png" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" alt="Silver BG" />
+                        )}
+                        {currentPlan.id === 'gold' && (
+                            <img src="https://imgur.com/S692ePG.png" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none" alt="Gold BG" />
+                        )}
                         {/* Badge */}
                         {currentPlan.badge && (
-                            <motion.div
-                                initial={{ opacity: 0, scale: 0.8, y: -10 }}
-                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                transition={{ delay: 0.2, duration: 0.3 }}
-                                className="absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-white shadow-md z-10"
+                            <div
+                                className={`absolute top-4 right-4 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-white shadow-md z-20 ${currentPlan.badge === 'Melhor Valor' ? 'evo-badge-shake' : ''}`}
                                 style={{
                                     background: currentPlan.badge === 'Melhor Valor'
                                         ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
@@ -164,7 +171,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscr
                                 }}
                             >
                                 ⭐ {currentPlan.badge}
-                            </motion.div>
+                            </div>
                         )}
 
                         {/* Current Plan Badge */}
@@ -180,7 +187,7 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscr
                             </motion.div>
                         )}
 
-                        <div className="flex flex-col lg:flex-row">
+                        <div className="flex flex-col lg:flex-row relative z-10">
                             {/* Left Side - Plan Info */}
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
@@ -192,14 +199,34 @@ function SubscriptionSlider({ currentTier = 'guest', onSubscribe, onManageSubscr
                                     {/* Plan Header */}
                                     <div className="flex items-center gap-3 mb-4">
                                         <div
-                                            className="w-14 h-14 rounded-2xl flex items-center justify-center"
-                                            style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                                            className={`w-14 h-14 rounded-2xl flex items-center justify-center ${currentPlan.id === 'gold' ? 'relative overflow-visible' : ''}`}
+                                            style={currentPlan.id === 'gold' ? {} : { background: 'transparent', border: 'none' }}
                                         >
-                                            <Icon size={28} color="#fff" />
+                                            {currentPlan.id === 'gold' ? (
+                                                <>
+                                                    <div className="evo-gold-circle-clipper">
+                                                        <img src={currentPlan.iconUrl} className="w-14 h-14 object-contain relative z-10" alt={`${currentPlan.id} icon`} />
+                                                    </div>
+                                                    {[...Array(12)].map((_, i) => {
+                                                        const x = (Math.random() - 0.5) * 160;
+                                                        const y = (Math.random() - 0.5) * 160;
+                                                        return <div key={i} className="evo-gold-particle" style={{ '--x': `${x}px`, '--y': `${y}px`, left: '50%', top: '50%', animationDelay: `${Math.random() * 2}s` }}></div>;
+                                                    })}
+                                                </>
+                                            ) : (
+                                                <img
+                                                    src={currentPlan.iconUrl}
+                                                    alt={`${currentPlan.id} icon`}
+                                                    className="w-14 h-14 object-contain"
+                                                />
+                                            )}
                                         </div>
                                         <div>
                                             <h3 className="text-2xl font-black text-white">{currentPlan.name}</h3>
-                                            <p className="text-xs font-bold uppercase tracking-widest text-blue-400">
+                                            <p
+                                                className="text-xs font-bold uppercase tracking-widest"
+                                                style={{ color: currentPlan.tierColor, fontWeight: currentPlan.id === 'gold' ? 'bold' : undefined }}
+                                            >
                                                 {currentPlan.tier}
                                             </p>
                                         </div>

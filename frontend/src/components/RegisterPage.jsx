@@ -94,7 +94,7 @@ function RegisterPage({ onSwitchToLogin }) {
                     <div className="absolute inset-0 z-0 opacity-30 mix-blend-overlay">
                         <img
                             src="/huofind_login_hero_mockup.png"
-                            alt="Huofind Hero"
+                            alt="Evo Society Hero"
                             className="w-full h-full object-cover"
                             onError={(e) => e.target.style.display = 'none'}
                         />
@@ -105,7 +105,7 @@ function RegisterPage({ onSwitchToLogin }) {
                             className="text-3xl lg:text-4xl font-bold leading-tight mb-5"
                             style={{ color: '#ff6b35' }}
                         >
-                            Huofind
+                            Evo Society
                         </h1>
                         <p
                             className="text-base lg:text-lg font-medium mb-10 leading-relaxed"
@@ -150,7 +150,7 @@ function RegisterPage({ onSwitchToLogin }) {
                     <div className="w-full max-w-[420px]">
                         {/* Logo */}
                         <div className="mb-10 flex justify-center">
-                            <img src="/logo.svg" alt="Huofind" className="h-20" />
+                            <img src="/logo.svg" alt="Evo Society" className="h-20" />
                         </div>
 
                         {/* Header Group */}

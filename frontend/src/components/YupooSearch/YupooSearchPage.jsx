@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, memo, useCallback, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LuSearch, LuFilter, LuX, LuChevronLeft, LuChevronRight, LuArrowDownUp, LuCheck, LuChevronDown, LuBadgeCheck, LuCamera, LuUpload, LuImage, LuLoaderCircle } from 'react-icons/lu';
 import WifiLoader from '../WifiLoader';
@@ -34,6 +35,9 @@ export default function YupooSearchPage({
     isBronze = false,
     onNavigate = () => { }
 }) {
+    const location = useLocation();
+    const navigate = useNavigate();
+
     // State for data
     const [allProducts, setAllProducts] = useState([]);
     useEffect(() => {
@@ -113,35 +117,50 @@ export default function YupooSearchPage({
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    // Check for search query or category filter from Home page navigation
+    // Watch for search query or category filter from Home page navigation.
+    // Uses location.search from React Router to ensure it's in sync during transitions.
     useEffect(() => {
-        // Check for search query from Home
-        const searchQuery = sessionStorage.getItem('yupoo_search_query');
+        const urlParams = new URLSearchParams(location.search);
+        let shouldReplaceUrl = false;
+
+        // 1. Process Category
+        const urlCategory = urlParams.get('category');
+        const storedCategory = sessionStorage.getItem('yupoo_category_filter');
+        const categoryFilter = urlCategory || storedCategory;
+
+        if (categoryFilter) {
+            const CMAP = {
+                'roupas': 'Roupas', 'camisetas': 'Camisetas', 'calcados': 'Calçados',
+                'moletons': 'Moletons', 'calcas': 'Calças', 'acessorios': 'Acessórios',
+                'relogios': 'Relógios', 'oculos': 'Óculos', 'eletronicos': 'Eletrônicos',
+            };
+            const mappedCat = CMAP[categoryFilter] || categoryFilter;
+            setSelectedCategories([mappedCat]);
+            sessionStorage.removeItem('yupoo_category_filter');
+            
+            if (mappedCat === 'Calçados') {
+                setIsShoesExpanded(true); // Expand accordion for better UX
+            }
+            if (urlCategory) shouldReplaceUrl = true;
+        }
+
+        // 2. Process Search Query
+        const urlQuery = urlParams.get('q');
+        const storedQuery = sessionStorage.getItem('yupoo_search_query');
+        const searchQuery = urlQuery || storedQuery;
+
         if (searchQuery) {
             setKeyword(searchQuery);
             sessionStorage.removeItem('yupoo_search_query');
+            if (urlQuery) shouldReplaceUrl = true;
         }
 
-        // Check for category filter from Home
-        const categoryFilter = sessionStorage.getItem('yupoo_category_filter');
-        if (categoryFilter) {
-            // Map category ID to actual category name if needed
-            const categoryMap = {
-                'roupas': 'Roupas',
-                'camisetas': 'Camisetas',
-                'calcados': 'Calçados',
-                'moletons': 'Moletons',
-                'calcas': 'Calças',
-                'acessorios': 'Acessórios',
-                'relogios': 'Relógios',
-                'oculos': 'Óculos',
-                'eletronicos': 'Eletrônicos'
-            };
-            const categoryName = categoryMap[categoryFilter] || categoryFilter;
-            setSelectedCategories([categoryName]);
-            sessionStorage.removeItem('yupoo_category_filter');
+        // Clean the URL so the filter doesn't persist as the user interacts 
+        // with the page (keeps the back-button behavior intuitive).
+        if (shouldReplaceUrl) {
+            navigate(location.pathname, { replace: true });
         }
-    }, []);
+    }, [location.search, location.pathname, navigate]);
 
     // Image search handler
     const handleImageSearch = useCallback(async (file) => {

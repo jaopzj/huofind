@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useSpring, useTransform } from 'framer-motion';
+import { motion, AnimatePresence, useSpring, useTransform } from 'framer-motion';
 import SparkleButton from './SparkleButton';
 import { Slider } from './ui/slider';
 import { normalizeTier } from '../utils/tierUtils';
 import AnimatedLogo from './AnimatedLogo';
+import GoofishPreviewCard from './GoofishPreviewCard';
 
 // Available categories with their display info
 const CATEGORIES = [
@@ -32,6 +33,7 @@ function HeroSection({
     isEvaluating,
     isLoading,
     isSellerVerified = false,
+    sellerInfo = null,
     onCategoryChange,
     selectedCategory = 'iphone',
     miningInfo = null,
@@ -80,8 +82,37 @@ function HeroSection({
 
     // Check tier for UI logic
     const isGuest = normalizeTier(miningInfo?.tier) === 'guest';
+    const isGold = normalizeTier(miningInfo?.tier) === 'gold';
 
-    const maxLimit = miningInfo?.maxProducts || 30;
+    // Calculate dynamic maxLimit based on Tier AND Seller's available products
+    let maxLimit = miningInfo?.maxProducts || 30;
+    let sellerProducts = 1000;
+    
+    if (sellerInfo?.productsText) {
+        const match = sellerInfo.productsText.match(/\d+/);
+        if (match) {
+            sellerProducts = parseInt(match[0], 10);
+        }
+    }
+    
+    // Hard limit per seller is 1000
+    sellerProducts = Math.min(sellerProducts, 1000);
+    
+    if (isGold) {
+        // Gold is unlimited, so it's only restricted by the seller's actual product count (up to 1000)
+        maxLimit = sellerProducts;
+    } else {
+        // Other tiers: strictly respect their maxProducts limit, but don't allow selecting more than the seller has
+        maxLimit = Math.min(maxLimit, sellerProducts);
+    }
+    
+    // Ensure limit is not 0 (in case sellerProducts parsed as 0)
+    maxLimit = Math.max(maxLimit, 10);
+
+    // Sync current limit if maxLimit drops below it (e.g. valid seller just loaded)
+    useEffect(() => {
+        setLimit(prev => Math.min(prev, maxLimit));
+    }, [maxLimit]);
 
     // Quando a URL muda e é válida, dispara avaliação do vendedor
     useEffect(() => {
@@ -103,7 +134,8 @@ function HeroSection({
     };
 
     // Botão só é habilitado quando vendedor está verificado e tem limite
-    const isLimitReached = miningInfo && miningInfo.credits <= 0;
+    const creditsCost = Math.ceil(Number(limit) / 100) || 1;
+    const isLimitReached = miningInfo && miningInfo.credits < creditsCost;
     const isButtonDisabled = isLoading || !url.trim() || !isValidUrl || !isSellerVerified || isEvaluating || isLimitReached;
 
     return (
@@ -122,6 +154,18 @@ function HeroSection({
 
             {/* Search Box with Category Selector */}
             <form onSubmit={handleSubmit} className="w-full max-w-2xl">
+                {/* Preview ao vivo do vendedor (fluxo da extensão do amigo).
+                    Aparece só quando há URL Goofish válida sendo avaliada ou já verificada. */}
+                <AnimatePresence>
+                    {isValidUrl && url.trim() && (isEvaluating || sellerInfo) && (
+                        <GoofishPreviewCard
+                            key={sellerInfo ? 'loaded' : 'loading'}
+                            sellerInfo={isEvaluating ? null : sellerInfo}
+                            isLoading={isEvaluating}
+                        />
+                    )}
+                </AnimatePresence>
+
                 {/* URL Input + Category Dropdown Row */}
                 <div className="flex gap-3 mb-6">
                     {/* URL Input Container */}
@@ -270,18 +314,40 @@ function HeroSection({
                     }}
                 >
                     <div className="flex items-center justify-between mb-3">
-                        <label className="font-medium text-sm" style={{ color: 'white' }}>
-                            📦 Limite de Produtos
-                        </label>
-                        <span
-                            className="text-lg font-bold px-3 py-1 rounded-lg"
+                        <div className="flex flex-col gap-1">
+                            <label className="font-medium text-sm" style={{ color: 'white' }}>
+                                📦 Limite de Produtos
+                            </label>
+                            <span className={`text-[10px] uppercase font-bold tracking-wider ${miningInfo?.credits >= creditsCost ? 'text-blue-400/80' : 'text-red-400'}`}>
+                                Custo base: {creditsCost} CRÉDITO{creditsCost > 1 ? 'S' : ''}
+                            </span>
+                        </div>
+                        <input
+                            type="number"
+                            className="text-lg font-bold px-3 py-1 rounded-lg w-24 text-center evo-editable-number flex-shrink-0"
                             style={{
                                 background: '#3B82F6',
-                                color: 'white'
+                                color: 'white',
+                                outline: 'none',
+                                border: '2px solid transparent'
                             }}
-                        >
-                            <AnimatedNumber value={limit} />
-                        </span>
+                            value={limit}
+                            onChange={(e) => {
+                                let val = parseInt(e.target.value, 10);
+                                if (isNaN(val)) {
+                                    setLimit('');
+                                } else {
+                                    setLimit(val);
+                                }
+                            }}
+                            onBlur={() => {
+                                let val = parseInt(limit, 10);
+                                if (isNaN(val) || val < 10) val = 10;
+                                if (val > maxLimit) val = maxLimit;
+                                setLimit(val);
+                            }}
+                            disabled={isLoading}
+                        />
                     </div>
                     <Slider
                         value={[limit]}
@@ -298,6 +364,7 @@ function HeroSection({
                         <span>{Math.round(maxLimit / 2)}</span>
                         <span>{maxLimit}</span>
                     </div>
+
                 </div>
 
                 <SparkleButton

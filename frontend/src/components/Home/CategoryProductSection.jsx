@@ -10,7 +10,6 @@ function CategoryProductSection({
     categoryId,
     title,
     subtitle,
-    icon
 }) {
     const [products, setProducts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -82,9 +81,9 @@ function CategoryProductSection({
     }
 
     return (
-        <section className="py-6">
+        <section className="home-section">
             <ProductCarousel
-                title={icon ? `${icon} ${title}` : title}
+                title={title}
                 subtitle={subtitle}
                 products={products}
                 isLoading={isLoading}

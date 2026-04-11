@@ -5,8 +5,8 @@ import { LuCheck, LuCrown, LuSparkles, LuShield, LuRocket } from 'react-icons/lu
 const PLAN_CONFIG = {
     bronze: {
         name: 'Explorador',
-        icon: LuShield,
-        color: '#B45309',
+        iconUrl: 'https://i.imgur.com/J790Vgc.png',
+        color: '#cd7f32',
         bgGradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)',
         benefits: [
             'Acesso completo à Yupoo',
@@ -17,8 +17,8 @@ const PLAN_CONFIG = {
     },
     silver: {
         name: 'Escavador',
-        icon: LuSparkles,
-        color: '#4B5563',
+        iconUrl: 'https://i.imgur.com/ibHs66L.png',
+        color: '#C0C0C0',
         bgGradient: 'linear-gradient(135deg, #F3F4F6 0%, #E5E7EB 100%)',
         benefits: [
             'Tudo do Explorador',
@@ -29,8 +29,8 @@ const PLAN_CONFIG = {
     },
     gold: {
         name: 'Minerador',
-        icon: LuCrown,
-        color: '#D97706',
+        iconUrl: 'https://i.imgur.com/UFgpPC1.png',
+        color: '#FFD700',
         bgGradient: 'linear-gradient(135deg, #FEF3C7 0%, #FCD34D 100%)',
         benefits: [
             'Tudo do Escavador',
@@ -56,7 +56,6 @@ function SubscriptionPlanCard({
     delay = 0
 }) {
     const plan = PLAN_CONFIG[planId] || PLAN_CONFIG.bronze;
-    const Icon = plan.icon;
 
     return (
         <motion.div
@@ -69,10 +68,19 @@ function SubscriptionPlanCard({
                 : 'border-white/5 hover:border-blue-500/30 shadow-sm hover:shadow-xl'
                 }`}
         >
+            {planId === 'bronze' && (
+                <img src="https://imgur.com/0ZJ7t4a.png" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none evo-store-bg" alt="Bronze BG" />
+            )}
+            {planId === 'silver' && (
+                <img src="https://imgur.com/Y3YR7AA.png" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none evo-store-bg" alt="Silver BG" />
+            )}
+            {planId === 'gold' && (
+                <img src="https://imgur.com/S692ePG.png" className="absolute inset-0 w-full h-full object-cover z-0 pointer-events-none evo-store-bg opacity-0" alt="Gold BG" />
+            )}
             {/* Top Badge */}
             {(isPopular || isBest || isCurrentPlan) && (
                 <div
-                    className="py-2 px-4 text-center text-xs font-bold uppercase tracking-wider text-white"
+                    className={`py-2 px-4 text-center text-xs font-bold uppercase tracking-wider text-white ${isBest && !isCurrentPlan ? 'evo-badge-shake' : ''}`}
                     style={{
                         background: isCurrentPlan
                             ? 'linear-gradient(135deg, #10B981 0%, #059669 100%)'
@@ -89,14 +97,27 @@ function SubscriptionPlanCard({
                 {/* Plan Header */}
                 <div className="flex items-center gap-3 mb-4">
                     <div
-                        className="w-12 h-12 rounded-2xl flex items-center justify-center"
-                        style={{ background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.1)' }}
+                        className={`w-14 h-14 rounded-2xl flex items-center justify-center ${planId === 'gold' ? 'relative overflow-visible' : ''}`}
+                        style={planId !== 'gold' ? { background: 'transparent', border: 'none' } : {}}
                     >
-                        <Icon className="w-6 h-6 text-white" />
+                        {planId === 'gold' ? (
+                            <>
+                                <div className="evo-gold-circle-clipper">
+                                    <img src={plan.iconUrl} className="w-14 h-14 object-contain evo-store-card-icon relative z-10" alt={`${planId} icon`} />
+                                </div>
+                                {[...Array(12)].map((_, i) => {
+                                    const x = (Math.random() - 0.5) * 160;
+                                    const y = (Math.random() - 0.5) * 160;
+                                    return <div key={i} className="evo-gold-particle" style={{ '--x': `${x}px`, '--y': `${y}px`, left: '50%', top: '50%', animationDelay: `${Math.random() * 2}s` }}></div>;
+                                })}
+                            </>
+                        ) : (
+                            <img src={plan.iconUrl} className="w-14 h-14 object-contain evo-store-card-icon" alt={`${planId} icon`} />
+                        )}
                     </div>
                     <div>
                         <p className="text-lg font-black text-white">{plan.name}</p>
-                        <p className="text-xs font-bold uppercase tracking-wider text-blue-400">
+                        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: plan.color }}>
                             {planId.toUpperCase()}
                         </p>
                     </div>

@@ -79,7 +79,12 @@ const SellerCard = memo(function SellerCard({ sellerInfo, variant = 'full', sell
         followersFormatted,
         salesCountFormatted,
         followers,
-        salesCount
+        salesCount,
+        // Mining fields (EVO)
+        description: sellerDescription,
+        location: sellerLocation,
+        reviewsText,
+        productsText
     } = sellerInfo;
 
     const score = trustScore || 0;
@@ -120,7 +125,11 @@ const SellerCard = memo(function SellerCard({ sellerInfo, variant = 'full', sell
         <div
             className={`w-full mb-8 relative overflow-hidden rounded-2xl transition-all duration-300 hover:shadow-lg ${isCompact ? '' : 'border border-white/10'} ${isTransitioning ? 'seller-card-transition-active' : ''}`}
             style={{
-                background: '#1f2937',
+                background: isCompact
+                    ? '#1f2937'
+                    : 'linear-gradient(rgba(31, 41, 55, 0.82), rgba(31, 41, 55, 0.82)), url("https://gw.alicdn.com/imgextra/i2/O1CN01wb0Ioz1TWfcAY9sol_!!6000000002390-2-tps-3120-564.png") center/cover no-repeat',
+                backgroundSize: isCompact ? undefined : 'cover',
+                backgroundPosition: isCompact ? undefined : 'center',
                 backdropFilter: isCompact ? 'none' : 'blur(10px)',
                 boxShadow: 'var(--shadow-soft)',
                 minHeight: isCompact ? 'auto' : '140px'
@@ -213,6 +222,37 @@ const SellerCard = memo(function SellerCard({ sellerInfo, variant = 'full', sell
                                     </div>
                                 </div>
                             </div>
+
+                            {/* Mining Details Row (EVO) */}
+                            {(sellerDescription || sellerLocation || reviewsText || productsText) && (
+                                <div className="mt-4 pt-4 border-t border-white/10">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {sellerLocation && (
+                                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                                <span>{sellerLocation}</span>
+                                            </div>
+                                        )}
+                                        {reviewsText && (
+                                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                <span className="text-yellow-400">⭐</span>
+                                                <span>{reviewsText}</span>
+                                            </div>
+                                        )}
+                                        {productsText && (
+                                            <div className="flex items-center gap-2 text-xs text-gray-400">
+                                                <span className="text-blue-400">📦</span>
+                                                <span>{productsText}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    {sellerDescription && (
+                                        <div className="mt-3 p-3 rounded-xl bg-white/5 border border-white/5">
+                                            <p className="text-xs text-gray-400 leading-relaxed line-clamp-3" dangerouslySetInnerHTML={{ __html: sellerDescription }} />
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
 

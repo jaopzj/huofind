@@ -1,6 +1,7 @@
 export { default as HomePage } from './HomePage';
 export { default as HeroHome } from './HeroHome';
-export { default as QuickAccess } from './QuickAccess';
+export { default as BannerCarousel } from './BannerCarousel';
+export { default as ResourcesRow } from './ResourcesRow';
 export { default as ForYouSection } from './ForYouSection';
 export { default as ExploreSection } from './ExploreSection';
 export { default as InstitutionalSection } from './InstitutionalSection';

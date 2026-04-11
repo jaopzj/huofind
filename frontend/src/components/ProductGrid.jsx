@@ -11,6 +11,7 @@ import {
     extractUniqueProductModels
 } from '../utils/modelDetector';
 import SaveBookmarkButton from './SaveBookmarkButton';
+import { formatAffiliateUrl } from '../utils/affiliateLinks';
 
 /**
  * ProductCard - Estilo e-commerce minimalista com salvamento
@@ -25,7 +26,7 @@ const ProductCard = memo(function ProductCard({
 }) {
     const handleClick = () => {
         if (product.url) {
-            window.open(product.url, '_blank');
+            window.open(formatAffiliateUrl(product.url), '_blank');
         }
     };
 

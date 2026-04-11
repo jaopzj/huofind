@@ -80,7 +80,10 @@ export async function registerUser(email, password, name, refCode = null) {
             email: emailLower,
             password: password,
             options: {
-                data: { name: name || null }
+                data: { name: name || null },
+                // Redirect target after user clicks the confirmation link in the email.
+                // Must be listed in Supabase Auth → URL Configuration → Redirect URLs.
+                emailRedirectTo: config.publicAppUrl
             }
         });
 
@@ -311,7 +314,10 @@ export async function resendConfirmationEmail(email) {
     try {
         const { error } = await supabaseAuth.auth.resend({
             type: 'signup',
-            email: email.toLowerCase()
+            email: email.toLowerCase(),
+            options: {
+                emailRedirectTo: config.publicAppUrl
+            }
         });
 
         if (error) {
@@ -323,6 +329,98 @@ export async function resendConfirmationEmail(email) {
         return { success: true };
     } catch (err) {
         console.error('[Auth] Resend error:', err);
+        return { error: 'Erro interno', code: 'INTERNAL_ERROR' };
+    }
+}
+
+/**
+ * Send a password-reset email through Supabase Auth.
+ * The link in the email will land on `${publicAppUrl}/reset-password#access_token=...&type=recovery`.
+ * The frontend reads the hash and POSTs to /api/auth/reset-password.
+ */
+export async function forgotPassword(email) {
+    try {
+        const emailLower = String(email || '').trim().toLowerCase();
+        if (!emailLower) {
+            return { error: 'Email é obrigatório', code: 'MISSING_EMAIL' };
+        }
+
+        const { error } = await supabaseAuth.auth.resetPasswordForEmail(emailLower, {
+            redirectTo: `${config.publicAppUrl}/reset-password`
+        });
+
+        if (error) {
+            console.error('[Auth] Forgot password error:', error);
+            // Supabase returns a generic error for rate-limit etc. Don't leak whether the email exists —
+            // respond with success to the client regardless, but log server-side.
+        }
+
+        // Always return success to prevent email enumeration.
+        console.log(`[Auth] Password reset email dispatch attempted for: ${emailLower}`);
+        return { success: true };
+    } catch (err) {
+        console.error('[Auth] Forgot password error:', err);
+        return { error: 'Erro interno', code: 'INTERNAL_ERROR' };
+    }
+}
+
+/**
+ * Complete a password reset. Takes the Supabase access_token that the user received
+ * in the reset email URL hash, verifies it, and updates the password via admin API.
+ * Also refreshes the bcrypt password_hash stored in public.users.
+ */
+export async function resetPassword(accessToken, newPassword) {
+    try {
+        if (!accessToken || !newPassword) {
+            return { error: 'Token e nova senha são obrigatórios', code: 'MISSING_FIELDS' };
+        }
+
+        if (newPassword.length < 8) {
+            return { error: 'Senha deve ter pelo menos 8 caracteres', code: 'WEAK_PASSWORD' };
+        }
+
+        // Verify the recovery access token by resolving the user it belongs to.
+        const { data: userData, error: getUserError } = await supabaseAuth.auth.getUser(accessToken);
+        if (getUserError || !userData?.user) {
+            console.warn('[Auth] Reset password: invalid token', getUserError?.message);
+            return { error: 'Link de redefinição inválido ou expirado', code: 'INVALID_TOKEN' };
+        }
+
+        const userId = userData.user.id;
+        const emailLower = (userData.user.email || '').toLowerCase();
+
+        // Update the password through the admin API (service-role key).
+        const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+            password: newPassword
+        });
+
+        if (updateError) {
+            console.error('[Auth] Reset password update error:', updateError);
+            return { error: 'Erro ao atualizar senha', code: 'UPDATE_ERROR' };
+        }
+
+        // Keep bcrypt password_hash in public.users in sync (used by other flows).
+        try {
+            const passwordHash = await bcrypt.hash(newPassword, 10);
+            await supabase.from('users')
+                .update({ password_hash: passwordHash })
+                .eq('id', userId);
+        } catch (hashErr) {
+            console.warn('[Auth] Failed to sync password_hash after reset:', hashErr);
+            // Not fatal — Supabase Auth already has the new password.
+        }
+
+        // Invalidate any existing refresh sessions so old devices are logged out.
+        try {
+            await supabase.from('sessions').delete().eq('user_id', userId);
+        } catch (sessionErr) {
+            console.warn('[Auth] Failed to clear sessions after password reset:', sessionErr);
+        }
+
+        console.log(`[Auth] Password reset completed for: ${emailLower}`);
+        return { success: true };
+    } catch (err) {
+        console.error('[Auth] Reset password error:', err);
         return { error: 'Erro interno', code: 'INTERNAL_ERROR' };
     }
 }

@@ -1,6 +1,7 @@
 import { useState, memo } from 'react';
 import { motion } from 'framer-motion';
 import { proxyImage } from '../../utils/imageProxy';
+import { formatAffiliateUrl } from '../../utils/affiliateLinks';
 
 /**
  * SavedProductCard - Enhanced product card with platform tag and actions
@@ -26,7 +27,7 @@ const SavedProductCard = memo(function SavedProductCard({
 
     const handleViewProduct = () => {
         if (product.product_url) {
-            window.open(product.product_url, '_blank');
+            window.open(formatAffiliateUrl(product.product_url), '_blank');
         }
     };
 

@@ -39,6 +39,7 @@ export default function MiningPage() {
                     isEvaluating={evaluating}
                     isLoading={loading}
                     isSellerVerified={sellerInfo !== null && !evaluating}
+                    sellerInfo={sellerInfo}
                     selectedCategory={selectedCategory}
                     onCategoryChange={setSelectedCategory}
                     miningInfo={miningInfo}

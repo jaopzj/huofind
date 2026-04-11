@@ -15,7 +15,9 @@ const CreditPackageCard = memo(function CreditPackageCard({
     isLoading = false,
     delay = 0,
     hasDiscount = false,
-    discountPercent = 15
+    discountPercent = 15,
+    iconUrl = null,
+    iconScale = 1
 }) {
     const getBadgeStyles = () => {
         if (badgeType === 'best') {
@@ -51,7 +53,7 @@ const CreditPackageCard = memo(function CreditPackageCard({
                         initial={{ scale: 0, rotate: -12 }}
                         animate={{ scale: 1, rotate: -12 }}
                         transition={{ delay: delay + 0.2, type: 'spring', stiffness: 300 }}
-                        className="absolute -top-3 -right-2 px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-lg"
+                        className={`absolute -top-3 -right-2 px-3 py-1 rounded-full text-white text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 shadow-lg ${badgeType === 'best' ? 'evo-badge-shake' : ''}`}
                         style={{ background: badgeStyles.bg }}
                     >
                         {badgeStyles.icon}
@@ -65,11 +67,24 @@ const CreditPackageCard = memo(function CreditPackageCard({
                 <div
                     className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto"
                     style={{
-                        background: 'rgba(59, 130, 246, 0.05)',
-                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                        background: iconUrl ? 'transparent' : 'rgba(59, 130, 246, 0.05)',
+                        border: iconUrl ? 'none' : '1px solid rgba(59, 130, 246, 0.2)',
+                        overflow: iconScale > 1 ? 'visible' : undefined
                     }}
                 >
-                    <LuZap className="w-7 h-7 text-blue-500" />
+                    {iconUrl ? (
+                        <img
+                            src={iconUrl}
+                            alt="Package icon"
+                            className="w-14 h-14 object-contain"
+                            style={{
+                                transform: iconScale !== 1 ? `scale(${iconScale})` : undefined,
+                                maxWidth: iconScale > 1 ? 'max-content' : '100%'
+                            }}
+                        />
+                    ) : (
+                        <LuZap className="w-7 h-7 text-blue-500" />
+                    )}
                 </div>
             </div>
 

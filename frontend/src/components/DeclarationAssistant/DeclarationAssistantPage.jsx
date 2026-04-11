@@ -546,8 +546,8 @@ const DeclarationAssistantPage = ({ onNavigate, isRestricted = false }) => {
                                     <div className="mt-4 p-4 bg-gradient-to-r from-blue-600/10 to-cyan-500/10 rounded-xl border border-blue-500/20">
                                         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                                             <span className="text-white font-bold flex items-center gap-2">
-                                                <span>💵</span>
-                                                Valor total sugerido para declarar
+                                                <span>⚖️</span>
+                                                Valor referencial de Peso e Volume base
                                             </span>
                                             <div className="flex items-center gap-4">
                                                 <motion.button
@@ -592,7 +592,7 @@ const DeclarationAssistantPage = ({ onNavigate, isRestricted = false }) => {
                                 >
                                     <p className="text-blue-400/90 text-xs flex items-start gap-2">
                                         <span>💡</span>
-                                        <span>Caso não queira declarar manualmente, e prefira que o agente declare, considere apenas o valor sugerido.</span>
+                                        <span>Esse valor trata-se unicamente de uma proporção com base nas médias volumétricas. Lembre-se que é seu dever aduaneiro informar sempre o valor exato pago.</span>
                                     </p>
                                 </motion.div>
 
@@ -627,8 +627,7 @@ const DeclarationAssistantPage = ({ onNavigate, isRestricted = false }) => {
                         Como funciona?
                     </h3>
                     <p className="text-white/60 text-xs leading-relaxed">
-                        Nosso sistema analisa seus produtos e sugere descrições genéricas em inglês
-                        com valores otimizados em dólar para minimizar taxas de importação.
+                        Nosso sistema analisa seus produtos e traz estimativas para adequação de guia de transporte (em inglês), fornecendo também as médias da tabela internacional.
                     </p>
                 </motion.div>
 
@@ -644,7 +643,7 @@ const DeclarationAssistantPage = ({ onNavigate, isRestricted = false }) => {
                     </h3>
                     <p className="text-white/60 text-xs leading-relaxed">
                         Adicione cada item separadamente com a quantidade correta.
-                        O sistema vai gerar descrições genéricas e valores baixos automaticamente.
+                        O sistema irá converter as documentações e prever a base por peso automaticamente.
                     </p>
                 </motion.div>
             </div>

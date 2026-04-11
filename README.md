@@ -1,4 +1,4 @@
-# Goofish Miner (Huofind) 🐟
+# Goofish Miner (Evo Society) 🐟
 
 Uma ferramenta moderna para mineração e análise de produtos da plataforma Goofish (Xianyu).
 

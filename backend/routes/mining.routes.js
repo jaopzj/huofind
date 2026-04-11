@@ -9,6 +9,7 @@ import { scrapeProductsForComparison } from '../productAnalyzer.js';
 import {
     miningLimitMiddleware,
     consumeCredit,
+    consumeCredits,
     refundCredit,
     startMiningSession,
     endMiningSession,
@@ -258,10 +259,11 @@ router.get('/mine-stream', authMiddleware, miningLimitMiddleware, async (req, re
             miningInfo: req.miningInfo
         });
 
-        // LOG-03: Consume credit only after successful delivery
-        const creditResult = await consumeCredit(userId);
+        // Consome créditos proporcional aos produtos minerados (1 a cada 100)
+        const creditsToConsume = Math.ceil(result.products.length / 100) || 1;
+        const creditResult = await consumeCredits(userId, creditsToConsume);
         if (creditResult === null) {
-            console.warn(`[Server] Falha ao consumir crédito de ${userId}, mas dados foram entregues`);
+            console.warn(`[Server] Falha ao consumir ${creditsToConsume} créditos de ${userId}, mas dados foram entregues`);
         }
 
         sendEvent('progress', { stage: 'done', message: 'Mineração concluída!' });
@@ -273,7 +275,7 @@ router.get('/mine-stream', authMiddleware, miningLimitMiddleware, async (req, re
         const sellerName = finalSellerInfo?.name || finalSellerInfo?.nickname || null;
         notifyMiningComplete(userId, result.productCount, sellerName).catch(() => {});
         if (creditResult !== null) {
-            notifyCreditSpent(userId, 1, 'mining', creditResult).catch(() => {});
+            notifyCreditSpent(userId, creditsToConsume, 'mining', creditResult).catch(() => {});
             if (creditResult <= 3) {
                 notifyCreditsLow(userId, creditResult).catch(() => {});
             }
